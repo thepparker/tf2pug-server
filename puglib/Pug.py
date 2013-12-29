@@ -1,0 +1,2 @@
+class Pug(object):
+    pass

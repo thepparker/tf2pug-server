@@ -30,7 +30,7 @@ class Application(tornado.web.Application):
 
         self.db = None
 
-        self.pug_manager = puglib.PugManager(self.db)
+        self.pug_manager = puglib.PugManager.PugManager(self.db)
 
         tornado.web.Application.__init__(self, handlers, **settings)
 
@@ -61,7 +61,7 @@ class BaseHandler(tornado.web.RequestHandler):
         return self.get_argument("name", None, False)
 
     def validate_api_key(self):
-        if not self.application.validate_api_key(self.request_key:
+        if not self.application.validate_api_key(self.request_key):
             raise tornado.web.HTTPError(403)
 
 # returns a list of pugs and their status
@@ -131,7 +131,7 @@ class PugCreateHandler(BaseHandler):
             raise HTTPError(500)
 
         pug_map = self.get_argument("map", None, False)
-        size = self.get_argument("size", None, False)
+        size = self.get_argument("size", 12, False)
 
         new_id = self.manager.create_pug(self.player, self.player_name,
                                          size, pug_map)

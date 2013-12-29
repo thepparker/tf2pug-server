@@ -4,14 +4,14 @@
 import logging
 import tornado.web
 import tornado.ioloop
-import PugLib
+import puglib
 
 from tornado.options import define, options, parse_command_line
 
 define("port", default = 51515, help = "take a guess motherfucker", type = int)
 
 
-class PugApplication(tornado.web.Application):
+class Application(tornado.web.Application):
     def __init__(self):
         handlers = [
             # pug creation and player adding/removing
@@ -29,19 +29,20 @@ class PugApplication(tornado.web.Application):
             debug = True,
         }
 
+        self.pug_manager = puglib.PugManager()
+
         tornado.web.Application.__init__(self, handlers, **settings)
 
-        self.pug_manager = PugLib.PugManager()
-
-
+    def valid_api_key(self, key):
+        return True
 
 
 if __name__ == "__main__":
     parse_command_line()
 
-    app = tornado.web.Application(
-        
+    api_server = tornado.httpserver.HTTPServer(Application())
+    api_server.listen(options.port)
+
+    tornado.ioloop.IOLoop.instance().start()
 
 
-
-        )

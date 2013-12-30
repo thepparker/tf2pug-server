@@ -4,9 +4,10 @@
 Response_PugListing = 1000
 Response_PugStatus = 1001
 Response_InvalidPug = 1002
-Response_PugEnded = 1003
-Response_PugFull = 1004
-Response_EmptyPugEnded = 1005
+Response_PugCreated = 1003
+Response_PugEnded = 1004
+Response_PugFull = 1005
+Response_EmptyPugEnded = 1006
 
 Response_PlayerList = 1100
 Response_PlayerInPug = 1101
@@ -61,6 +62,21 @@ class ResponseHandler(object):
 
     def empty_pug_ended(self):
         return { "response": Response_EmptyPugEnded }
+
+    def pug_created(self, pug):
+        response = self.pug_status(pug)
+
+        self.change_response_code(response, Response_PugCreated)
+
+        return response
+
+    def pug_ended(self, pug_id):
+        response = {
+            "response": Response_PugEnded,
+            "id": pug_id
+        }
+
+        return response
 
     def player_list(self, pug):
         response = {}

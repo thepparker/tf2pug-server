@@ -6,6 +6,8 @@ import tornado.web
 import tornado.ioloop
 import puglib
 
+from tornado.web import HTTPError
+
 from tornado.options import define, options, parse_command_line
 
 define("port", default = 51515, help = "take a guess motherfucker", type = int)
@@ -25,11 +27,12 @@ class Application(tornado.web.Application):
             ("r/ITF2Pug/Player/List/", PugPlayerListHandler),
 
             # map voting
-            (r"/ITF2Pug/MapVote/", PugMapVoteHandler),
+            (r"/ITF2Pug/Vote/Add", PugMapVoteHandler),
+
         ]
 
         settings = {
-            debug = True,
+            "debug": True,
         }
 
         self.db = None
@@ -151,7 +154,7 @@ class PugCreateHandler(BaseHandler):
         pug_map = self.get_argument("map", None, False)
         size = self.get_argument("size", 12, False)
 
-        new_id = self.manager.create_pug(self.player, self.player_name,
+        pug = self.manager.create_pug(self.player, self.player_name,
                                          size, pug_map)
 
         # send the status of the new pug
@@ -183,6 +186,23 @@ class PugPlayerListHandler(BaseHandler):
             raise HTTPError(500)
 
         return self.manager.get_player_list(pugid)
+
+class PugMapVoteHandler(BaseHandler):
+    # A POST is used to set a player's map vote
+    #
+    # Required parameters are player id and the map being voted for.
+    #
+    # @steamid The player's ID who is voting
+    # @map The map name being voted for
+    def post(self):
+        pmap = self.get_argument("map", None, False)
+        if self.player is None or pmap is None:
+            raise HTTPError(500)
+
+        pug = self.manager.vote_map(self.player, pmap) 
+
+        return self.manager.get_vote_status(pug)
+
 
 if __name__ == "__main__":
     parse_command_line()

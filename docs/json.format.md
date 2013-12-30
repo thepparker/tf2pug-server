@@ -82,3 +82,25 @@ Returns the list of players for a given pug
         }
 
     }
+
+ITF2Pug/Vote/Add
+----------------
+Adds a vote for the specified map by the specified player. Returns a list of
+current votes and their count.
+
+    JSON
+    {
+        response: Response_MapVoteAdded
+        
+        player_votes: {
+            player_id: map,
+            player_id: map,
+            ...
+        },
+
+        map_votes: {
+            map: count,
+            map: count,
+            ...
+        }
+    }

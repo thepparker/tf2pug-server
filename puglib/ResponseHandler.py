@@ -7,6 +7,8 @@ Response_InvalidPug = 1002
 
 Response_PlayerList = 1003
 
+Response_MapVoteAdded = 1010
+
 class ResponseHandler(object):
     def __init__(self):
         pass

@@ -45,14 +45,12 @@ class Application(tornado.web.Application):
         tornado.web.Application.__init__(self, handlers, **settings)
 
     def valid_api_key(self, key):
-        return True
+        return key == "123abc"
 
 # The base handler class sets up properties and useful methods
 class BaseHandler(tornado.web.RequestHandler):
     def __init__(self, application, request, **kwargs):
         tornado.web.RequestHandler.__init__(self, application, request, **kwargs)
-
-        self.validate_api_key()
 
     @property
     def manager(self):
@@ -70,14 +68,20 @@ class BaseHandler(tornado.web.RequestHandler):
     def player_name(self):
         return self.get_argument("name", None, False)
 
+    @property
+    def response_handler(self):
+        return self.application.response_handler
+
     def validate_api_key(self):
-        if not self.application.validate_api_key(self.request_key):
-            raise tornado.web.HTTPError(403)
+        if not self.application.valid_api_key(self.request_key):
+            raise HTTPError(403)
 
 # returns a list of pugs and their status
 class PugListHandler(BaseHandler):
     # A simple GET is required for a pug listing
     def get(self):
+        self.validate_api_key()
+
         self.write(self.response_handler.pug_listing(self.manager.get_pugs()))
 
 class PugStatusHandler(BaseHandler):
@@ -85,6 +89,8 @@ class PugStatusHandler(BaseHandler):
     # Parameters:
     # @pugid The ID to get status for
     def get(self):
+        self.validate_api_key()
+
         pug_id = self.get_argument("pugid", None, False)
 
         self.write(self.response_handler.pug_status(self.manager.get_pug_by_id(pug_id)))
@@ -99,7 +105,9 @@ class PugAddHandler(BaseHandler):
     # @pugid (optional) The pug ID to add the player to.
     # @size (optional) The size of the pug to add the player to. eg, size=12
     #                  to only add to 6v6 pugs.
-    def put(self):        
+    def put(self):
+        self.validate_api_key()
+
         if self.player is None or self.player_name is None:
             raise HTTPError(500)
 
@@ -133,6 +141,7 @@ class PugRemoveHandler(BaseHandler):
     # The only required parameter is the player's steamid
     # @steamid The SteamID to remove
     def delete(self):
+        self.validate_api_key()
 
         if not self.player:
             raise HTTPError(500)
@@ -170,6 +179,8 @@ class PugCreateHandler(BaseHandler):
     #                  join). Defaults to 12, but can be any supported size*.
     #                  * See the PugManager class for supported sizes.
     def post(self):
+        self.validate_api_key()
+
         if not self.player or not self.player_name:
             raise HTTPError(500)
 
@@ -192,6 +203,8 @@ class PugEndHandler(BaseHandler):
     # The only parameter required is the pug id
     # @pugid The ID of the pug to end
     def delete(self):
+        self.validate_api_key()
+
         pug_id = self.get_argument("pugid", None, False)
         if not pug_id:
             raise HTTPError(500)
@@ -211,6 +224,8 @@ class PugPlayerListHandler(BaseHandler):
     # The only required parameter is the pug id
     # @pugid The pug ID to get a player list for
     def get(self):
+        self.validate_api_key()
+
         pug_id = self.get_argument("pugid", None, False)
         if pugid is None:
             raise HTTPError(500)
@@ -225,6 +240,8 @@ class PugMapVoteHandler(BaseHandler):
     # @steamid The player's ID who is voting
     # @map The map name being voted for
     def post(self):
+        self.validate_api_key()
+
         pmap = self.get_argument("map", None, False)
         if self.player is None or pmap is None:
             raise HTTPError(500)
@@ -240,6 +257,11 @@ if __name__ == "__main__":
     api_server = Application()
     api_server.listen(options.port)
 
-    tornado.ioloop.IOLoop.instance().start()
+    logging.info("TF2Pug API Server listening on %d", options.port)
+
+    try:
+        tornado.ioloop.IOLoop.instance().start()
+    except KeyboardInterrupt:
+        logging.info("KeyboardInterrupt. Exiting")
 
 

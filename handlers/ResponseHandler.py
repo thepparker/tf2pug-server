@@ -101,7 +101,7 @@ class ResponseHandler(object):
             "id": pug.id,
             "size": pug.size,
             "map": pug.map,
-            "starter"] = pug.starter,
+            "starter": pug.starter,
 
             "ip": pug.ip,
             "port": pug.port,

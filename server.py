@@ -171,6 +171,19 @@ class PugEndHandler(BaseHandler):
 
         self.write(self.manager.get_pug_listing())
 
+# Gets a the list of players for the given pugid
+class PugPlayerListHandler(BaseHandler):
+    # A GET is required to get the player list
+    #
+    # The only required parameter is the pug id
+    # @pugid The pug ID to get a player list for
+    def get(self):
+        pug_id = self.get_argument("pugid", None, False)
+        if pugid is None:
+            raise HTTPError(500)
+
+        return self.manager.get_player_list(pugid)
+
 if __name__ == "__main__":
     parse_command_line()
 

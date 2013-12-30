@@ -27,7 +27,7 @@ class Application(tornado.web.Application):
             # pug player adding/removing/listing
             (r"/ITF2Pug/Player/Add/", PugAddHandler),
             (r"/ITF2Pug/Player/Remove/", PugRemoveHandler),
-            ("r/ITF2Pug/Player/List/", PugPlayerListHandler),
+            (r"/ITF2Pug/Player/List/", PugPlayerListHandler),
 
             # map voting
             (r"/ITF2Pug/Vote/Add/", PugMapVoteHandler),
@@ -145,7 +145,6 @@ class PugAddHandler(BaseHandler):
 
         except:
             logging.exception("Unknown exception occurred when adding player to a pug")
-            return
 
 # removes a player from a pug
 class PugRemoveHandler(BaseHandler):
@@ -239,10 +238,10 @@ class PugPlayerListHandler(BaseHandler):
         self.validate_api_key()
 
         pug_id = self.pugid
-        if pugid is None:
+        if pug_id is None:
             raise HTTPError(400)
 
-        return self.response_handler.player_list(self.manager.get_pug_by_id(pug_id))
+        self.write(self.response_handler.player_list(self.manager.get_pug_by_id(pug_id)))
 
 class PugMapVoteHandler(BaseHandler):
     # A POST is used to set a player's map vote
@@ -260,7 +259,7 @@ class PugMapVoteHandler(BaseHandler):
 
         pug = self.manager.vote_map(self.player, pmap) 
 
-        return self.manager.get_vote_status(pug)
+        self.write(self.manager.get_vote_status(pug))
 
 
 if __name__ == "__main__":

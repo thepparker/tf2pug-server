@@ -15,13 +15,17 @@ class Application(tornado.web.Application):
         handlers = [
             # pug creation and player adding/removing
             (r"/ITF2Pug/List/", PugListHandler),
+            (r"/ITF2Pug/Status/", PugStatusHandler),
             (r"/ITF2Pug/Add/", PugAddHandler),
             (r"/ITF2Pug/Remove/", PugRemoveHandler),
             (r"/ITF2Pug/Create/", PugCreateHandler),
             (r"/ITF2Pug/End/", PugEndHandler),
 
             # pug player listings
-            ("r/ITF2Pug/Player/List", PugPlayerListHandler),
+            ("r/ITF2Pug/Player/List/", PugPlayerListHandler),
+
+            # map voting
+            (r"/ITF2Pug/MapVote/", PugMapVoteHandler),
         ]
 
         settings = {
@@ -69,6 +73,17 @@ class PugListHandler(BaseHandler):
     # A simple GET is required for a pug listing
     def get(self):
         self.write(self.manager.get_pug_listing())
+
+class PugStatusHandler(BaseHandler):
+    # A GET which retrieves the status of the given pug id
+    # Parameters:
+    # @pugid The ID to get status for
+    def get(self):
+        pug_id = self.get_argument("pugid", None, False)
+        if pug_id:
+            self.write(self.manager.get_pug_status(pug_id))
+        else:
+            self.write({ "response": PugManager.Response_InvalidPugStatus })
 
 # adds a player to a pug
 class PugAddHandler(BaseHandler):
@@ -154,7 +169,7 @@ class PugEndHandler(BaseHandler):
 
         self.manager.end_pug(pug_id)
 
-        self.write({ "result": 0 })
+        self.write(self.manager.get_pug_listing())
 
 if __name__ == "__main__":
     parse_command_line()

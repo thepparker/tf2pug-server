@@ -5,7 +5,8 @@ import logging
 import tornado.web
 import tornado.ioloop
 
-from puglib import PugManager, ResponseHandler
+from puglib import PugManager
+from handlers import ResponseHandler
 
 from tornado.web import HTTPError
 

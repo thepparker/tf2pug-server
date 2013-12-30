@@ -77,8 +77,7 @@ class ResponseHandler(object):
 
     def pug_listing(self, pugs):
         response = {
-            "response": Response_PugListing
-
+            "response": Response_PugListing,
             "pugs": [ self._pug_status_packet(pug) for pug in pugs ]
         }
 

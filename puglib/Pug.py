@@ -1,4 +1,5 @@
 
+import collections
 
 class Pug(object):
     def __init__(self, pid, size, pmap):
@@ -6,10 +7,14 @@ class Pug(object):
         self.size = size
         self.map = pmap
 
-        self._players = {}
+        self._players = collections.OrderedDict()
 
         self.player_votes = {}
         self.map_votes = {}
+
+        self.ip = "1.1.1.1"
+        self.port = 22222
+        self.password = 123
 
     def add_player(self, player_id, player_name):
         self._players[player_id] = player_name
@@ -23,3 +28,7 @@ class Pug(object):
     @property
     def full(self):
         return self.size == len(self._players)
+
+    @property
+    def starter(self):
+        return self._players.keys()[0]

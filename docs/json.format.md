@@ -46,24 +46,26 @@ Returns the status of a single pug.
     JSON
     {
         response: Response_PugStatus
-        pugs: {
-            id: long,
-            size: int,
-            map: string,
-            starter: long (id of pug starter),
+        pugs: [
+            {
+                id: long,
+                size: int,
+                map: string,
+                starter: long (id of pug starter),
 
-            ip: string,
-            port: int,
-            password: string,
+                ip: string,
+                port: int,
+                password: string,
 
-            mumble: string,
+                mumble: string,
 
-            players: {
-                player_id: player_name,
-                player_id: player_name,
-                ...
-            },
-        }
+                players: {
+                    player_id: player_name,
+                    player_id: player_name,
+                    ...
+                },
+            }  
+        ]
     }
 
 ITF2Pug/Player/List:

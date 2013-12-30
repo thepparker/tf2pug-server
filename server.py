@@ -156,7 +156,7 @@ class PugRemoveHandler(BaseHandler):
             # player not in the given pug, simple response
             self.write(self.response_handler.player_not_in_pug())
 
-        except PugManager.PugEndException:
+        except PugManager.PugEmptyEndException:
             self.write(self.response_handler.empty_pug_ended())
             self.write(self.response_handler.pug_listing(self.manager.get_pugs()))
 

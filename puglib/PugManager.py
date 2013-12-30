@@ -31,6 +31,10 @@ class PlayerNotInPugException(Exception):
 class NonExistantPugException(Exception):
     pass
 
+# Raised when a pug is ended because it becomes empty after a remove
+class PugEmptyEndException(Exception):
+    pass
+
 class PugManager(object):
     def __init__(self, db):
         self.db = db
@@ -79,6 +83,7 @@ class PugManager(object):
             pug = self._get_pug_with_space(size)
             if pug:
                 pug.add_player(player_id, player_name)
+                return pug
 
             else:
                 # No pugs available with space. We need to make a new one!
@@ -107,7 +112,7 @@ class PugManager(object):
         if pug.player_count == 0:
             self._end_pug(pug)
 
-            raise PugEndException("Pug %d is empty and was ended" % pug.id)
+            raise PugEmptyEndException("Pug %d is empty and was ended" % pug.id)
         else:
             return pug
 

@@ -12,6 +12,7 @@ from tornado.web import HTTPError
 
 from tornado.options import define, options, parse_command_line
 
+define("ip", default = "0.0.0.0", help = "The IP to listen on", type = str)
 define("port", default = 51515, help = "take a guess motherfucker", type = int)
 
 class Application(tornado.web.Application):
@@ -74,7 +75,7 @@ class BaseHandler(tornado.web.RequestHandler):
 
     def validate_api_key(self):
         if not self.application.valid_api_key(self.request_key):
-            raise HTTPError(403)
+            raise HTTPError(401)
 
 # returns a list of pugs and their status
 class PugListHandler(BaseHandler):
@@ -105,11 +106,11 @@ class PugAddHandler(BaseHandler):
     # @pugid (optional) The pug ID to add the player to.
     # @size (optional) The size of the pug to add the player to. eg, size=12
     #                  to only add to 6v6 pugs.
-    def put(self):
+    def post(self):
         self.validate_api_key()
 
         if self.player is None or self.player_name is None:
-            raise HTTPError(500)
+            raise HTTPError(400)
 
         pug_id = self.get_argument("pugid", None, False)
         size = self.get_argument("size", 12, False)
@@ -140,11 +141,11 @@ class PugRemoveHandler(BaseHandler):
     #
     # The only required parameter is the player's steamid
     # @steamid The SteamID to remove
-    def delete(self):
+    def post(self):
         self.validate_api_key()
 
         if not self.player:
-            raise HTTPError(500)
+            raise HTTPError(400)
 
         try:
             pug = self.manager.remove_player(self.player)
@@ -182,7 +183,7 @@ class PugCreateHandler(BaseHandler):
         self.validate_api_key()
 
         if not self.player or not self.player_name:
-            raise HTTPError(500)
+            raise HTTPError(400)
 
         pug_map = self.get_argument("map", None, False)
         size = self.get_argument("size", 12, False)
@@ -207,7 +208,7 @@ class PugEndHandler(BaseHandler):
 
         pug_id = self.get_argument("pugid", None, False)
         if not pug_id:
-            raise HTTPError(500)
+            raise HTTPError(400)
 
         try:
             self.manager.end_pug(pug_id)
@@ -228,7 +229,7 @@ class PugPlayerListHandler(BaseHandler):
 
         pug_id = self.get_argument("pugid", None, False)
         if pugid is None:
-            raise HTTPError(500)
+            raise HTTPError(400)
 
         return self.response_handler.player_list(self.manager.get_pug_by_id(pug_id))
 
@@ -244,7 +245,7 @@ class PugMapVoteHandler(BaseHandler):
 
         pmap = self.get_argument("map", None, False)
         if self.player is None or pmap is None:
-            raise HTTPError(500)
+            raise HTTPError(400)
 
         pug = self.manager.vote_map(self.player, pmap) 
 
@@ -255,9 +256,9 @@ if __name__ == "__main__":
     parse_command_line()
 
     api_server = Application()
-    api_server.listen(options.port)
+    api_server.listen(options.port, options.ip)
 
-    logging.info("TF2Pug API Server listening on %d", options.port)
+    logging.info("TF2Pug API Server listening on %s:%d", options.ip, options.port)
 
     try:
         tornado.ioloop.IOLoop.instance().start()

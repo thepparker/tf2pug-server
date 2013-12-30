@@ -65,7 +65,7 @@ class PugManager(object):
 
         # if we have a pug_id, check if that pug exists
         if pug_id:
-            pug = self.get_pug_by_id(pug)
+            pug = self.get_pug_by_id(pug_id)
 
             if pug is None:
                 raise InvalidPugException("Pug with id %d does not exist" % pug_id)

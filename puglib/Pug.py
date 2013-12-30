@@ -36,3 +36,7 @@ class Pug(object):
     @property
     def starter(self):
         return self._players.keys()[0]
+
+    @property
+    def player_count(self):
+        return len(self._players)

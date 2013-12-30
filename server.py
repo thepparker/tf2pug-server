@@ -70,6 +70,20 @@ class BaseHandler(tornado.web.RequestHandler):
         return self.get_argument("name", None, False)
 
     @property
+    def pugid(self):
+        pugid = self.get_argument("pugid", None, False)
+        
+        if pugid is not None:
+            try:
+                pugid = int(pugid)
+            except ValueError:
+                raise HTTPError(400)
+
+            return pugid
+
+        return pugid
+
+    @property
     def response_handler(self):
         return self.application.response_handler
 
@@ -92,9 +106,7 @@ class PugStatusHandler(BaseHandler):
     def get(self):
         self.validate_api_key()
 
-        pug_id = self.get_argument("pugid", None, False)
-
-        self.write(self.response_handler.pug_status(self.manager.get_pug_by_id(pug_id)))
+        self.write(self.response_handler.pug_status(self.manager.get_pug_by_id(self.pugid)))
 
 # adds a player to a pug
 class PugAddHandler(BaseHandler):
@@ -112,7 +124,7 @@ class PugAddHandler(BaseHandler):
         if self.player is None or self.player_name is None:
             raise HTTPError(400)
 
-        pug_id = self.get_argument("pugid", None, False)
+        pug_id = self.pugid
         size = self.get_argument("size", 12, False)
 
         # the add_player method returns the pug the player was added to
@@ -206,7 +218,7 @@ class PugEndHandler(BaseHandler):
     def delete(self):
         self.validate_api_key()
 
-        pug_id = self.get_argument("pugid", None, False)
+        pug_id = self.pugid
         if not pug_id:
             raise HTTPError(400)
 
@@ -227,7 +239,7 @@ class PugPlayerListHandler(BaseHandler):
     def get(self):
         self.validate_api_key()
 
-        pug_id = self.get_argument("pugid", None, False)
+        pug_id = self.pugid
         if pugid is None:
             raise HTTPError(400)
 

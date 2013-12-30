@@ -4,7 +4,8 @@
 import logging
 import tornado.web
 import tornado.ioloop
-import puglib
+
+from puglib import PugManager, ResponseHandler
 
 from tornado.web import HTTPError
 
@@ -15,19 +16,19 @@ define("port", default = 51515, help = "take a guess motherfucker", type = int)
 class Application(tornado.web.Application):
     def __init__(self):
         handlers = [
-            # pug creation and player adding/removing
+            # pug creation and management
             (r"/ITF2Pug/List/", PugListHandler),
             (r"/ITF2Pug/Status/", PugStatusHandler),
-            (r"/ITF2Pug/Add/", PugAddHandler),
-            (r"/ITF2Pug/Remove/", PugRemoveHandler),
             (r"/ITF2Pug/Create/", PugCreateHandler),
             (r"/ITF2Pug/End/", PugEndHandler),
 
-            # pug player listings
+            # pug player adding/removing/listing
+            (r"/ITF2Pug/Player/Add/", PugAddHandler),
+            (r"/ITF2Pug/Player/Remove/", PugRemoveHandler),
             ("r/ITF2Pug/Player/List/", PugPlayerListHandler),
 
             # map voting
-            (r"/ITF2Pug/Vote/Add", PugMapVoteHandler),
+            (r"/ITF2Pug/Vote/Add/", PugMapVoteHandler),
 
         ]
 
@@ -36,8 +37,9 @@ class Application(tornado.web.Application):
         }
 
         self.db = None
+        self.response_handler = ResponseHandler.ResponseHandler()
 
-        self.pug_manager = puglib.PugManager.PugManager(self.db)
+        self.pug_manager = PugManager.PugManager(self.db)
 
         tornado.web.Application.__init__(self, handlers, **settings)
 
@@ -75,7 +77,7 @@ class BaseHandler(tornado.web.RequestHandler):
 class PugListHandler(BaseHandler):
     # A simple GET is required for a pug listing
     def get(self):
-        self.write(self.manager.get_pug_listing())
+        self.write(self.response_handler.pug_listing(self.manager.get_pugs()))
 
 class PugStatusHandler(BaseHandler):
     # A GET which retrieves the status of the given pug id
@@ -83,10 +85,8 @@ class PugStatusHandler(BaseHandler):
     # @pugid The ID to get status for
     def get(self):
         pug_id = self.get_argument("pugid", None, False)
-        if pug_id:
-            self.write(self.manager.get_pug_status(pug_id))
-        else:
-            self.write({ "response": PugManager.Response_InvalidPugStatus })
+
+        self.write(self.response_handler.pug_status(self.manager.get_pug_by_id(pug_id)))
 
 # adds a player to a pug
 class PugAddHandler(BaseHandler):
@@ -95,25 +95,35 @@ class PugAddHandler(BaseHandler):
     # Parameters are as follows:
     # @steamid The SteamID to add
     # @name The name of the player being added
-    # @pugid (optional) The pug ID to add the player to. If no ID is specified,
-    #                   the player is added to the first pug with space.
+    # @pugid (optional) The pug ID to add the player to.
     # @size (optional) The size of the pug to add the player to. eg, size=12
     #                  to only add to 6v6 pugs.
-    def put(self):
-
-
-        if not self.player or not self.player_name:
+    def put(self):        
+        if self.player is None or self.player_name is None:
             raise HTTPError(500)
 
         pug_id = self.get_argument("pugid", None, False)
         size = self.get_argument("size", 12, False)
 
-        # the add_player method returns the id of the pug the player was
-        # added to
-        added_id = self.manager.add_player(self.player, self.player_name, pug_id = pug_id, size = size)
+        # the add_player method returns the pug the player was added to
+        try:
+            pug = self.manager.add_player(self.player, self.player_name, pug_id = pug_id, size = size)
+            # send the updated status of this pug (i.e which players are in it now)
 
-        # send the updated status of this pug (i.e which players are in it now)
-        self.write(self.manager.get_pug_status(added_id))
+            self.write(self.response_handler.player_added(pug))
+
+        except PugManager.PlayerInPugException:
+            self.write(self.response_handler.player_in_pug(self.manager.get_player_pug(self.player)))
+
+        except PugManager.InvalidPugException:
+            self.write(self.response_handler.invalid_pug())
+
+        except PugManager.PugFullException:
+            self.write(self.response_handler.pug_full(self.manager.get_pug_by_id(pug_id)))
+
+        except:
+            logging.exception("Unknown exception occurred when adding player to a pug")
+            return
 
 # removes a player from a pug
 class PugRemoveHandler(BaseHandler):
@@ -126,10 +136,21 @@ class PugRemoveHandler(BaseHandler):
         if not self.player:
             raise HTTPError(500)
 
-        removed_id = self.manager.remove_player(self.player)
+        try:
+            pug = self.manager.remove_player(self.player)
 
-        # send the updated status of this pug
-        self.write(self.manager.get_pug_status(removed_id))
+            self.write(self.response_handler.player_removed(pug))
+
+        except PugManager.PlayerNotInPugException:
+            # player not in the given pug, simple response
+            self.write(self.response_handler.player_not_in_pug())
+
+        except PugManager.PugEndException:
+            self.write(self.response_handler.empty_pug_ended())
+            self.write(self.response_handler.pug_listing(self.manager.get_pugs()))
+
+        except:
+            logging.exception("Unknown exception when removing player from a pug")
 
 # Creates a new pug. Only called to explicitly create a new pug. Normally pugs
 # are automatically created behind the scenes by the pug manager when a pug
@@ -154,11 +175,15 @@ class PugCreateHandler(BaseHandler):
         pug_map = self.get_argument("map", None, False)
         size = self.get_argument("size", 12, False)
 
-        pug = self.manager.create_pug(self.player, self.player_name,
-                                         size, pug_map)
+        try:
+            pug = self.manager.create_pug(self.player, self.player_name,
+                                          size, pug_map)
 
-        # send the status of the new pug
-        self.write(self.manager.get_pug_status(new_id))
+            # send the status of the new pug
+            self.write(self.response_handler.pug_status(pug))
+
+        except PugManager.PlayerInPugException:
+            self.write(self.response_handler.player_in_pug(self.manager.get_player_pug(self.player)))
 
 class PugEndHandler(BaseHandler):
     # To end a pug, a DELETE is required
@@ -170,9 +195,13 @@ class PugEndHandler(BaseHandler):
         if not pug_id:
             raise HTTPError(500)
 
-        self.manager.end_pug(pug_id)
+        try:
+            self.manager.end_pug(pug_id)
 
-        self.write(self.manager.get_pug_listing())
+        except PugManager.NonExistantPugException:
+            self.write(self.response_handler.invalid_pug())
+
+        self.write(self.response_handler.pug_listing(self.manager.get_pugs()))
 
 # Gets a the list of players for the given pugid
 class PugPlayerListHandler(BaseHandler):
@@ -185,7 +214,7 @@ class PugPlayerListHandler(BaseHandler):
         if pugid is None:
             raise HTTPError(500)
 
-        return self.manager.get_player_list(pugid)
+        return self.response_handler.player_list(self.manager.get_pug_by_id(pug_id))
 
 class PugMapVoteHandler(BaseHandler):
     # A POST is used to set a player's map vote

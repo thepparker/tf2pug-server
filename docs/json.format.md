@@ -87,7 +87,7 @@ If you specified a pug ID and there was no space in the pug, you will receive
 an ITF2Pug/Status/ response with a Response_PugFull code.
 
 If the pug does not exist anymore, the response code will be 
-Response_InvalidPug. In this case, you will need to perform an ITF2Pug/List to 
+Response_InvalidPug. In this case, it is advised to perform an ITF2Pug/List/ to
 get an updated pug list.
 
 ITF2Pug/Player/Remove/
@@ -102,8 +102,8 @@ If the player is not in a pug, an empty packet with the response code
 Response_PlayerNotInPug will be sent. 
 
 If the pug was made empty by removing this player, the response will be an 
-otherwise empty packet with the code Response_EmptyPugEnded, followed by an
-ITF2Pug/List response.
+otherwise empty packet with the code Response_EmptyPugEnded. It would be
+advised to get an updated listing after this response.
 
 ITF2Pug/Player/List/
 --------------------

@@ -6,7 +6,14 @@
 # the specific format of that packet.
 
 import logging
+import time
+
 from Pug import Pug
+
+
+Response_PugListing = 1000
+Response_PugStatus = 1001
+Response_InvalidPugStatus = 1002
 
 class PugManager(object):
     def __init__(self, db):
@@ -51,6 +58,31 @@ class PugManager(object):
                 return self.create_pug(player_id, player_name, size = size)
 
     """
+    This method removes the given player ID from any pugs they may be in.
+
+    @param player_id The player to remove. If the player is not in a pug,
+                     -1 is returned
+
+    @return int The ID of the pug the player was removed from, -1 if the user
+                is not in a pug, (-2 if the pug has been ended)?
+    """
+    def remove_player(self, player_id):
+        pug = self._get_player_pug(player_id)
+
+        if pug is None:
+            return -1
+
+        pug.remove_player(player_id)
+
+        # if there's no more players in the pug, we need to end it
+        if pug.player_count == 0:
+            self._end_pug(pug)
+
+            return -2
+        else:
+            return pug.id
+
+    """
     This method is used to create a new pug. Size and map are optional. If the
     player is already in a pug, -1 is returned.
 
@@ -72,7 +104,48 @@ class PugManager(object):
         pug = Pug(pug_id, size, pug_map)
         pug.add_player(player_id, player_name)
 
+        self._pugs.append(pug)
+
         return pug_id
+
+    """
+    This method is a public wrapper for _end_pug(). This serves to ensure that
+    the pug object itself is always passed to _end_pug, rather than an ID. In
+    otherwords, it's for method overloading (which we can otherwise only do by
+    having optional parameters).
+
+    @param pug_id The ID of the pug to end
+    """
+    def end_pug(self, pug_id):
+        pug = self._get_pug_by_id(pug_id)
+
+        if pug is None:
+            return
+
+        self._end_pug(pug)
+
+    """
+    Ends the given pug (i.e deletes it from the manager, maybe does some
+    database shit at a later stage)
+
+    @param Pug The pug to end
+    """
+    def _end_pug(self, pug):
+        self._pugs.remove(pug)
+
+    """
+    Returns a dictionary of pug ids and their status. (i.e a complete listing 
+    of current pugs and their complete status)
+
+    This will be converted to a JSON packet by tornado.
+    The format is documented in 'docs/json.format.md'
+    """
+    def get_pug_listing(self):
+        pass
+
+    def get_pug_status(self, pug_id):
+        pass
+
 
     """
     Determines if a player is in a pug.
@@ -82,11 +155,21 @@ class PugManager(object):
     @return bool True if the player is in a pug, else False
     """
     def _player_in_pug(self, player_id):
+        return self._get_player_pug(player_id) is not None
+
+    """
+    Gets the pug the given player is in (if any).
+
+    @param player_id The player to check for
+
+    @return Pug The pug the player is in, or none
+    """
+    def _get_player_pug(self, player_id):
         for pug in self._pugs:
             if pug.has_player(player_id):
-                return True
+                return pug
 
-        return False
+        return None
 
     """
     Searches through the pug list for a pug matching the given id.

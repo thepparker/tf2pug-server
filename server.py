@@ -79,6 +79,8 @@ class PugAddHandler(BaseHandler):
     # @name The name of the player being added
     # @pugid (optional) The pug ID to add the player to. If no ID is specified,
     #                   the player is added to the first pug with space.
+    # @size (optional) The size of the pug to add the player to. eg, size=12
+    #                  to only add to 6v6 pugs.
     def put(self):
 
 
@@ -86,10 +88,11 @@ class PugAddHandler(BaseHandler):
             raise HTTPError(500)
 
         pug_id = self.get_argument("pugid", None, False)
+        size = self.get_argument("size", 12, False)
 
         # the add_player method returns the id of the pug the player was
         # added to
-        added_id = self.manager.add_player(self.player, self.player_name, pug_id)
+        added_id = self.manager.add_player(self.player, self.player_name, pug_id = pug_id, size = size)
 
         # send the updated status of this pug (i.e which players are in it now)
         self.write(self.manager.get_pug_status(added_id))

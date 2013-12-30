@@ -1,5 +1,6 @@
 # This is the PUG manager library for TF2Pug. It handles pug creation, user
 # user management and server management.
+#
 # The methods provided in this class are used by the API server. The data
 # returned for certain methods is in the form of a dict, which is converted to
 # a JSON packet by the tornado request write method. These methods document
@@ -9,11 +10,7 @@ import logging
 import time
 
 from Pug import Pug
-
-
-Response_PugListing = 1000
-Response_PugStatus = 1001
-Response_InvalidPugStatus = 1002
+from ResponseHandler import ResponseHandler
 
 class PugManager(object):
     def __init__(self, db):
@@ -21,6 +18,8 @@ class PugManager(object):
 
         # pugs are maintained as a list of Pug objects
         self._pugs = []
+
+        self.responder = ResponseHandler()
 
     """
     This method is used to add players to a pug. 
@@ -141,11 +140,20 @@ class PugManager(object):
     The format is documented in 'docs/json.format.md'
     """
     def get_pug_listing(self):
-        pass
+        return self.responder.construct_list_packet(self._pugs)
 
+    """
+    Returns a dictionary of a pug's status.
+    """
     def get_pug_status(self, pug_id):
-        pass
+        pug = self._get_pug_by_id(pug_id)
 
+        return self.responder.construct_status_packet(pug)
+
+    def get_player_list(self, pug_id):
+        pug = self._get_pug_by_id(pug_id)
+
+        return self.responder.construct_player_list_packet(pug)
 
     """
     Determines if a player is in a pug.

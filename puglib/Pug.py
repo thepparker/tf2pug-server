@@ -19,6 +19,10 @@ class Pug(object):
     def add_player(self, player_id, player_name):
         self._players[player_id] = player_name
 
+    def remove_player(self, player_id):
+        if player_id in self._players:
+            del self._players[player_id]
+
     def vote_map(self, player_id, map_name):
         pass
 

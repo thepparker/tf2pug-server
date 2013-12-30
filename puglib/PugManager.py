@@ -10,7 +10,26 @@ import logging
 import time
 
 from Pug import Pug
-from ResponseHandler import ResponseHandler
+
+# Raised when trying to add a player to a full pug
+class PugFullException(Exception):
+    pass
+
+# Raised when an invalid pug is given
+class InvalidPugException(Exception):
+    pass
+
+# Raised when a player is already in a pug (during pug creation)
+class PlayerInPugException(Exception):
+    pass
+
+# Raised when a player is not in a pug
+class PlayerNotInPugException(Exception):
+    pass
+
+# Raised when a pug doesn't exist
+class NonExistantPugException(Exception):
+    pass
 
 class PugManager(object):
     def __init__(self, db):
@@ -19,12 +38,11 @@ class PugManager(object):
         # pugs are maintained as a list of Pug objects
         self._pugs = []
 
-        self.responder = ResponseHandler()
-
     """
-    This method is used to add players to a pug. 
+    Adds a player to a pug. 
+
     If a pug ID is specified, the player is added to that pug if possible. If 
-    it is not possible, a -1 is returned.
+    it is not possible, an exception is raised.
 
     If no pug ID is specified, the player is added to the first pug with space
     available. If no space is available, a new pug is created.
@@ -33,18 +51,28 @@ class PugManager(object):
     @param player_name The name of the player to add
     @param pug_id The ID of the pug to add the player to
 
-    @return int The ID of the pug the player was added to, or -1 if none
+    @return Pug The pug the player was added to or None
     """
     def add_player(self, player_id, player_name, pug_id = None, size = 12):
+        # first check if the player is already in a pug. If so, return that pug?
+        player_pug = self.get_player_pug(player_id)
+        if player_pug is not None:
+            raise PlayerInPugException("Player %s is in pug %d", (player_id, player_pug.id))
+
         # if we have a pug_id, check if that pug exists
         if pug_id:
-            pug = self._get_pug_by_id(pug)
+            pug = self.get_pug_by_id(pug)
 
-            if pug and not pug.full:
+            if pug is None:
+                raise InvalidPugException("Pug with id %d does not exist" % pug_id)
+
+            if not pug.full:
                 pug.add_player(player_id, player_name)
-                return pug_id
+
+                return pug
             else:
-                return -1
+                raise PugFullException("Pug %d is full" % pug.id )
+                
 
         else:
             # no pug id specified. add player to the first pug with space
@@ -57,19 +85,21 @@ class PugManager(object):
                 return self.create_pug(player_id, player_name, size = size)
 
     """
-    This method removes the given player ID from any pugs they may be in.
+    This method removes the given player ID from any pug they may be in.
 
-    @param player_id The player to remove. If the player is not in a pug,
-                     -1 is returned
+    If the player is not in a pug, an exception is raised. If the pug was
+    ended because it is empty after removing the player, an exception is
+    raised.
 
-    @return int The ID of the pug the player was removed from, -1 if the user
-                is not in a pug, (-2 if the pug has been ended)?
+    @param player_id The player to remove
+
+    @return Pug The pug the player was removed from.
     """
     def remove_player(self, player_id):
-        pug = self._get_player_pug(player_id)
+        pug = self.get_player_pug(player_id)
 
         if pug is None:
-            return -1
+            raise PlayerNotInPugException("Player %s is not in a pug" % player_id)
 
         pug.remove_player(player_id)
 
@@ -77,13 +107,13 @@ class PugManager(object):
         if pug.player_count == 0:
             self._end_pug(pug)
 
-            return -2
+            raise PugEndException("Pug %d is empty and was ended" % pug.id)
         else:
-            return pug.id
+            return pug
 
     """
     This method is used to create a new pug. Size and map are optional. If the
-    player is already in a pug, -1 is returned.
+    player is already in a pug, an exception is raised.
 
     @param player_id The ID of the player to add
     @param player_name The name of the player to add
@@ -95,7 +125,7 @@ class PugManager(object):
     """
     def create_pug(self, player_id, player_name, size = 12, pug_map = None):
         if self._player_in_pug(player_id):
-            return -1
+            raise PlayerInPugException("Player %s (%s) is already in a pug" % (player_name, player_id))
 
         # create a new pug with id
         pug_id = int(round(time.time()))
@@ -105,7 +135,7 @@ class PugManager(object):
 
         self._pugs.append(pug)
 
-        return pug_id
+        return pug
 
     """
     This method is a public wrapper for _end_pug(). This serves to ensure that
@@ -116,10 +146,10 @@ class PugManager(object):
     @param pug_id The ID of the pug to end
     """
     def end_pug(self, pug_id):
-        pug = self._get_pug_by_id(pug_id)
+        pug = self.get_pug_by_id(pug_id)
 
         if pug is None:
-            return
+            raise NonExistantPugException("Pug with id %d does not exist", pug_id)
 
         self._end_pug(pug)
 
@@ -133,27 +163,10 @@ class PugManager(object):
         self._pugs.remove(pug)
 
     """
-    Returns a dictionary of pug ids and their status. (i.e a complete listing 
-    of current pugs and their complete status)
-
-    This will be converted to a JSON packet by tornado.
-    The format is documented in 'docs/json.format.md'
+    Returns the list of pugs being managed by this manager
     """
-    def get_pug_listing(self):
-        return self.responder.construct_list_packet(self._pugs)
-
-    """
-    Returns a dictionary of a pug's status.
-    """
-    def get_pug_status(self, pug_id):
-        pug = self._get_pug_by_id(pug_id)
-
-        return self.responder.construct_status_packet(pug)
-
-    def get_player_list(self, pug_id):
-        pug = self._get_pug_by_id(pug_id)
-
-        return self.responder.construct_player_list_packet(pug)
+    def get_pugs(self):
+        return self._pugs
 
     """
     Determines if a player is in a pug.
@@ -163,7 +176,7 @@ class PugManager(object):
     @return bool True if the player is in a pug, else False
     """
     def _player_in_pug(self, player_id):
-        return self._get_player_pug(player_id) is not None
+        return self.get_player_pug(player_id) is not None
 
     """
     Gets the pug the given player is in (if any).
@@ -172,7 +185,7 @@ class PugManager(object):
 
     @return Pug The pug the player is in, or none
     """
-    def _get_player_pug(self, player_id):
+    def get_player_pug(self, player_id):
         for pug in self._pugs:
             if pug.has_player(player_id):
                 return pug
@@ -186,7 +199,7 @@ class PugManager(object):
 
     @return Pug The pug matching the given ID, or None
     """
-    def _get_pug_by_id(self, pug_id):
+    def get_pug_by_id(self, pug_id):
         for pug in self._pugs:
             if pug.id == pug_id:
                 return pug

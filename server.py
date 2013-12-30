@@ -170,7 +170,6 @@ class PugRemoveHandler(BaseHandler):
 
         except PugManager.PugEmptyEndException:
             self.write(self.response_handler.empty_pug_ended())
-            self.write(self.response_handler.pug_listing(self.manager.get_pugs()))
 
         except:
             logging.exception("Unknown exception when removing player from a pug")
@@ -205,7 +204,7 @@ class PugCreateHandler(BaseHandler):
                                           size, pug_map)
 
             # send the status of the new pug
-            self.write(self.response_handler.pug_status(pug))
+            self.write(self.response_handler.pug_created(pug))
 
         except PugManager.PlayerInPugException:
             self.write(self.response_handler.player_in_pug(self.manager.get_player_pug(self.player)))
@@ -225,10 +224,10 @@ class PugEndHandler(BaseHandler):
         try:
             self.manager.end_pug(pug_id)
 
+            self.write(self.response_handler.pug_ended(pug_id))
+
         except PugManager.NonExistantPugException:
             self.write(self.response_handler.invalid_pug())
-
-        self.write(self.response_handler.pug_listing(self.manager.get_pugs()))
 
 # Gets a the list of players for the given pugid
 class PugPlayerListHandler(BaseHandler):

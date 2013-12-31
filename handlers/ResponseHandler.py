@@ -1,5 +1,5 @@
-# The ResponseHandler handles responses that require packet construction, so
-# the PugManager does not have unnecessary bloat
+# The ResponseHandler handles all responses to API calls. Response codes
+# are the code sent along with packets to indicate what the packet is for.
 
 Response_PugListing = 1000
 Response_PugStatus = 1001
@@ -16,6 +16,9 @@ Response_PlayerAdded = 1103
 Response_PlayerRemoved = 1104
 
 Response_MapVoteAdded = 1200
+Response_MapForced = 1201
+Response_MapNotForced = 1202
+Response_MapVoteNotInProgress = 1203
 
 class ResponseHandler(object):
     def __init__(self):
@@ -25,6 +28,15 @@ class ResponseHandler(object):
         packet["response"] = new_code
 
         return packet
+
+    def vote_status(self, pug):
+        response = {
+            "response": Response_MapVoteAdded,
+            "player_votes": pug.player_votes,
+            "map_vote_counts": pug.map_votes
+        }
+
+        return response
 
     def player_added(self, pug):
         response = self.pug_status(pug)
@@ -47,7 +59,7 @@ class ResponseHandler(object):
 
         return response
 
-    def player_not_in_pug(self, pug):
+    def player_not_in_pug(self):
         return { "response": Response_PlayerNotInPug }
 
     def pug_full(self, pug):
@@ -99,6 +111,19 @@ class ResponseHandler(object):
 
         return response
 
+    def pug_map_forced(self, pug):
+        response = self.pug_status(pug)
+
+        self.change_response_code(response, Response_MapForced)
+
+        return response
+
+    def pug_map_not_forced(self):
+        return { "response": Response_MapNotForced }
+
+    def pug_no_map_vote(self):
+        return { "response": Response_MapVoteNotInProgress }
+
     def pug_status(self, pug):
         response = {}
 
@@ -115,9 +140,16 @@ class ResponseHandler(object):
     def _pug_status_packet(self, pug):
         packet = {
             "id": pug.id,
-            "size": pug.size,
-            "map": pug.map,
             "starter": pug.starter,
+
+            # state is an enum style variable which lets us know what stage
+            # the pug is at
+            "state": pug.state,
+
+            "size": pug.size,
+
+            "map_forced": pug.map_forced,
+            "map": pug.map,
 
             "ip": pug.ip,
             "port": pug.port,
@@ -126,11 +158,19 @@ class ResponseHandler(object):
             "mumble": "",
 
             # players is already a dict, so we can just use that
-            "players": pug._players
+            "players": pug._players,
+            "team_red": pug.team_red,
+            "team_blue": pug.team_blue,
+
+            # like wise with map votes
+            "player_votes": pug.player_votes,
+            "map_vote_counts": pug.map_votes,
+            # these fields store the times that map voting has begun and when
+            # it will end. this is required so that clients know when they
+            # should get an updated status after map voting
+            "map_vote_start": pug.map_vote_start,
+            "map_vote_end": pug.map_vote_end
         }
 
         return packet
-
-    def _pug_player_packet(self, pug):
-        packet = {}
 

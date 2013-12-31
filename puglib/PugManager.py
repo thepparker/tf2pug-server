@@ -9,7 +9,7 @@
 import logging
 import time
 
-from Pug import Pug
+import Pug
 
 # Raised when trying to add a player to a full pug
 class PugFullException(Exception):
@@ -33,6 +33,14 @@ class NonExistantPugException(Exception):
 
 # Raised when a pug is ended because it becomes empty after a remove
 class PugEmptyEndException(Exception):
+    pass
+
+# Raised when we're unable to force the map. Likely due to it being too late
+class ForceMapException(Exception):
+    pass
+
+# Raised when we cannot vote for maps. i.e when not in map voting state
+class NoMapVoteException(Exception):
     pass
 
 class PugManager(object):
@@ -135,7 +143,7 @@ class PugManager(object):
         # create a new pug with id
         pug_id = int(round(time.time()))
 
-        pug = Pug(pug_id, size, pug_map)
+        pug = Pug.Pug(pug_id, size, pug_map)
         pug.add_player(player_id, player_name)
 
         self._pugs.append(pug)
@@ -162,10 +170,50 @@ class PugManager(object):
     Ends the given pug (i.e deletes it from the manager, maybe does some
     database shit at a later stage)
 
-    @param Pug The pug to end
+    @param pug The pug to end
     """
     def _end_pug(self, pug):
         self._pugs.remove(pug)
+
+    """
+    Adds a vote for the given map by the specified player.
+
+    Raises an exception if the player is not in a pug.
+
+    @param player_id The ID of the player voting
+    @param pmap The map being voted for
+
+    @return Pug The pug that had a map vote placed
+    """
+    def vote_map(self, player_id, pmap):
+        pug = self.get_player_pug(player_id)
+
+        if pug is None:
+            raise PlayerNotInPugException("Player %s is not in a pug" % player_id)
+
+        if pug.state != Pug.states["MAP_VOTING"]:
+            raise NoMapVoteException("Pug is not in map voting stage")
+
+        pug.vote_map(player_id, pmap)
+
+        return pug
+
+    """
+    Forces the pug's map to this the given map. Can only be used before voting
+    has begun.
+    """
+    def force_map(self, pug_id, pmap):
+        pug = self.get_pug_by_id(pug_id)
+
+        if pug is None:
+            raise NonExistantPugException("Pug with id %d does not exist" % pug_id)
+
+        if pug.state > Pug.states["GATHERING_PLAYERS"]:
+            raise ForceMapException("Too late to force the map")
+
+        pug.force_map(pmap)
+
+        return pug
 
     """
     Returns the list of pugs being managed by this manager

@@ -7,6 +7,7 @@ import tornado.ioloop
 
 from puglib import PugManager
 from handlers import ResponseHandler
+from serverlib import ServerManager
 
 from tornado.web import HTTPError
 
@@ -29,8 +30,9 @@ class Application(tornado.web.Application):
             (r"/ITF2Pug/Player/Remove/", PugRemoveHandler),
             (r"/ITF2Pug/Player/List/", PugPlayerListHandler),
 
-            # map voting
-            (r"/ITF2Pug/Vote/Add/", PugMapVoteHandler),
+            # map voting/other shit
+            (r"/ITF2Pug/Map/Vote/", PugMapVoteHandler),
+            (r"/ITF2Pug/Map/Force/", PugForceMapHandler),
 
         ]
 
@@ -39,9 +41,12 @@ class Application(tornado.web.Application):
         }
 
         self.db = None
+        
         self.response_handler = ResponseHandler.ResponseHandler()
 
         self.pug_manager = PugManager.PugManager(self.db)
+
+        self.server_manager = ServerManager.ServerManager()
 
         tornado.web.Application.__init__(self, handlers, **settings)
 
@@ -177,7 +182,7 @@ class PugRemoveHandler(BaseHandler):
             self.write(self.response_handler.player_removed(pug))
 
         except PugManager.PlayerNotInPugException:
-            # player not in the given pug, simple response
+            # player not in a pug
             self.write(self.response_handler.player_not_in_pug())
 
         except PugManager.PugEmptyEndException:
@@ -270,10 +275,48 @@ class PugMapVoteHandler(BaseHandler):
         if self.player_id is None or pmap is None:
             raise HTTPError(400)
 
-        pug = self.manager.vote_map(self.player_id, pmap) 
+        try:
+            pug = self.manager.vote_map(self.player_id, pmap)
 
-        self.write(self.manager.get_vote_status(pug))
+            self.write(self.response_handler.vote_status(pug))
 
+        except PugManager.PlayerNotInPugException:
+            self.write(self.response_handler.player_not_in_pug())
+
+        except PugManager.NoMapVoteException:
+            self.write(self.response_handler.pug_no_map_vote())
+
+        except:
+            logging.exception("Unknown exception occured during map vote")
+
+class PugForceMapHandler(BaseHandler):
+    # A POST is used to force the map
+    #
+    # Required parameters are the pug id and the map to force it to
+    #
+    # @pugid The ID of the pug
+    # @map The name of the map
+    def post(self):
+        self.validate_api_key()
+
+        fmap = self.get_argument("map", None, False)
+        pug_id = self.pugid
+        if self.fmap is None or pug_id is None:
+            raise HTTPError(400)
+
+        try:
+            pug = self.manager.force_map(pug_id, fmap)
+
+            self.write(self.response_handler.pug_map_forced(pug))
+        
+        except PugManager.NonExistantPugException:
+            self.write(self.response_handler.invalid_pug())
+
+        except PugManager.ForceMapException:
+            self.write(self.response_handler.pug_map_not_forced())
+
+        except:
+            logging.exception("Exception occured when forcing map")
 
 if __name__ == "__main__":
     parse_command_line()

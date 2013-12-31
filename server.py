@@ -124,6 +124,8 @@ class PugStatusHandler(BaseHandler):
     def get(self):
         self.validate_api_key()
 
+        # the response handler will automatically handle invalid pug ids by
+        # sending an invalidpug response code
         self.write(self.response_handler.pug_status(self.manager.get_pug_by_id(self.pugid)))
 
 # adds a player to a pug
@@ -227,11 +229,11 @@ class PugCreateHandler(BaseHandler):
             self.write(self.response_handler.player_in_pug(self.manager.get_player_pug(self.player_id)))
 
 class PugEndHandler(BaseHandler):
-    # To end a pug, a DELETE is required
+    # To end a pug, a POST is required
     #
     # The only parameter required is the pug id
     # @pugid The ID of the pug to end
-    def delete(self):
+    def post(self):
         self.validate_api_key()
 
         pug_id = self.pugid

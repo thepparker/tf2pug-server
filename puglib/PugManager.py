@@ -78,13 +78,13 @@ class PugManager(object):
             if pug is None:
                 raise InvalidPugException("Pug with id %d does not exist" % pug_id)
 
-            if not pug.full:
+            elif pug.full:
+                raise PugFullException("Pug %d is full" % pug.id )
+
+            else:
                 pug.add_player(player_id, player_name)
 
                 return pug
-            else:
-                raise PugFullException("Pug %d is full" % pug.id )
-                
 
         else:
             # no pug id specified. add player to the first pug with space

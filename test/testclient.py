@@ -23,6 +23,27 @@ def main():
 
     pug_list()
 
+    vote_map(1, "cp_granary")
+    vote_map(1, "cp_badlands")
+
+def vote_map(player_id, map_name):
+    interface = "ITF2Pug/Map/Vote/"
+
+    params = {
+        "key": api_key,
+        "steamid": player_id,
+        "map": map_name
+    }
+
+    data = post_data(interface, params)
+
+    jdata = json.loads(data)
+
+    print "MAP VOTE RESULT: "
+    pprint(jdata)
+
+    return jdata
+
 def pug_status(pid):
     interface = "ITF2Pug/Status/"
 
@@ -37,6 +58,8 @@ def pug_status(pid):
 
     print "STATUS FOR PUG %d:" % pid
     pprint(jdata)
+
+    return jdata
 
 def pug_list():
     interface = "ITF2Pug/List/"
@@ -56,6 +79,8 @@ def pug_list():
     for pug in jdata["pugs"]:
         print pug["id"]
 
+    return jdata
+
 def player_list(pid):
     interface = "ITF2Pug/Player/List/"
 
@@ -70,6 +95,8 @@ def player_list(pid):
 
     print "PLAYERS IN PUG %d:" % pid
     pprint(jdata)
+
+    return jdata
 
 def create_pug(pid, name, size = 12):
     create_params = {

@@ -1,0 +1,2 @@
+class ServerManager(object):
+    pass

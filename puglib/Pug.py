@@ -120,7 +120,7 @@ class Pug(object):
         return self.size == len(self._players)
 
     @property
-    def starter(self):
+    def admin(self):
         return self._players.keys()[0]
 
     @property

@@ -140,7 +140,7 @@ class ResponseHandler(object):
     def _pug_status_packet(self, pug):
         packet = {
             "id": pug.id,
-            "starter": pug.starter,
+            "admin": pug.admin,
 
             # state is an enum style variable which lets us know what stage
             # the pug is at
@@ -165,7 +165,7 @@ class ResponseHandler(object):
             # must convert votes to json arrays too
             "player_votes": self._pug_vote_list(pug),
             "map_vote_counts": self._pug_vote_count_list(pug),
-            
+
             # these fields store the times that map voting has begun and when
             # it will end. this is required so that clients know when they
             # should get an updated status after map voting

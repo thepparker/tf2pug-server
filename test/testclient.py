@@ -14,12 +14,12 @@ def main():
 
     remove_player(1)
 
-    add_player(3, "jimmy", int(res["pugs"][0]["id"]))
+    add_player(3, "jimmy", int(res["pug"]["id"]))
 
     res2 = create_pug(1, "rick")
 
-    player_list(int(res["pugs"][0]["id"]))
-    pug_status(int(res["pugs"][0]["id"]))
+    player_list(int(res["pug"]["id"]))
+    pug_status(int(res["pug"]["id"]))
 
     pug_list()
 

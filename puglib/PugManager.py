@@ -50,6 +50,8 @@ class PugManager(object):
         # pugs are maintained as a list of Pug objects
         self._pugs = []
 
+        self._id_counter = 0
+
     """
     Adds a player to a pug. 
 
@@ -141,7 +143,8 @@ class PugManager(object):
             raise PlayerInPugException("Player %s (%s) is already in a pug" % (player_name, player_id))
 
         # create a new pug with id
-        pug_id = int(round(time.time()))
+        pug_id = self._id_counter
+        self._id_counter += 1
 
         pug = Pug.Pug(pug_id, size, pug_map)
         pug.add_player(player_id, player_name)

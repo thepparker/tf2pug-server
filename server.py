@@ -102,6 +102,18 @@ class BaseHandler(tornado.web.RequestHandler):
         return pugid
 
     @property
+    def size(self):
+        size = self.get_argument("size", 12, False)
+        try:
+            size = int(size)
+
+            return size
+
+        except ValueError:
+            raise HTTPError(400)
+
+
+    @property
     def response_handler(self):
         return self.application.response_handler
 
@@ -145,7 +157,7 @@ class PugAddHandler(BaseHandler):
             raise HTTPError(400)
 
         pug_id = self.pugid
-        size = self.get_argument("size", 12, False)
+        size = self.size
 
         # the add_player method returns the pug the player was added to
         try:
@@ -216,12 +228,7 @@ class PugCreateHandler(BaseHandler):
             raise HTTPError(400)
 
         pug_map = self.get_argument("map", None, False)
-        size = self.get_argument("size", 12, False)
-        
-        try:
-            size = int(size)
-        except ValueError:
-            raise HTTPError(400)
+        size = self.size
 
         try:
             pug = self.manager.create_pug(self.player_id, self.player_name,

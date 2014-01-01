@@ -30,11 +30,9 @@ class ResponseHandler(object):
         return packet
 
     def vote_status(self, pug):
-        response = {
-            "response": Response_MapVoteAdded,
-            "player_votes": self._pug_vote_list(pug),
-            "map_vote_counts": self._pug_vote_count_list(pug),
-        }
+        response = self._pug_status_packet(pug)
+
+        self.change_response_code(response, Response_MapVoteAdded)
 
         return response
 
@@ -133,7 +131,7 @@ class ResponseHandler(object):
         else:
             response["response"] = Response_PugStatus
 
-            response["pugs"] = [ self._pug_status_packet(pug) ]
+            response["pug"] = self._pug_status_packet(pug)
 
         return response
 

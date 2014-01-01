@@ -32,8 +32,8 @@ class ResponseHandler(object):
     def vote_status(self, pug):
         response = {
             "response": Response_MapVoteAdded,
-            "player_votes": pug.player_votes,
-            "map_vote_counts": pug.map_votes
+            "player_votes": self._pug_vote_list(pug),
+            "map_vote_counts": self._pug_vote_count_list(pug),
         }
 
         return response
@@ -98,7 +98,7 @@ class ResponseHandler(object):
         else:
             response = {
                 "response": Response_PlayerList,
-                "players": pug._players
+                "players": self._pug_players_list(pug)
             }
 
         return response
@@ -157,14 +157,15 @@ class ResponseHandler(object):
 
             "mumble": "",
 
-            # players is already a dict, so we can just use that
-            "players": pug._players,
+            # players is converted to a proper json array
+            "players": self._pug_players_list(pug),
             "team_red": pug.team_red,
             "team_blue": pug.team_blue,
 
-            # like wise with map votes
-            "player_votes": pug.player_votes,
-            "map_vote_counts": pug.map_votes,
+            # must convert votes to json arrays too
+            "player_votes": self._pug_vote_list(pug),
+            "map_vote_counts": self._pug_vote_count_list(pug),
+            
             # these fields store the times that map voting has begun and when
             # it will end. this is required so that clients know when they
             # should get an updated status after map voting
@@ -174,3 +175,42 @@ class ResponseHandler(object):
 
         return packet
 
+    def _pug_players_list(self, pug):
+        player_list = []
+
+        for player_id in pug._players:
+            player = dict({
+                    "id": player_id,
+                    "name": pug._players[player_id]
+                })
+
+
+            player_list.append(player)
+
+        return player_list
+
+    def _pug_vote_list(self, pug):
+        vote_list = []
+
+        for player_id in pug.player_votes:
+            vote = dict({
+                    "id": player_id,
+                    "map": pug.player_votes[player_id]
+                })
+
+            vote_list.append(vote)
+
+        return vote_list
+
+    def _pug_vote_count_list(self, pug):
+        count_list = []
+
+        for mname in pug.map_votes:
+            count = dict({
+                    "map": mname,
+                    "count": pug.map_votes[mname]
+                })
+
+            count_list.append(count)
+
+        return count_list

@@ -54,6 +54,11 @@ class Pug(object):
         if player_id in self._players:
             del self._players[player_id]
 
+        if player_id in self.player_votes:
+            self._decrement_map_vote(self.player_votes[player_id])
+
+            del self.player_votes[player_id]
+
     def begin_map_vote(self):
         if self.map_forced:
             raise MapForcedException("Cannot begin vote when the map is forced")

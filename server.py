@@ -217,6 +217,11 @@ class PugCreateHandler(BaseHandler):
 
         pug_map = self.get_argument("map", None, False)
         size = self.get_argument("size", 12, False)
+        
+        try:
+            size = int(size)
+        except ValueError:
+            raise HTTPError(400)
 
         try:
             pug = self.manager.create_pug(self.player_id, self.player_name,
@@ -233,6 +238,7 @@ class PugEndHandler(BaseHandler):
     #
     # The only parameter required is the pug id
     # @pugid The ID of the pug to end
+    # @steamid The user trying to end the pug?
     def post(self):
         self.validate_api_key()
 

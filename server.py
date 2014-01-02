@@ -2,7 +2,6 @@
 
 
 import logging
-logging.basicConfig(level = logging.DEBUG)
 
 import tornado.web
 import tornado.ioloop
@@ -78,7 +77,7 @@ class BaseHandler(tornado.web.RequestHandler):
             return sid
 
         except:
-            logging.exception()
+            logging.exception("error casting steamid")
             raise HTTPError(400)
 
     @property
@@ -98,7 +97,7 @@ class BaseHandler(tornado.web.RequestHandler):
                 return pugid
 
             except:
-                logging.exception()
+                logging.exception("error casting pug id")
                 raise HTTPError(400)
 
         return pugid
@@ -114,9 +113,8 @@ class BaseHandler(tornado.web.RequestHandler):
             return size
 
         except:
-            logging.exception()
+            logging.exception("error casting size")
             raise HTTPError(400)
-
 
     @property
     def response_handler(self):
@@ -226,7 +224,7 @@ class PugCreateHandler(BaseHandler):
     def post(self):
         self.validate_api_key()
 
-        if self.player_name:
+        if self.player_name is None:
             raise HTTPError(400)
 
         pug_map = self.get_argument("map", None, False)

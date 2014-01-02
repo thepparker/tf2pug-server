@@ -70,6 +70,7 @@ class BaseHandler(tornado.web.RequestHandler):
     def player_id(self):
         sid = self.get_argument("steamid", None, False)
 
+        logging.debug("STEAMID: %s" % sid)
         try:
             sid = long(sid)
 
@@ -86,8 +87,10 @@ class BaseHandler(tornado.web.RequestHandler):
     def pugid(self):
         pugid = self.get_argument("pugid", None, False)
         
+        logging.debug("PUG ID: %s" % pugid)
+
         try:
-            pugid = int(pugid)
+            pugid = long(pugid)
 
             return pugid
 
@@ -98,6 +101,7 @@ class BaseHandler(tornado.web.RequestHandler):
     @property
     def size(self):
         size = self.get_argument("size", 12, False)
+        logging.debug("SIZE: %s" % size)
         try:
             size = int(size)
 
@@ -249,6 +253,9 @@ class PugEndHandler(BaseHandler):
 
         except PugManager.NonExistantPugException:
             self.write(self.response_handler.invalid_pug())
+
+        except:
+            logging.exception("Unknown exception when ending a pug")
 
 # Gets a the list of players for the given pugid
 class PugPlayerListHandler(BaseHandler):

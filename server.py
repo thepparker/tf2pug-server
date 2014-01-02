@@ -240,6 +240,12 @@ class PugCreateHandler(BaseHandler):
         except PugManager.PlayerInPugException:
             self.write(self.response_handler.player_in_pug(self.manager.get_player_pug(self.player_id)))
 
+        except PugManager.InvalidMapException:
+            self.write(self.response_handler.invalid_map())
+
+        except:
+            logging.exception("Unknown exception occurred during pug creation")
+
 class PugEndHandler(BaseHandler):
     # To end a pug, a POST is required
     #
@@ -297,13 +303,16 @@ class PugMapVoteHandler(BaseHandler):
         try:
             pug = self.manager.vote_map(self.player_id, pmap)
 
-            self.write(self.response_handler.vote_status(pug))
+            self.write(self.response_handler.pug_vote_added(pug))
 
         except PugManager.PlayerNotInPugException:
             self.write(self.response_handler.player_not_in_pug())
 
         except PugManager.NoMapVoteException:
             self.write(self.response_handler.pug_no_map_vote())
+
+        except PugManager.InvalidMapException:
+            self.write(self.response_handler.invalid_map())
 
         except:
             logging.exception("Unknown exception occured during map vote")
@@ -333,6 +342,9 @@ class PugForceMapHandler(BaseHandler):
 
         except PugManager.ForceMapException:
             self.write(self.response_handler.pug_map_not_forced())
+
+        except PugManager.InvalidMapException:
+            self.write(self.response_handler.invalid_map())
 
         except:
             logging.exception("Exception occured when forcing map")

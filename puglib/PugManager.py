@@ -43,6 +43,10 @@ class ForceMapException(Exception):
 class NoMapVoteException(Exception):
     pass
 
+# Raised when attempting to vote for an invalid map
+class InvalidMapException(Exception):
+    pass
+
 class PugManager(object):
     def __init__(self, db):
         self.db = db
@@ -73,6 +77,8 @@ class PugManager(object):
         if player_pug is not None:
             raise PlayerInPugException("Player %s is in pug %d", (player_id, player_pug.id))
 
+        pug = None
+
         # if we have a pug_id, check if that pug exists
         if pug_id:
             pug = self.get_pug_by_id(pug_id)
@@ -86,18 +92,24 @@ class PugManager(object):
             else:
                 pug.add_player(player_id, player_name)
 
-                return pug
-
         else:
             # no pug id specified. add player to the first pug with space
             pug = self._get_pug_with_space(size)
             if pug:
                 pug.add_player(player_id, player_name)
-                return pug
 
             else:
                 # No pugs available with space. We need to make a new one!
                 return self.create_pug(player_id, player_name, size = size)
+
+        # we now have a valid pug and the player has been aded. check if it's
+        # full
+        if pug.full:
+            # pug is full, so we should make it transition to map voting
+            pug.begin_map_vote()
+
+        return pug
+
 
     """
     This method removes the given player ID from any pug they may be in.
@@ -197,6 +209,9 @@ class PugManager(object):
         if pug.state != Pug.states["MAP_VOTING"]:
             raise NoMapVoteException("Pug is not in map voting stage")
 
+        if pmap not in pug.maps:
+            raise InvalidMapException("Map is not available in this pug")
+
         pug.vote_map(player_id, pmap)
 
         return pug
@@ -213,6 +228,9 @@ class PugManager(object):
 
         if pug.state > Pug.states["GATHERING_PLAYERS"]:
             raise ForceMapException("Too late to force the map")
+
+        if pmap not in pug.maps:
+            raise InvalidMapException("Map is not available in this pug")
 
         pug.force_map(pmap)
 

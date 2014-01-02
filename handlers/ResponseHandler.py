@@ -1,6 +1,7 @@
 # The ResponseHandler handles all responses to API calls. Response codes
 # are the code sent along with packets to indicate what the packet is for.
 
+Response_None = 0 # for when shit goes completely wrong
 Response_PugListing = 1000
 Response_PugStatus = 1001
 Response_InvalidPug = 1002
@@ -19,6 +20,7 @@ Response_MapVoteAdded = 1200
 Response_MapForced = 1201
 Response_MapNotForced = 1202
 Response_MapVoteNotInProgress = 1203
+Response_InvalidMap = 1204
 
 class ResponseHandler(object):
     def __init__(self):
@@ -29,12 +31,15 @@ class ResponseHandler(object):
 
         return packet
 
-    def vote_status(self, pug):
+    def pug_vote_added(self, pug):
         response = self._pug_status_packet(pug)
 
         self.change_response_code(response, Response_MapVoteAdded)
 
         return response
+
+    def invalid_map(self):
+        return { "response": Response_InvalidMap }
 
     def player_added(self, pug):
         response = self.pug_status(pug)
@@ -148,6 +153,7 @@ class ResponseHandler(object):
 
             "map_forced": pug.map_forced,
             "map": pug.map,
+            "maps": pug.maps,
 
             "ip": pug.ip,
             "port": pug.port,

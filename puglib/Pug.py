@@ -37,6 +37,7 @@ class Pug(object):
         self.map_votes = {}
         self.map_vote_start = -1
         self.map_vote_end = -1
+        self.maps = [ "cp_granary", "cp_badlands" ]
 
         self.ip = "1.1.1.1"
         self.port = 22222
@@ -48,6 +49,9 @@ class Pug(object):
         self.team_blue = []
 
     def add_player(self, player_id, player_name):
+        if pug.full:
+            return
+
         self._players[player_id] = player_name
 
     def remove_player(self, player_id):
@@ -61,14 +65,15 @@ class Pug(object):
 
     def begin_map_vote(self):
         if self.map_forced:
-            raise MapForcedException("Cannot begin vote when the map is forced")
+            self.state = states["MAPVOTE_COMPLETED"]
 
-        # we store the map vote start and end times. this way, clients can know
-        # when they need to update the pug's status again after a map vote
-        self.map_vote_start = rounded_ctime()
-        self.map_vote_end = self.map_vote_start + MAPVOTE_DURATION
+        else:
+            # we store the map vote start and end times. this way, clients can know
+            # when they need to update the pug's status again after a map vote
+            self.map_vote_start = rounded_ctime()
+            self.map_vote_end = self.map_vote_start + MAPVOTE_DURATION
 
-        self.state = states["MAP_VOTING"]
+            self.state = states["MAP_VOTING"]
 
     def end_map_vote(self):
         sorted_votes = sorted(self.map_votes.keys(), key = lambda m: self.map_votes[m], reverse = True)
@@ -78,7 +83,7 @@ class Pug(object):
         self.state = states["MAPVOTE_COMPLETED"]
 
     def vote_map(self, player_id, map_name):
-        if self.state != states["MAP_VOTING"]:
+        if self.state != states["MAP_VOTING"] or map_name not in self.maps:
             return
 
         if player_id in self.player_votes:

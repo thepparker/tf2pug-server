@@ -70,17 +70,13 @@ class BaseHandler(tornado.web.RequestHandler):
     def player_id(self):
         sid = self.get_argument("steamid", None, False)
 
-        if sid is not None:
-            try:
-                sid = long(sid)
+        try:
+            sid = long(sid)
 
-                return sid
+            return sid
 
-            except ValueError:
-                raise HTTPError(400)
-
-
-        return sid
+        except ValueError:
+            raise HTTPError(400)
 
     @property
     def player_name(self):
@@ -90,16 +86,14 @@ class BaseHandler(tornado.web.RequestHandler):
     def pugid(self):
         pugid = self.get_argument("pugid", None, False)
         
-        if pugid is not None:
-            try:
-                pugid = int(pugid)
+        try:
+            pugid = int(pugid)
 
-                return pugid
+            return pugid
 
-            except ValueError:
-                raise HTTPError(400)
+        except ValueError:
+            raise HTTPError(400)
 
-        return pugid
 
     @property
     def size(self):
@@ -153,7 +147,7 @@ class PugAddHandler(BaseHandler):
     def post(self):
         self.validate_api_key()
 
-        if self.player_id is None or self.player_name is None:
+        if self.player_name is None:
             raise HTTPError(400)
 
         pug_id = self.pugid
@@ -186,9 +180,6 @@ class PugRemoveHandler(BaseHandler):
     # @steamid The SteamID to remove
     def post(self):
         self.validate_api_key()
-
-        if not self.player_id:
-            raise HTTPError(400)
 
         try:
             pug = self.manager.remove_player(self.player_id)
@@ -224,7 +215,7 @@ class PugCreateHandler(BaseHandler):
     def post(self):
         self.validate_api_key()
 
-        if not self.player_id or not self.player_name:
+        if self.player_name:
             raise HTTPError(400)
 
         pug_map = self.get_argument("map", None, False)
@@ -250,8 +241,6 @@ class PugEndHandler(BaseHandler):
         self.validate_api_key()
 
         pug_id = self.pugid
-        if not pug_id:
-            raise HTTPError(400)
 
         try:
             self.manager.end_pug(pug_id)
@@ -271,8 +260,6 @@ class PugPlayerListHandler(BaseHandler):
         self.validate_api_key()
 
         pug_id = self.pugid
-        if pug_id is None:
-            raise HTTPError(400)
 
         self.write(self.response_handler.player_list(self.manager.get_pug_by_id(pug_id)))
 
@@ -287,7 +274,7 @@ class PugMapVoteHandler(BaseHandler):
         self.validate_api_key()
 
         pmap = self.get_argument("map", None, False)
-        if self.player_id is None or pmap is None:
+        if pmap is None:
             raise HTTPError(400)
 
         try:
@@ -316,7 +303,7 @@ class PugForceMapHandler(BaseHandler):
 
         fmap = self.get_argument("map", None, False)
         pug_id = self.pugid
-        if self.fmap is None or pug_id is None:
+        if self.fmap is None:
             raise HTTPError(400)
 
         try:

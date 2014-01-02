@@ -2,6 +2,8 @@
 
 
 import logging
+logging.getLogger().setLevel(logging.DEBUG)
+
 import tornado.web
 import tornado.ioloop
 
@@ -90,14 +92,17 @@ class BaseHandler(tornado.web.RequestHandler):
         
         logging.debug("PUG ID: %s" % pugid)
 
-        try:
-            pugid = long(pugid)
+        if pug is not None:
+            try:
+                pugid = long(pugid)
 
-            return pugid
+                return pugid
 
-        except:
-            logging.exception()
-            raise HTTPError(400)
+            except:
+                logging.exception()
+                raise HTTPError(400)
+
+        return pugid
 
 
     @property
@@ -249,6 +254,9 @@ class PugEndHandler(BaseHandler):
 
         pug_id = self.pugid
 
+        if pug_id is None:
+            raise HTTPError(400)
+
         try:
             self.manager.end_pug(pug_id)
 
@@ -270,6 +278,8 @@ class PugPlayerListHandler(BaseHandler):
         self.validate_api_key()
 
         pug_id = self.pugid
+        if pug_id is None:
+            raise HTTPError(400)
 
         self.write(self.response_handler.player_list(self.manager.get_pug_by_id(pug_id)))
 
@@ -313,7 +323,7 @@ class PugForceMapHandler(BaseHandler):
 
         fmap = self.get_argument("map", None, False)
         pug_id = self.pugid
-        if self.fmap is None:
+        if self.fmap is None or pug_id is None:
             raise HTTPError(400)
 
         try:

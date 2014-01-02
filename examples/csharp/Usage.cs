@@ -2,17 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-using SteamBot.PugLib;
+using SteamBot.TF2PugAPI;
 
 namespace ConsoleApplication1
 {
     class Program
     {
-        static TF2PugAPI api;
+        static TF2PugInterface api;
 
         static void Main(string[] args)
         {
-            api = new TF2PugAPI();
+            api = new TF2PugInterface();
 
             AddPlayer();
 
@@ -21,16 +21,13 @@ namespace ConsoleApplication1
 
         static void ListPugs()
         {
-            Dictionary<String, dynamic> result;
+            ResultContainer result = api.GetPugListing();
 
-            result = api.GetPugListing();
-            Console.WriteLine("\nPUG LISTING. RESPONSE: {0}", result["response"]);
-
-            EPugAPIResponse response = (EPugAPIResponse)result["response"];
+            Console.WriteLine("\nPUG LISTING. RESPONSE: {0}", result.response);
             
-            if (response == EPugAPIResponse.Response_PugListing)
+            if (result.response == EPugAPIResponse.Response_PugListing)
             {
-                foreach (var pug in result["pugs"])
+                foreach (var pug in result.Data["pugs"])
                 {
                     Console.WriteLine(pug);
                 }
@@ -39,18 +36,14 @@ namespace ConsoleApplication1
 
         static void AddPlayer()
         {
-            Dictionary<String, dynamic> result;
+            ResultContainer result = api.AddPlayer(15, "joe");
 
-            result = api.AddPlayer(15, "joe");
+            Console.WriteLine("RESPONSE: {0}", result.response);
 
-            Console.WriteLine(result["pugs"]);
-
-            EPugAPIResponse response = (EPugAPIResponse)result["response"];
-
-            Console.WriteLine("RESPONSE: {0}", response);
-
-            foreach (var pug in result["pugs"])
+            if (result.response == EPugAPIResponse.Response_PlayerAdded)
             {
+                var pug = result.Data["pug"];
+                Console.WriteLine(pug);
                 Console.WriteLine("PUG ID: {0}", pug["id"]);
 
                 Console.WriteLine("PLAYERS:");

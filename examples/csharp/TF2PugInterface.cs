@@ -6,10 +6,11 @@ using System.Text;
 using System.Net;
 
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
-namespace SteamBot.PugLib
+namespace SteamBot.TF2PugAPI
 {
-    class TF2PugAPI
+    class TF2PugInterface
     {
         static String api_address = "http://192.168.106.128:51515/";
         static String api_key = "123abc";
@@ -29,7 +30,7 @@ namespace SteamBot.PugLib
          * 
          * @return Deserialized JSON object
          */
-        public Dictionary<String, Object> AddPlayer(long player_id, String name, long pug_id = -1, int size = 12)
+        public ResultContainer AddPlayer(ulong player_id, String name, long pug_id = -1, int size = 12)
         {
             String iface = player_interface + "/Add/";
 
@@ -39,7 +40,7 @@ namespace SteamBot.PugLib
             aparams.Add("name", name);
             aparams.Add("size", size.ToString());
 
-            if (pug_id != -1)
+            if (pug_id >= 0)
             {
                 aparams.Add("pugid", pug_id.ToString());
             }
@@ -55,7 +56,7 @@ namespace SteamBot.PugLib
          * 
          * @return Deserialized JSON object
          */
-        public Dictionary<String, Object> RemovePlayer(long player_id)
+        public ResultContainer RemovePlayer(ulong player_id)
         {
             String iface = player_interface + "/Remove/";
 
@@ -77,12 +78,14 @@ namespace SteamBot.PugLib
          * 
          * @return Deserialized JSON object
          */
-        public Dictionary<String, Object> CreatePug(long player_id, String player_name, 
+        public ResultContainer CreatePug(ulong player_id, String player_name, 
             int size = 12, String map = "")
         {
             String iface = pug_interface + "/Create/";
 
             NameValueCollection aparams = new NameValueCollection();
+            aparams.Add("steamid", player_id.ToString());
+            aparams.Add("name", player_name);
             aparams.Add("key", api_key);
             aparams.Add("size", size.ToString());
 
@@ -101,7 +104,7 @@ namespace SteamBot.PugLib
          * 
          * @return Deserialized JSON object
          */
-        public Dictionary<String, Object> EndPug(long pug_id)
+        public ResultContainer EndPug(long pug_id)
         {
             String iface = pug_interface + "/End/";
 
@@ -118,7 +121,7 @@ namespace SteamBot.PugLib
          * 
          * @return Deserialized JSON object
          */
-        public Dictionary<String, Object> GetPugListing()
+        public ResultContainer GetPugListing()
         {
             String iface = pug_interface + "/List/";
 
@@ -135,7 +138,7 @@ namespace SteamBot.PugLib
          * 
          * @return Deserialized JSON object
          */
-        public Dictionary<String, Object> GetPugStatus(long pug_id)
+        public ResultContainer GetPugStatus(long pug_id)
         {
             String iface = pug_interface + "/Status/";
 
@@ -153,7 +156,7 @@ namespace SteamBot.PugLib
          * 
          * @return Deserialized JSON object
          */
-        public Dictionary<String, Object> GetPugPlayerList(long pug_id)
+        public ResultContainer GetPugPlayerList(long pug_id)
         {
             String iface = player_interface + "/List/";
 
@@ -174,7 +177,7 @@ namespace SteamBot.PugLib
          * 
          * @return Deserialized JSON object
          */
-        public Dictionary<String, Object> AddMapVote(long player_id, String map)
+        public ResultContainer AddMapVote(ulong player_id, String map)
         {
             String iface = map_interface + "/Vote/";
 
@@ -196,7 +199,7 @@ namespace SteamBot.PugLib
          * 
          * @return Deserialized JSON object
          */
-        public Dictionary<String, Object> ForceMap(long pug_id, String map)
+        public ResultContainer ForceMap(long pug_id, String map)
         {
             String iface = map_interface + "/Force/";
 
@@ -216,17 +219,26 @@ namespace SteamBot.PugLib
          * @param aparams A NameValueCollection of parameters to post
          * @param interface_name The interface to post to
          * 
-         * @return Dictionary<String, Object> The parsed json result
+         * @return ResultContainer The parsed json result
          */
-        Dictionary<String, Object> PostToAPI(String interface_name, NameValueCollection aparams, string method = "POST")
+        ResultContainer PostToAPI(String interface_name, NameValueCollection aparams, string method = "POST")
         {
             String api_url = api_address + interface_name;
-            using (WebClient client = new WebClient())
-            {
-                byte[] response = client.UploadValues(api_url, method, aparams);
-                string response_body = Encoding.UTF8.GetString(response);
 
-                return JsonStringToDictionary(response_body);
+            try
+            {
+                using (WebClient client = new WebClient())
+                {
+                    byte[] response = client.UploadValues(api_url, method, aparams);
+                    string response_body = Encoding.UTF8.GetString(response);
+
+                    return JsonStringToContainer(response_body);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("EXCEPTION POSTING TO API" + e.Message);
+                return new ResultContainer();
             }
         }
 
@@ -237,17 +249,25 @@ namespace SteamBot.PugLib
          * @param aparams The parameters
          * @param interface_name The interface to query
          * 
-         * @result Dictionary<String, Object> The parsed json result
+         * @result ResultContainer The parsed json result
          */
-        Dictionary<String, Object> GetFromAPI(String interface_name, NameValueCollection aparams)
+        ResultContainer GetFromAPI(String interface_name, NameValueCollection aparams)
         {
             String api_url = api_address + interface_name;
-            using (WebClient client = new WebClient())
+            try
             {
-                client.QueryString = aparams;
-                string response_body = client.DownloadString(api_url);
+                using (WebClient client = new WebClient())
+                {
+                    client.QueryString = aparams;
+                    string response_body = client.DownloadString(api_url);
 
-                return JsonStringToDictionary(response_body);
+                    return JsonStringToContainer(response_body);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("EXCEPTION WHEN GETTING FROM API" + e.Message);
+                return new ResultContainer();
             }
         }
 
@@ -264,6 +284,20 @@ namespace SteamBot.PugLib
         {
             return JsonConvert.DeserializeObject<Dictionary<String, Object>>(data);
         }
+
+        /**
+         * Takes a JSON serialized string and returns a result container
+         * which has the entire data set and the response code. This allows
+         * for simpler returning.
+         * 
+         * @param data The serialized string
+         * 
+         * @return ResultContainer The container which has the deserialized data
+         */
+        ResultContainer JsonStringToContainer(string data)
+        {
+            return new ResultContainer(JsonStringToDictionary(data)); 
+        }
     }
 
     /**
@@ -274,6 +308,7 @@ namespace SteamBot.PugLib
      */
     enum EPugAPIResponse
     {
+        Response_None = 0,
         Response_PugListing = 1000,
         Response_PugStatus = 1001,
         Response_InvalidPug = 1002,
@@ -291,6 +326,7 @@ namespace SteamBot.PugLib
         Response_MapVoteAdded = 1200,
         Response_MapForced = 1201,
         Response_MapNotForced = 1202,
-        Response_MapVoteNotInProgress = 1203
+        Response_MapVoteNotInProgress = 1203,
+        Response_InvalidMap = 1204
     }
 }

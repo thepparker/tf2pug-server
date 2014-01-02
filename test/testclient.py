@@ -16,7 +16,7 @@ def main():
 
     add_player(3, "jimmy", int(res["pug"]["id"]))
 
-    res2 = create_pug(1, "rick")
+    res2 = create_pug(1, "rick", 18)
 
     player_list(int(res["pug"]["id"]))
     pug_status(int(res["pug"]["id"]))
@@ -25,6 +25,8 @@ def main():
 
     vote_map(1, "cp_granary")
     vote_map(1, "cp_badlands")
+
+
 
 def vote_map(player_id, map_name):
     interface = "ITF2Pug/Map/Vote/"
@@ -117,11 +119,20 @@ def create_pug(pid, name, size = 12):
 
 def end_pug(pid):
     params = {
-        "key": api_address,
+        "key": api_key,
         "pugid": pid
     }
 
     end_interface = "ITF2Pug/End/"
+
+    end_data = post_data(end_interface, params)
+
+    jdata = json.loads(end_data)
+
+    print "PUG ENDED"
+    pprint(jdata)
+
+    return jdata
 
 
 def add_player(pid, name, pugid = None, size=12):

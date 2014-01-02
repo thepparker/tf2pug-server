@@ -76,7 +76,8 @@ class BaseHandler(tornado.web.RequestHandler):
 
             return sid
 
-        except ValueError:
+        except:
+            logging.exception()
             raise HTTPError(400)
 
     @property
@@ -94,7 +95,8 @@ class BaseHandler(tornado.web.RequestHandler):
 
             return pugid
 
-        except ValueError:
+        except:
+            logging.exception()
             raise HTTPError(400)
 
 
@@ -107,7 +109,8 @@ class BaseHandler(tornado.web.RequestHandler):
 
             return size
 
-        except ValueError:
+        except:
+            logging.exception()
             raise HTTPError(400)
 
 

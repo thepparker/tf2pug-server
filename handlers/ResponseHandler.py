@@ -32,7 +32,7 @@ class ResponseHandler(object):
         return packet
 
     def pug_vote_added(self, pug):
-        response = self._pug_status_packet(pug)
+        response = self.pug_status(pug)
 
         self.change_response_code(response, Response_MapVoteAdded)
 

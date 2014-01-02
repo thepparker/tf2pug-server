@@ -49,7 +49,7 @@ class Pug(object):
         self.team_blue = []
 
     def add_player(self, player_id, player_name):
-        if pug.full:
+        if self.full:
             return
 
         self._players[player_id] = player_name

@@ -2,7 +2,7 @@
 
 
 import logging
-logging.getLogger().setLevel(logging.DEBUG)
+logging.basicConfig(level = logging.DEBUG)
 
 import tornado.web
 import tornado.ioloop
@@ -12,7 +12,6 @@ from handlers import ResponseHandler
 from serverlib import ServerManager
 
 from tornado.web import HTTPError
-
 from tornado.options import define, options, parse_command_line
 
 define("ip", default = "0.0.0.0", help = "The IP to listen on", type = str)
@@ -92,7 +91,7 @@ class BaseHandler(tornado.web.RequestHandler):
         
         logging.debug("PUG ID: %s" % pugid)
 
-        if pug is not None:
+        if pugid is not None:
             try:
                 pugid = long(pugid)
 

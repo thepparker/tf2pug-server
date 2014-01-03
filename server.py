@@ -46,7 +46,7 @@ class Application(tornado.web.Application):
 
         self.pug_manager = PugManager.PugManager(self.db)
 
-        self.server_manager = ServerManager.ServerManager()
+        self.server_manager = ServerManager.ServerManager(self.db)
 
         tornado.web.Application.__init__(self, handlers, **settings)
 

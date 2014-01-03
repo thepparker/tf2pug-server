@@ -174,7 +174,8 @@ class ResponseHandler(object):
             # it will end. this is required so that clients know when they
             # should get an updated status after map voting
             "map_vote_start": pug.map_vote_start,
-            "map_vote_end": pug.map_vote_end
+            "map_vote_end": pug.map_vote_end,
+            "map_vote_duration": pug.map_vote_duration
         }
 
         return packet

@@ -37,6 +37,7 @@ class Pug(object):
         self.map_votes = {}
         self.map_vote_start = -1
         self.map_vote_end = -1
+        self.map_vote_duration = MAPVOTE_DURATION
         self.maps = [ "cp_granary", "cp_badlands" ]
 
         self.ip = "1.1.1.1"

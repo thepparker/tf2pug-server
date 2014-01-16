@@ -1,8 +1,14 @@
 import logging
 
+import tornado.web
+
 from tornado.web import HTTPError
 
-from ..puglib import PugManager
+# Even though puglib is not in the same directory as this module, import reads
+# from the toplevel namespace (i.e the folder apiserver.py is run from).
+# Therefore, we can import directly from the toplevel, because this module is
+# not standalone.
+from puglib import PugManager
 
 # The base handler class sets up properties and useful methods
 class BaseHandler(tornado.web.RequestHandler):

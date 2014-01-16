@@ -11,6 +11,7 @@ from puglib import PugManager
 from handlers import ResponseHandler
 from serverlib import ServerManager
 
+from tornado import gen
 from tornado.web import HTTPError
 from tornado.options import define, options, parse_command_line
 
@@ -56,11 +57,14 @@ class Application(tornado.web.Application):
 
         tornado.web.Application.__init__(self, handlers, **settings)
 
+    @tornado.web.asynchronous
+    @gen.engine
     def validate_api_key(self, key):
+        logging.debug("Getting user details for API key %s", key)
         cursor = yield momoko.Op(self.db.execute, "SELECT user FROM api_keys WHERE key = %s", (key,))
 
         results = cursor.fetchone()
-        logging.debug("Validating API key %s. Results: %s", key, results)
+        logging.debug("Results: %s", key, results)
 
         if results[0] == None:
             raise InvalidKeyException("Invalid API key %s" % (key))

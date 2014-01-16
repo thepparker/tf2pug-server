@@ -62,6 +62,7 @@ class RconConnection(object):
             try:
                 self.socket.connect((self.ip, self.port))
             except:
+                self.close()
                 raise RconConnectionError("Unable to connect to server")
         else:
             raise RconConnectionError("Cannot connect to dead socket")

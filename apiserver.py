@@ -66,9 +66,10 @@ class Application(tornado.web.Application):
             raise
 
         results = cursor.fetchone()
-        logging.debug("Results: %s", key, results)
+        logging.debug("Results: %s", results)
 
-        if results[0] == None:
+
+        if results is None:
             raise InvalidKeyException("Invalid API key %s" % (key))
 
         # else, we don't need to do anything
@@ -154,9 +155,14 @@ class BaseHandler(tornado.web.RequestHandler):
     def validate_api_key(self):
         try:
             self.application.validate_api_key(self.request_key)
+            
+        except InvalidKeyException:
+            logging.exception("Unauthorised user")
+            raise HTTPError(401)
+
         except:
             logging.exception("Exception validating API key")
-            raise HTTPError(401)
+            raise HTTPError(500)
 
 # returns a list of pugs and their status
 class PugListHandler(BaseHandler):

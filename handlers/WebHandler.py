@@ -8,7 +8,7 @@ from tornado.web import HTTPError
 # from the toplevel namespace (i.e the folder apiserver.py is run from).
 # Therefore, we can import directly from the toplevel, because this module is
 # not standalone.
-from puglib import PugManager
+from puglib import Exceptions as PugManagerExceptions
 
 # The base handler class sets up properties and useful methods
 class BaseHandler(tornado.web.RequestHandler):
@@ -128,13 +128,13 @@ class PugAddHandler(BaseHandler):
 
             self.write(self.response_handler.player_added(pug))
 
-        except PugManager.PlayerInPugException:
+        except PugManagerExceptions.PlayerInPugException:
             self.write(self.response_handler.player_in_pug(self.manager.get_player_pug(self.player_id)))
 
-        except PugManager.InvalidPugException:
+        except PugManagerExceptions.InvalidPugException:
             self.write(self.response_handler.invalid_pug())
 
-        except PugManager.PugFullException:
+        except PugManagerExceptions.PugFullException:
             self.write(self.response_handler.pug_full(self.manager.get_pug_by_id(pug_id)))
 
         except:
@@ -154,11 +154,11 @@ class PugRemoveHandler(BaseHandler):
 
             self.write(self.response_handler.player_removed(pug))
 
-        except PugManager.PlayerNotInPugException:
+        except PugManagerExceptions.PlayerNotInPugException:
             # player not in a pug
             self.write(self.response_handler.player_not_in_pug())
 
-        except PugManager.PugEmptyEndException:
+        except PugManagerExceptions.PugEmptyEndException:
             self.write(self.response_handler.empty_pug_ended())
 
         except:
@@ -196,10 +196,10 @@ class PugCreateHandler(BaseHandler):
             # send the status of the new pug
             self.write(self.response_handler.pug_created(pug))
 
-        except PugManager.PlayerInPugException:
+        except PugManagerExceptions.PlayerInPugException:
             self.write(self.response_handler.player_in_pug(self.manager.get_player_pug(self.player_id)))
 
-        except PugManager.InvalidMapException:
+        except PugManagerExceptions.InvalidMapException:
             self.write(self.response_handler.invalid_map())
 
         except:
@@ -224,7 +224,7 @@ class PugEndHandler(BaseHandler):
 
             self.write(self.response_handler.pug_ended(pug_id))
 
-        except PugManager.NonExistantPugException:
+        except PugManagerExceptions.NonExistantPugException:
             self.write(self.response_handler.invalid_pug())
 
         except:
@@ -264,13 +264,13 @@ class PugMapVoteHandler(BaseHandler):
 
             self.write(self.response_handler.pug_vote_added(pug))
 
-        except PugManager.PlayerNotInPugException:
+        except PugManagerExceptions.PlayerNotInPugException:
             self.write(self.response_handler.player_not_in_pug())
 
-        except PugManager.NoMapVoteException:
+        except PugManagerExceptions.NoMapVoteException:
             self.write(self.response_handler.pug_no_map_vote())
 
-        except PugManager.InvalidMapException:
+        except PugManagerExceptions.InvalidMapException:
             self.write(self.response_handler.invalid_map())
 
         except:
@@ -296,13 +296,13 @@ class PugForceMapHandler(BaseHandler):
 
             self.write(self.response_handler.pug_map_forced(pug))
         
-        except PugManager.NonExistantPugException:
+        except PugManagerExceptions.NonExistantPugException:
             self.write(self.response_handler.invalid_pug())
 
-        except PugManager.ForceMapException:
+        except PugManagerExceptions.ForceMapException:
             self.write(self.response_handler.pug_map_not_forced())
 
-        except PugManager.InvalidMapException:
+        except PugManagerExceptions.InvalidMapException:
             self.write(self.response_handler.invalid_map())
 
         except:

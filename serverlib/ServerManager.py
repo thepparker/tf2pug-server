@@ -12,7 +12,16 @@ class ServerManager(object):
         self._servers = []
 
     def allocate(self, pug):
-        pass
+        for server in self._servers:
+            if not server.in_use:
+                server.setup(pug)
+
+                self.flush_server(server)
+
+                return server
+
+        # if we've reached here, there are no servers available
+        return None
 
     def reset(self, server):
         pass
@@ -24,10 +33,16 @@ class ServerManager(object):
         pass
 
     def flush_server(self, server):
-        pass
+        # write server details to database
+        update_query =  % 
+
+        self.db.execute("UPDATE servers SET rcon_password = %s, password = %s, pug_id = %d, log_port = %d WHERE servers.id = %d", 
+                (server.rcon_password, server.password, server.pug_id, server.log_port, server.id,)
+            )
 
     def flush_all(self):
-        pass
+        for server in self._servers:
+            self.flush_server(server)
 
     def hydrate_server(self, db_result):
         pass

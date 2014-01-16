@@ -3,6 +3,7 @@ import Rcon
 
 class Server(object):
     def __init__(self):
+        self.id = -1
         # server details
         self.ip = ""
         self.port = 0
@@ -16,3 +17,9 @@ class Server(object):
         # the log port being used by this server (for log_address)
         self.log_port = 0
 
+    def setup(self, pug):
+        pass
+
+    @property
+    def in_use(self):
+        return self.pug is not None

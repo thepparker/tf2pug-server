@@ -5,7 +5,9 @@ import logging
 
 import tornado.web
 import tornado.ioloop
-import momoko
+
+import psycopg2
+import psycopg2.pool
 
 from puglib import PugManager
 from handlers import ResponseHandler
@@ -57,22 +59,38 @@ class Application(tornado.web.Application):
 
         tornado.web.Application.__init__(self, handlers, **settings)
 
-    @gen.engine
-    def validate_api_key(self, key):
+    def valid_api_key(self, key):
         logging.debug("Getting user details for API key %s", key)
+
+        valid = False
+
+        conn = None
+        cursor = None
+
         try:
-            cursor = yield momoko.Op(self.db.execute, "SELECT name FROM api_keys WHERE key = %s", (key,))
+            conn = self.db.getconn()
+
+            cursor = conn.cursor()
+            cursor.execute("SELECT name FROM api_keys WHERE key = %s", (key,))
+
+            results = cursor.fetchone()
+            logging.debug("Results: %s", results)
+
+            if results is None:
+                raise InvalidKeyException("Invalid API key %s" % (key))
+            else:
+                valid = True
+
         except:
-            raise
+            logging.exception("Exception when validating API key")
 
-        results = cursor.fetchone()
-        logging.debug("Results: %s", results)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                self.db.putconn(conn)
 
-
-        if results is None:
-            raise InvalidKeyException("Invalid API key %s" % (key))
-
-        # else, we don't need to do anything
+            return valid
 
     def get_manager(self, key):
         if key in self._pug_managers:
@@ -151,18 +169,11 @@ class BaseHandler(tornado.web.RequestHandler):
     def response_handler(self):
         return self.application.response_handler
 
-    @tornado.web.asynchronous
     def validate_api_key(self):
-        try:
-            self.application.validate_api_key(self.request_key)
-            
-        except InvalidKeyException:
-            logging.exception("Unauthorised user")
+        if not self.application.validate_api_key(self.request_key):
+            logging.info("Unauthorised user")
             raise HTTPError(401)
 
-        except:
-            logging.exception("Exception validating API key")
-            raise HTTPError(500)
 
 # returns a list of pugs and their status
 class PugListHandler(BaseHandler):
@@ -397,10 +408,7 @@ if __name__ == "__main__":
                 settings.db_host, settings.db_port
             )
 
-    db = momoko.Pool(
-            dsn = dsn,
-            size = 1
-        )
+    db = psycopg2.pool.SimpleConnectionPool(minconn = 1, maxconn = 1, dsn = dsn)
 
     api_server = Application(db)
 

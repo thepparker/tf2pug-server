@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
-
+import settings
 import logging
 
 import tornado.web
 import tornado.ioloop
+import momoko
 
 from puglib import PugManager
 from handlers import ResponseHandler
@@ -13,8 +14,13 @@ from serverlib import ServerManager
 from tornado.web import HTTPError
 from tornado.options import define, options, parse_command_line
 
-define("ip", default = "0.0.0.0", help = "The IP to listen on", type = str)
-define("port", default = 51515, help = "take a guess motherfucker", type = int)
+# allow command line overriding of these options
+define("ip", default = settings.listen_ip, help = "The IP to listen on", type = str)
+define("port", default = settings.listen_port, help = "The port to listen on", type = int)
+
+# Raised when a user attempts to authorise with an invalid key
+class InvalidKeyException(Exception):
+    pass
 
 class Application(tornado.web.Application):
     def __init__(self):
@@ -39,19 +45,34 @@ class Application(tornado.web.Application):
         settings = {
             "debug": True,
         }
-
-        self.db = None
         
         self.response_handler = ResponseHandler.ResponseHandler()
 
-        self.pug_manager = PugManager.PugManager(self.db)
+        self._pug_managers = {}
 
         self.server_manager = ServerManager.ServerManager(self.db)
 
         tornado.web.Application.__init__(self, handlers, **settings)
 
-    def valid_api_key(self, key):
-        return key == "123abc"
+    def validate_api_key(self, key):
+        result = yield momoko.Op(self.db.execute, "SELECT user FROM api_keys WHERE key = %s", (key,))
+
+        result = result.fetchone()
+
+        if result[0] == None:
+            raise InvalidKeyException("Invalid API key %s" % (key))
+
+    def get_manager(self, key):
+        if key in self._pug_managers:
+            return self._pug_managers[key]
+        else:
+            new_manager = PugManager.PugManager(self.db)
+
+            self._pug_managers[key] = new_manager
+
+            return new_manager
+
+        
 
 # The base handler class sets up properties and useful methods
 class BaseHandler(tornado.web.RequestHandler):
@@ -60,7 +81,7 @@ class BaseHandler(tornado.web.RequestHandler):
 
     @property
     def manager(self):
-        return self.application.pug_manager
+        return self.application.get_manager(self.request_key)
 
     @property
     def request_key(self):
@@ -121,7 +142,10 @@ class BaseHandler(tornado.web.RequestHandler):
         return self.application.response_handler
 
     def validate_api_key(self):
-        if not self.application.valid_api_key(self.request_key):
+        try:
+            self.application.validate_api_key(self.request_key)
+        except:
+            logging.exception("Exception validating API key")
             raise HTTPError(401)
 
 # returns a list of pugs and their status
@@ -353,6 +377,19 @@ if __name__ == "__main__":
     parse_command_line()
 
     api_server = Application()
+
+    dsn = "dbname=%s user=%s password=%s host=%s port=%s" % (
+                settings.db_name, settings.db_user, settings.db_pass, 
+                settings.db_host, settings.db_port
+            )
+
+    api_server.db = momoko.Pool(
+            dsn = dsn,
+            minconn = 1,
+            maxconn = 1
+        )
+
+
     api_server.listen(options.port, options.ip)
 
     logging.info("TF2Pug API Server listening on %s:%d", options.ip, options.port)

@@ -57,12 +57,15 @@ class Application(tornado.web.Application):
         tornado.web.Application.__init__(self, handlers, **settings)
 
     def validate_api_key(self, key):
-        result = yield momoko.Op(self.db.execute, "SELECT user FROM api_keys WHERE key = %s", (key,))
+        cursor = yield momoko.Op(self.db.execute, "SELECT user FROM api_keys WHERE key = %s", (key,))
 
-        result = result.fetchone()
+        results = cursor.fetchone()
+        logging.debug("Validating API key %s. Results: %s", key, results)
 
-        if result[0] == None:
+        if results[0] == None:
             raise InvalidKeyException("Invalid API key %s" % (key))
+
+        # else, we don't need to do anything
 
     def get_manager(self, key):
         if key in self._pug_managers:
@@ -385,8 +388,7 @@ if __name__ == "__main__":
 
     db = momoko.Pool(
             dsn = dsn,
-            minconn = 1,
-            maxconn = 1
+            size = 1
         )
 
     api_server = Application(db)

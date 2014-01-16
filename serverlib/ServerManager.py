@@ -34,7 +34,6 @@ class ServerManager(object):
 
     def flush_server(self, server):
         # write server details to database
-        update_query =  % 
 
         self.db.execute("UPDATE servers SET rcon_password = %s, password = %s, pug_id = %d, log_port = %d WHERE servers.id = %d", 
                 (server.rcon_password, server.password, server.pug_id, server.log_port, server.id,)

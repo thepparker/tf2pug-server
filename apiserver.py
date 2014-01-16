@@ -23,7 +23,7 @@ class InvalidKeyException(Exception):
     pass
 
 class Application(tornado.web.Application):
-    def __init__(self):
+    def __init__(self, db):
         handlers = [
             # pug creation and management
             (r"/ITF2Pug/List/", PugListHandler),
@@ -45,6 +45,8 @@ class Application(tornado.web.Application):
         settings = {
             "debug": True,
         }
+
+        self.db = db
         
         self.response_handler = ResponseHandler.ResponseHandler()
 
@@ -169,7 +171,7 @@ class PugStatusHandler(BaseHandler):
 
 # adds a player to a pug
 class PugAddHandler(BaseHandler):
-    # To add a player to a PUG, there must be a PUT
+    # To add a player to a PUG, there must be a POST
     #
     # Parameters are as follows:
     # @steamid The SteamID to add
@@ -207,7 +209,7 @@ class PugAddHandler(BaseHandler):
 
 # removes a player from a pug
 class PugRemoveHandler(BaseHandler):
-    # To remove a player from a PUG, a DELETE is required
+    # To remove a player from a PUG, a POST is required
     #
     # The only required parameter is the player's steamid
     # @steamid The SteamID to remove
@@ -376,19 +378,18 @@ class PugForceMapHandler(BaseHandler):
 if __name__ == "__main__":
     parse_command_line()
 
-    api_server = Application()
-
     dsn = "dbname=%s user=%s password=%s host=%s port=%s" % (
                 settings.db_name, settings.db_user, settings.db_pass, 
                 settings.db_host, settings.db_port
             )
 
-    api_server.db = momoko.Pool(
+    db = momoko.Pool(
             dsn = dsn,
             minconn = 1,
             maxconn = 1
         )
 
+    api_server = Application(db)
 
     api_server.listen(options.port, options.ip)
 

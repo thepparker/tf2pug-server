@@ -57,11 +57,13 @@ class Application(tornado.web.Application):
 
         tornado.web.Application.__init__(self, handlers, **settings)
 
-    @tornado.web.asynchronous
     @gen.engine
     def validate_api_key(self, key):
         logging.debug("Getting user details for API key %s", key)
-        cursor = yield momoko.Op(self.db.execute, "SELECT user FROM api_keys WHERE key = %s", (key,))
+        try:
+            cursor = yield momoko.Op(self.db.execute, "SELECT name FROM api_keys WHERE key = %s", (key,))
+        except:
+            raise
 
         results = cursor.fetchone()
         logging.debug("Results: %s", key, results)
@@ -80,8 +82,6 @@ class Application(tornado.web.Application):
             self._pug_managers[key] = new_manager
 
             return new_manager
-
-        
 
 # The base handler class sets up properties and useful methods
 class BaseHandler(tornado.web.RequestHandler):
@@ -150,6 +150,7 @@ class BaseHandler(tornado.web.RequestHandler):
     def response_handler(self):
         return self.application.response_handler
 
+    @tornado.web.asynchronous
     def validate_api_key(self):
         try:
             self.application.validate_api_key(self.request_key)

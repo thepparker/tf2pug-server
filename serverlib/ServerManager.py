@@ -40,8 +40,12 @@ class ServerManager(object):
     def reset(self, server):
         pass
 
-    def get_servers(self):
-        return self._servers
+    def get_server_by_id(self, sid):
+        for server in self._servers:
+            if server.id == sid:
+                return server
+
+        return None
 
     def _flush_server(self, server):
         # write server details to database
@@ -68,7 +72,7 @@ class ServerManager(object):
             self._flush_server(server)
 
     def __hydrate_server(self, db_result):
-        logging.debug("HYDRATING SERVER DB RESULT: %s", db_result)
+        logging.debug("HYDRATING SERVER. DB RESULT: %s", db_result)
 
         server = Server()
         server.id = db_result[0]
@@ -97,9 +101,9 @@ class ServerManager(object):
                 return
 
             for result in results:
-                hydrated = self.__hydrate_server(result)
+                server = self.__hydrate_server(result)
 
-                self._servers.append(hydrated)
+                self._servers.append(server)
 
         except:
             logging.exception("Exception loading servers")
@@ -107,7 +111,10 @@ class ServerManager(object):
         finally:
             self._close_db_objects((conn, cursor))
 
-
+    """
+    Retrieves a db connection and a cursor in a (conn, cursor) tuple from the
+    db pool
+    """
     def _get_db_objects(self):
         conn = None
         curs = None
@@ -132,7 +139,7 @@ class ServerManager(object):
     into the pool
     """
     def _close_db_objects(self, objects):
-        if objects[1]:
+        if objects[1] and not objects[1].closed:
             objects[1].close()
 
         if objects[0]:

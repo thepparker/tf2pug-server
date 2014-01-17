@@ -39,6 +39,9 @@ class Server(object):
         self.pug = pug
         self.pug_id = pug.id
 
+        pug.server = self
+        pug.server_id = self.id
+
         self.password = random_string(10)
 
         self.rcon("sv_password %s" % self.password)

@@ -23,9 +23,9 @@ class ServerManager(object):
 
         self._servers = []
 
-    def allocate(self, pug):
         self.__load_servers()
 
+    def allocate(self, pug):
         for server in self._servers:
             if not server.in_use:
                 server.setup(pug)

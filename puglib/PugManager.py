@@ -373,7 +373,8 @@ class PugManager(object):
         try:
             psycopg2.extras.register_hstore(cursor)
 
-            cursor.execute("SELECT %s FROM pugs WHERE state != %s", (", ".join(pug_columns), Pug.states["GAME_OVER"],))
+            query = "SELECT %s FROM pugs WHERE state != '%s'" % (", ".join(pug_columns), Pug.states["GAME_OVER"])
+            cursor.execute(query)
 
             results = cursor.fetchall()
 

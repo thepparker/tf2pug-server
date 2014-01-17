@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
-import settings
 import logging
+import sys
+
+import settings
 
 import tornado.web
 import tornado.ioloop
@@ -134,7 +136,7 @@ if __name__ == "__main__":
         logging.info("Shutting the server down...")
 
         api_server.close()
-        db.close()
+        db.closeall()
         tornado.ioloop.IOLoop.instance().stop()
         
         sys.exit(0)

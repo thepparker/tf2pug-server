@@ -53,7 +53,7 @@ class ServerManager(object):
         conn, cursor = self._get_db_objects()
 
         try:
-            cursor.execute("UPDATE servers SET rcon_password = %s, password = %s, pug_id = %d, log_port = %d WHERE servers.id = %d", 
+            cursor.execute("UPDATE servers SET rcon_password = %s, password = %s, pug_id = %s, log_port = %s WHERE servers.id = %s", 
                     (server.rcon_password, server.password, server.pug_id, server.log_port, server.id,)
                 )
 

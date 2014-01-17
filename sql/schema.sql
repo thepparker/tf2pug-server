@@ -1,6 +1,6 @@
 -- Contains user auth keys
 --DROP TABLE IF EXISTS api_keys;
-CREATE TABLE api_keys (name text, key text);
+CREATE TABLE api_keys (name text, key text UNIQUE);
 
 -- Servers available for use in pugs
 --DROP TABLE IF EXISTS servers;

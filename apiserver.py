@@ -94,7 +94,7 @@ class Application(tornado.web.Application):
         if key in self._pug_managers:
             return self._pug_managers[key]
         else:
-            new_manager = PugManager.PugManager(self.db)
+            new_manager = PugManager.PugManager(key, self.db, self.server_manager)
 
             self._pug_managers[key] = new_manager
 

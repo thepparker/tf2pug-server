@@ -142,6 +142,7 @@ class PugAddHandler(BaseHandler):
 
         except:
             logging.exception("Unknown exception occurred when adding player to a pug")
+            raise HTTPError(500)
 
 # removes a player from a pug
 class PugRemoveHandler(BaseHandler):
@@ -166,6 +167,7 @@ class PugRemoveHandler(BaseHandler):
 
         except:
             logging.exception("Unknown exception when removing player from a pug")
+            raise HTTPError(500)
 
 # Creates a new pug. Only called to explicitly create a new pug. Normally pugs
 # are automatically created behind the scenes by the pug manager when a pug
@@ -210,6 +212,7 @@ class PugCreateHandler(BaseHandler):
 
         except:
             logging.exception("Unknown exception occurred during pug creation")
+            raise HTTPError(500)
 
 class PugEndHandler(BaseHandler):
     # To end a pug, a POST is required
@@ -235,6 +238,7 @@ class PugEndHandler(BaseHandler):
 
         except:
             logging.exception("Unknown exception when ending a pug")
+            raise HTTPError(500)
 
 # Gets a the list of players for the given pugid
 class PugPlayerListHandler(BaseHandler):
@@ -281,6 +285,7 @@ class PugMapVoteHandler(BaseHandler):
 
         except:
             logging.exception("Unknown exception occured during map vote")
+            raise HTTPError(500)
 
 class PugForceMapHandler(BaseHandler):
     # A POST is used to force the map
@@ -313,3 +318,4 @@ class PugForceMapHandler(BaseHandler):
 
         except:
             logging.exception("Exception occured when forcing map")
+            raise HTTPError(500)

@@ -348,6 +348,8 @@ class PugManager(object):
         conn, cursor = self._get_db_objects()
 
         try:
+            psycopg2.extras.register_hstore(cursor)
+
             cursor.execute("SELECT %s FROM pugs WHERE state != %s", (", ".join(pug_columns), Pug.states["GAME_OVER"],))
 
             results = cursor.fetchall()
@@ -371,11 +373,11 @@ class PugManager(object):
             # insert
             conn, cursor = self._get_db_objects()
 
-            psycopg2.extras.register_hstore(cursor)
-
             logging.debug("Pug is new. Inserting")
             try:
-                cursor.execute("INSERTO INTO pugs (%s, api_key) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id", (
+                psycopg2.extras.register_hstore(cursor)
+
+                cursor.execute("INSERT INTO pugs (%s, api_key) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id", (
                             ", ".join(pug_columns[1:]), pug.size, pug.state, 
                             pug.map, pug.map_forced, dict(pug._players), pug.player_votes,
                             pug.map_votes, pug.map_vote_start, pug.map_vote_end, 
@@ -408,10 +410,10 @@ class PugManager(object):
         else:
             conn, cursor = self._get_db_objects()
 
-            psycopg2.extras.register_hstore(cursor)
-
             logging.debug("Pug is not new. Updating")
             try:
+                psycopg2.extras.register_hstore(cursor)
+
                 cursor.execute("""UPDATE pugs SET size = %s, state = %s, map = %s, map_forced = %s, players = %s, 
                     player_votes = %s, map_votes = %s, map_vote_start = %s, map_vote_end = %s, server_id = %s,
                     team_red = %s, team_blue = %s WHERE pugs.id = %s""", (

@@ -5,11 +5,11 @@ change maps, etc.
 
 import logging
 
-import Server
+from Server import Server
 
 server_columns = (
         "id", 
-        "ip", 
+        "HOST(ip) as ip", 
         "port", 
         "rcon_password",
         "password", 
@@ -114,9 +114,9 @@ class ServerManager(object):
 
         try:
             conn = self.db.getconn()
-            curs = db.cursor()
+            curs = conn.cursor()
 
-            return (conn, cursor)
+            return (conn, curs)
         
         except:
             logging.exception("Exception getting db objects")

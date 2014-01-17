@@ -36,6 +36,16 @@ pug_columns = (
         "team_blue"
     )
 
+# convert a dictionary to a postgresql hstore-safe dict
+# this means that keys and values of the dict are converted to strings
+def hstore_dict(dictionary):
+    new_dict = {}
+
+    for key in dictionary:
+        new_dict[str(key)] = str(dictionary[key])
+
+    return new_dict
+
 
 class PugManager(object):
     def __init__(self, api_key, db, server_manager):
@@ -322,10 +332,19 @@ class PugManager(object):
 
         pug.map = data[3]
         pug.map_forced = data[4]
-        pug._players = collections.OrderedDict(data[5])
+        
+        # IDs are returned as strings, so we convert them back to longs
+        # and re-add the players normally
+        for pid in data[5]:
+            pug.add_player(long(pid), data[5][pid])
 
-        pug.player_votes = data[6]
-        pug.map_votes = data[7]
+        # do the same for player_votes and map_votes
+        for pid in data[6]:
+            pug.player_votes[long(pid)] = data[5][pid]
+
+        for mname in data[7]:
+            pug.map_votes[mname] = int(data[7][mname])
+            
         pug.map_vote_start = data[8]
         pug.map_vote_end = data[9]
 
@@ -377,17 +396,17 @@ class PugManager(object):
             try:
                 psycopg2.extras.register_hstore(cursor)
 
-                insert_query = """INSERT INTO pugs (%s, api_key) 
-                                  VALUES (E'%s', E'%s', E'%s', E'%s', E'%s', E'%s', E'%s', E'%s', E'%s', E'%s', E'%s', E'%s', E'%s') 
-                                  RETURNING id""" % (
-                                        ", ".join(pug_columns[1:]), pug.size, pug.state, 
-                                        pug.map, pug.map_forced, dict(pug._players), pug.player_votes,
-                                        pug.map_votes, pug.map_vote_start, pug.map_vote_end, 
-                                        pug.server_id, pug.team_red, pug.team_blue, self.api_key
-                                    )
-                    )
-
-                cursor.execute(insert_query)
+                cursor.execute("""INSERT INTO pugs (size, state, map, map_forced, players, player_votes, 
+                                                    map_votes, map_vote_start, map_vote_end,
+                                                    server_id, team_red, team_blue, api_key)
+                                  VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) 
+                                  RETURNING id""", (
+                                    ", ".join(pug_columns[1:]), pug.size, pug.state, 
+                                    pug.map, pug.map_forced, hstore_dict(pug._players), hstore_dict(pug.player_votes),
+                                    hstore_dict(pug.map_votes), pug.map_vote_start, pug.map_vote_end, 
+                                    pug.server_id, pug.team_red, pug.team_blue, self.api_key
+                                )
+                            )
 
                 return_data = cursor.fetchone()
 
@@ -422,8 +441,8 @@ class PugManager(object):
                     player_votes = %s, map_votes = %s, map_vote_start = %s, map_vote_end = %s, server_id = %s,
                     team_red = %s, team_blue = %s WHERE pugs.id = %s""", (
                             pug.size, pug.state, 
-                            pug.map, pug.map_forced, dict(pug._players), pug.player_votes,
-                            pug.map_votes, pug.map_vote_start, pug.map_vote_end, 
+                            pug.map, pug.map_forced, hstore_dict(pug._players), hstore_dict(pug.player_votes),
+                            hstore_dict(pug.map_votes), pug.map_vote_start, pug.map_vote_end, 
                             pug.server_id, pug.team_red, pug.team_blue, pug.id
                         )
                     )

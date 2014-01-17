@@ -1,7 +1,13 @@
 
 import logging
+import string
+import random
 
 import Rcon
+
+def random_string(len=24, chars=string.ascii_lowercase + string.ascii_uppercase + string.digits):
+    #generates a random string of length len
+    return ''.join(random.choice(chars) for x in range(len))
 
 class Server(object):
     def __init__(self):
@@ -28,16 +34,23 @@ class Server(object):
         res = self.rcon_connection.send_cmd(command)
         logging.debug("RCON RESULT: %s", res)
 
-    def setup(self, pug):
-        rcon_command = "changelevel %s; password %s; logaddress_add %s" % (pug.map, self.password, "asdf")
-        self.rcon(rcon_command)
-
+    # reserves a server for a pug
+    def reserve(self, pug):
         self.pug = pug
         self.pug_id = pug.id
 
-        self.password = pug.password
+        self.password = random_string(10)
+
+        self.rcon("sv_password %s" % self.password)
 
         self._setup_listener()
+
+    def setup(self):
+        if not self.pug:
+            return
+
+        rcon_command = "changelevel %s; sv_password %s" % (self.pug.map, self.password)
+        self.rcon(rcon_command)
 
     def _setup_listener(self):
         pass

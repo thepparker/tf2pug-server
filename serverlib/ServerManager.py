@@ -28,7 +28,7 @@ class ServerManager(object):
     def allocate(self, pug):
         for server in self._servers:
             if not server.in_use:
-                server.setup(pug)
+                server.reserve(pug)
 
                 self._flush_server(server)
 

@@ -13,14 +13,40 @@ import Pug
 
 from Exceptions import *
 
+pug_columns = (
+        "id",
+        "size",
+        "state",
+
+        "map",
+        "map_forced",
+        "players",
+
+        "player_votes",
+        "map_votes",
+        "map_vote_start",
+        "map_vote_end",
+
+        "server_id",
+
+        "team_red",
+        "team_blue"
+    )
+
+
 class PugManager(object):
-    def __init__(self, db):
+    def __init__(self, api_key, db, server_manager):
+        self.api_key = api_key
         self.db = db
 
         # pugs are maintained as a list of Pug objects
         self._pugs = []
 
         self._id_counter = 0
+
+        self.server_manager = server_manager
+
+        self.__load_pugs()
 
     """
     Adds a player to a pug. 
@@ -74,6 +100,9 @@ class PugManager(object):
             # pug is full, so we should make it transition to map voting
             pug.begin_map_vote()
 
+        # update the database with current pug details
+        self._flush_pug(pug)
+
         return pug
 
 
@@ -120,14 +149,22 @@ class PugManager(object):
         if self._player_in_pug(player_id):
             raise PlayerInPugException("Player %s (%s) is already in a pug" % (player_name, player_id))
 
-        # create a new pug with id
-        pug_id = self._id_counter
-        self._id_counter += 1
+        pug = Pug.Pug(-1, size, pug_map)
+        
+        # see if we can get a server before doing anything else
+        server = self.server_manager.allocate(pug)
 
-        pug = Pug.Pug(pug_id, size, pug_map)
+        # If the server returned is None, there are no servers available.
+        # Therefore, we raise an exception. Else, code continues and player
+        # gets added/pug gets flushed
+        if not server:
+            raise NoAvailableServersException("No more servers are available")
+            
         pug.add_player(player_id, player_name)
 
         self._pugs.append(pug)
+
+        self._flush_pug(pug, new = True)
 
         return pug
 
@@ -154,6 +191,8 @@ class PugManager(object):
     @param pug The pug to end
     """
     def _end_pug(self, pug):
+        # we need to delete this pug from the database
+
         self._pugs.remove(pug)
 
     """
@@ -180,6 +219,9 @@ class PugManager(object):
 
         pug.vote_map(player_id, pmap)
 
+        # update the database with current pug details
+        self._flush_pug(pug)
+
         return pug
 
     """
@@ -199,6 +241,9 @@ class PugManager(object):
             raise InvalidMapException("Map is not available in this pug")
 
         pug.force_map(pmap)
+
+        # update the database with current pug details
+        self._flush_pug(pug)
 
         return pug
 
@@ -260,3 +305,160 @@ class PugManager(object):
                 return pug
 
         return None
+
+
+    def __hydrate_pug(self, data):
+        logging.debug("HYDRATING PUG. DB DATA: %s", data)
+
+        # data is a tuple in the form of pug_columns
+        pug = Pug.Pug()
+
+        pug.id = data[0]
+        pug.size = data[1]
+        pug.state = data[2]
+
+        pug.map = data[3]
+        pug.map_forced = data[4]
+        pug._players = data[5]
+
+        pug.player_votes = data[6]
+        pug.map_votes = data[7]
+        pug.map_vote_start = data[8]
+        pug.map_vote_end = data[9]
+
+        pug.server_id = data[10]
+        if pug.server_id >= 0:
+            pug.server = self.server_manager.get_server_by_id(pug.server_id)
+
+            pug.server.pug = pug
+            pug.server.pug_id = pug.id
+
+        pug.team_red = data[11]
+        pug.team_blue = data[12]
+
+        return pug
+
+    def __load_pugs(self):
+        # clear the pug list
+        del self._pugs[:]
+
+        conn, cursor = self._get_db_objects()
+
+        try:
+            cursor.execute("SELECT %s FROM pugs WHERE state != %s", (", ".join(pug_columns), Pug.states["GAME_OVER"],))
+
+            results = cursor.fetchall()
+
+            if results:
+                for data in results:
+                    pug = self.__hydrate_pug(data)
+
+                    self._pugs.append(pug)
+
+        except:
+            logging.exception("Exception while loading pugs")
+
+        finally:
+            self._close_db_objects((conn, cursor))
+
+
+    def _flush_pug(self, pug, new = False):
+        logging.debug("Flushing pug to database. ID: %d", pug.id)
+        if new:
+            # insert
+            conn, cursor = self._get_db_objects()
+
+            logging.debug("Pug is new. Inserting")
+            try:
+                cursor.execute("INSERTO INTO pugs (%s, api_key) VALUES (%s) RETURNING id", (
+                            ", ".join(pug_columns[1:]), pug.id, pug.size, pug.state, 
+                            pug.map, pug.map_forced, pug._players, pug.player_votes,
+                            pug.map_votes, pug.map_vote_start, pug.map_vote_end, 
+                            pug.server_id, pug.team_red, pug.team_blue, self.api_key
+                        )
+                    )
+
+                return_data = cursor.fetchone()
+
+                if return_data:
+                    pug.id = return_data[0]
+                    logging.debug("New pug has ID %d", pug.id)
+                    
+                    # update server with id
+                    pug.server.pug_id = pug.id
+                    self.server_manager._flush_server(pug.server)
+
+                else:
+                    logging.error("No ID was returned when inserting pug. wat da fuk?")
+                    pug.id = int(round(time.time()))
+
+                conn.commit()
+
+            except:
+                logging.exception("Exception occured flushing pug")
+
+            finally:
+                self._close_db_objects((conn, cursor))
+
+        else:
+            conn, cursor = self._get_db_objects()
+
+            logging.debug("Pug is not new. Updating")
+            try:
+                cursor.execute("""UPDATE pugs SET size = %s, state = %s, map = %s, map_forced = %s, players = %s, 
+                    player_votes = %s, map_votes = %s, map_vote_start = %s, map_vote_end = %s, server_id = %s,
+                    team_red = %s, team_blue = %s WHERE pugs.id = %s""", (
+                            pug.size, pug.state, 
+                            pug.map, pug.map_forced, pug._players, pug.player_votes,
+                            pug.map_votes, pug.map_vote_start, pug.map_vote_end, 
+                            pug.server_id, pug.team_red, pug.team_blue
+                        )
+                    )
+
+                conn.commit()
+
+            except:
+                logging.exception("Exception occured flushing pug")
+
+            finally:
+                self._close_db_objects((conn, cursor))
+
+    def flush_all(self, pug):
+        for pug in self._pugs:
+            self._flush_pug(pug)
+
+
+    """
+    Retrieves a db connection and a cursor in a (conn, cursor) tuple from the
+    db pool
+    """
+    def _get_db_objects(self):
+        conn = None
+        curs = None
+
+        try:
+            conn = self.db.getconn()
+            curs = conn.cursor()
+
+            return (conn, curs)
+        
+        except:
+            logging.exception("Exception getting db objects")
+
+            if curs:
+                curs.close()
+
+            if conn:
+                self.db.putconn(conn)
+
+    """
+    Takes a tuple of (conn, cursor), closes the cursor and puts the conn back
+    into the pool
+    """
+    def _close_db_objects(self, objects):
+        if objects[1] and not objects[1].closed:
+            objects[1].close()
+
+        if objects[0]:
+            conn.rollback() # perform a rollback just incase something fucked up happened
+            self.db.putconn(objects[0])

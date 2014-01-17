@@ -137,6 +137,9 @@ class PugAddHandler(BaseHandler):
         except PugManagerExceptions.PugFullException:
             self.write(self.response_handler.pug_full(self.manager.get_pug_by_id(pug_id)))
 
+        except PugManagerExceptions.NoAvailableServersException:
+            self.write(self.response_handler.no_available_servers())
+
         except:
             logging.exception("Unknown exception occurred when adding player to a pug")
 
@@ -201,6 +204,9 @@ class PugCreateHandler(BaseHandler):
 
         except PugManagerExceptions.InvalidMapException:
             self.write(self.response_handler.invalid_map())
+
+        except PugManagerExceptions.NoAvailableServersException:
+            self.write(self.response_handler.no_available_servers())
 
         except:
             logging.exception("Unknown exception occurred during pug creation")

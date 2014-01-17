@@ -22,6 +22,8 @@ Response_MapNotForced = 1202
 Response_MapVoteNotInProgress = 1203
 Response_InvalidMap = 1204
 
+Response_NoAvailableServers = 1300
+
 class ResponseHandler(object):
     def __init__(self):
         pass
@@ -30,6 +32,9 @@ class ResponseHandler(object):
         packet["response"] = new_code
 
         return packet
+
+    def no_available_servers(self):
+        return { "response": Response_NoAvailableServers }
 
     def pug_vote_added(self, pug):
         response = self.pug_status(pug)
@@ -155,9 +160,9 @@ class ResponseHandler(object):
             "map": pug.map,
             "maps": pug.maps,
 
-            "ip": pug.ip,
-            "port": pug.port,
-            "password": pug.password,
+            "ip": pug.server.ip,
+            "port": pug.server.port,
+            "password": pug.server.password,
 
             "mumble": "",
 

@@ -33,3 +33,7 @@ class NoMapVoteException(Exception):
 # Raised when attempting to vote for an invalid map
 class InvalidMapException(Exception):
     pass
+
+# Raised when no more servers are available
+class NoAvailableServersException(Exception):
+    pass

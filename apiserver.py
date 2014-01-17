@@ -100,6 +100,18 @@ class Application(tornado.web.Application):
 
             return new_manager
 
+    def close(self):
+        # flush the managers to the database
+        logging.info("Flushing pug managers")
+        for manager in self._pug_managers:
+            manager.flush_all()
+
+
+        logging.info("Flushing server manager")
+        self.server_manager.flush_all()
+
+        logging.info("Managers successfully flushed")
+
 if __name__ == "__main__":
     parse_command_line()
 
@@ -118,7 +130,12 @@ if __name__ == "__main__":
 
     try:
         tornado.ioloop.IOLoop.instance().start()
-    except KeyboardInterrupt:
-        logging.info("KeyboardInterrupt. Exiting")
+    except:
+        logging.info("Shutting the server down...")
 
+        api_server.close()
+        db.close()
+        tornado.ioloop.IOLoop.instance().stop()
+        
+        sys.exit(0)
 

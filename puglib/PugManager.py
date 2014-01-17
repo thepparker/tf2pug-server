@@ -370,7 +370,7 @@ class PugManager(object):
 
             logging.debug("Pug is new. Inserting")
             try:
-                cursor.execute("INSERTO INTO pugs (%s, api_key) VALUES (%s) RETURNING id", (
+                cursor.execute("INSERTO INTO pugs (%s, api_key) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id", (
                             ", ".join(pug_columns[1:]), pug.size, pug.state, 
                             pug.map, pug.map_forced, pug._players, pug.player_votes,
                             pug.map_votes, pug.map_vote_start, pug.map_vote_end, 

@@ -179,6 +179,10 @@ class PugManager(object):
 
         self._flush_pug(pug, new = True)
 
+        # update server with id
+        pug.server.pug_id = pug.id
+        self.server_manager._flush_server(pug.server)
+
         return pug
 
     """
@@ -344,7 +348,7 @@ class PugManager(object):
 
         for mname in data[7]:
             pug.map_votes[mname] = int(data[7][mname])
-            
+
         pug.map_vote_start = data[8]
         pug.map_vote_end = data[9]
 
@@ -401,10 +405,10 @@ class PugManager(object):
                                                     server_id, team_red, team_blue, api_key)
                                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) 
                                   RETURNING id""", (
-                                    ", ".join(pug_columns[1:]), pug.size, pug.state, 
-                                    pug.map, pug.map_forced, hstore_dict(pug._players), hstore_dict(pug.player_votes),
-                                    hstore_dict(pug.map_votes), pug.map_vote_start, pug.map_vote_end, 
-                                    pug.server_id, pug.team_red, pug.team_blue, self.api_key
+                                    pug.size, pug.state, pug.map, pug.map_forced, hstore_dict(pug._players), 
+                                    hstore_dict(pug.player_votes), hstore_dict(pug.map_votes), 
+                                    pug.map_vote_start, pug.map_vote_end, pug.server_id, pug.team_red, 
+                                    pug.team_blue, self.api_key
                                 )
                             )
 
@@ -413,10 +417,6 @@ class PugManager(object):
                 if return_data:
                     pug.id = return_data[0]
                     logging.debug("New pug has ID %d", pug.id)
-                    
-                    # update server with id
-                    pug.server.pug_id = pug.id
-                    self.server_manager._flush_server(pug.server)
 
                 else:
                     logging.error("No ID was returned when inserting pug. wat da fuk?")

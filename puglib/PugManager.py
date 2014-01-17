@@ -10,6 +10,8 @@ import logging
 import time
 import collections
 
+import psycopg2.extras
+
 import Pug
 
 from Exceptions import *
@@ -369,6 +371,8 @@ class PugManager(object):
             # insert
             conn, cursor = self._get_db_objects()
 
+            psycopg2.extras.register_hstore(cursor)
+
             logging.debug("Pug is new. Inserting")
             try:
                 cursor.execute("INSERTO INTO pugs (%s, api_key) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id", (
@@ -403,6 +407,8 @@ class PugManager(object):
 
         else:
             conn, cursor = self._get_db_objects()
+
+            psycopg2.extras.register_hstore(cursor)
 
             logging.debug("Pug is not new. Updating")
             try:

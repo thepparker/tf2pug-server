@@ -24,6 +24,8 @@ class Pug(object):
     def __init__(self, pid, size, pmap):
         self.id = pid
         self.size = size
+        self.state = states["GATHERING_PLAYERS"]
+
         self.map = pmap
 
         if pmap is not None:
@@ -40,11 +42,8 @@ class Pug(object):
         self.map_vote_duration = MAPVOTE_DURATION
         self.maps = [ "cp_granary", "cp_badlands" ]
 
-        self.ip = "1.1.1.1"
-        self.port = 22222
-        self.password = 123
-
-        self.state = states["GATHERING_PLAYERS"]
+        self.server = None
+        self.server_id = -1
 
         self.team_red = []
         self.team_blue = []

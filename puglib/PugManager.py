@@ -377,13 +377,17 @@ class PugManager(object):
             try:
                 psycopg2.extras.register_hstore(cursor)
 
-                cursor.execute("INSERT INTO pugs (%s, api_key) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id", (
-                            ", ".join(pug_columns[1:]), pug.size, pug.state, 
-                            pug.map, pug.map_forced, dict(pug._players), pug.player_votes,
-                            pug.map_votes, pug.map_vote_start, pug.map_vote_end, 
-                            pug.server_id, pug.team_red, pug.team_blue, self.api_key
-                        )
+                insert_query = """INSERT INTO pugs (%s, api_key) 
+                                  VALUES (E'%s', E'%s', E'%s', E'%s', E'%s', E'%s', E'%s', E'%s', E'%s', E'%s', E'%s', E'%s', E'%s') 
+                                  RETURNING id""" % (
+                                        ", ".join(pug_columns[1:]), pug.size, pug.state, 
+                                        pug.map, pug.map_forced, dict(pug._players), pug.player_votes,
+                                        pug.map_votes, pug.map_vote_start, pug.map_vote_end, 
+                                        pug.server_id, pug.team_red, pug.team_blue, self.api_key
+                                    )
                     )
+
+                cursor.execute(insert_query)
 
                 return_data = cursor.fetchone()
 
@@ -420,7 +424,7 @@ class PugManager(object):
                             pug.size, pug.state, 
                             pug.map, pug.map_forced, dict(pug._players), pug.player_votes,
                             pug.map_votes, pug.map_vote_start, pug.map_vote_end, 
-                            pug.server_id, pug.team_red, pug.team_blue
+                            pug.server_id, pug.team_red, pug.team_blue, pug.id
                         )
                     )
 

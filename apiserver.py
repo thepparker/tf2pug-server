@@ -105,7 +105,7 @@ class Application(tornado.web.Application):
     def close(self):
         # flush the managers to the database
         logging.info("Flushing pug managers")
-        for manager in self._pug_managers:
+        for manager in self._pug_managers.values():
             manager.flush_all()
 
 

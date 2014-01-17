@@ -29,7 +29,7 @@ class Server(object):
         logging.debug("RCON RESULT: %s", res)
 
     def setup(self, pug):
-        rcon_command = "changelevel %s; password %s; logaddress_add %s" % (pug.map, pug.password, "asdf")        
+        rcon_command = "changelevel %s; password %s; logaddress_add %s" % (pug.map, self.password, "asdf")
         self.rcon(rcon_command)
 
         self.pug = pug

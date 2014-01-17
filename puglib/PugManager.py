@@ -460,5 +460,5 @@ class PugManager(object):
             objects[1].close()
 
         if objects[0]:
-            conn.rollback() # perform a rollback just incase something fucked up happened
+            objects[0].rollback() # perform a rollback just incase something fucked up happened
             self.db.putconn(objects[0])

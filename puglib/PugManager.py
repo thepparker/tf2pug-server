@@ -371,7 +371,7 @@ class PugManager(object):
             logging.debug("Pug is new. Inserting")
             try:
                 cursor.execute("INSERTO INTO pugs (%s, api_key) VALUES (%s) RETURNING id", (
-                            ", ".join(pug_columns[1:]), pug.id, pug.size, pug.state, 
+                            ", ".join(pug_columns[1:]), pug.size, pug.state, 
                             pug.map, pug.map_forced, pug._players, pug.player_votes,
                             pug.map_votes, pug.map_vote_start, pug.map_vote_end, 
                             pug.server_id, pug.team_red, pug.team_blue, self.api_key
@@ -395,7 +395,7 @@ class PugManager(object):
                 conn.commit()
 
             except:
-                logging.exception("Exception occured flushing pug")
+                logging.exception("Exception occured inserting pug")
 
             finally:
                 self._close_db_objects((conn, cursor))
@@ -418,12 +418,12 @@ class PugManager(object):
                 conn.commit()
 
             except:
-                logging.exception("Exception occured flushing pug")
+                logging.exception("Exception occured updating pug")
 
             finally:
                 self._close_db_objects((conn, cursor))
 
-    def flush_all(self, pug):
+    def flush_all(self):
         for pug in self._pugs:
             self._flush_pug(pug)
 

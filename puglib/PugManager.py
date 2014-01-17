@@ -8,6 +8,7 @@
 
 import logging
 import time
+import collections
 
 import Pug
 
@@ -319,7 +320,7 @@ class PugManager(object):
 
         pug.map = data[3]
         pug.map_forced = data[4]
-        pug._players = data[5]
+        pug._players = collections.OrderedDict(data[5])
 
         pug.player_votes = data[6]
         pug.map_votes = data[7]
@@ -372,7 +373,7 @@ class PugManager(object):
             try:
                 cursor.execute("INSERTO INTO pugs (%s, api_key) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id", (
                             ", ".join(pug_columns[1:]), pug.size, pug.state, 
-                            pug.map, pug.map_forced, pug._players, pug.player_votes,
+                            pug.map, pug.map_forced, dict(pug._players), pug.player_votes,
                             pug.map_votes, pug.map_vote_start, pug.map_vote_end, 
                             pug.server_id, pug.team_red, pug.team_blue, self.api_key
                         )
@@ -409,7 +410,7 @@ class PugManager(object):
                     player_votes = %s, map_votes = %s, map_vote_start = %s, map_vote_end = %s, server_id = %s,
                     team_red = %s, team_blue = %s WHERE pugs.id = %s""", (
                             pug.size, pug.state, 
-                            pug.map, pug.map_forced, pug._players, pug.player_votes,
+                            pug.map, pug.map_forced, dict(pug._players), pug.player_votes,
                             pug.map_votes, pug.map_vote_start, pug.map_vote_end, 
                             pug.server_id, pug.team_red, pug.team_blue
                         )

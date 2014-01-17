@@ -60,4 +60,4 @@ class Server(object):
 
     @property
     def in_use(self):
-        return self.pug is not None
+        return self.pug is not None or self.pug_id > 0

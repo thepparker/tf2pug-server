@@ -21,7 +21,7 @@ class MapForcedException(Exception):
     pass
 
 class Pug(object):
-    def __init__(self, pid, size, pmap):
+    def __init__(self, pid = -1, size = 12, pmap = None):
         self.id = pid
         self.size = size
         self.state = states["GATHERING_PLAYERS"]

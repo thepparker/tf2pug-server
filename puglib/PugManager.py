@@ -162,7 +162,7 @@ class PugManager(object):
         if self._player_in_pug(player_id):
             raise PlayerInPugException("Player %s (%s) is already in a pug" % (player_name, player_id))
 
-        pug = Pug.Pug(-1, size, pug_map)
+        pug = Pug.Pug(size = size, pmap = pug_map)
         
         # see if we can get a server before doing anything else
         server = self.server_manager.allocate(pug)

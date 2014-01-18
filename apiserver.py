@@ -2,6 +2,7 @@
 
 import logging
 import sys
+import time
 
 import settings
 
@@ -57,9 +58,27 @@ class Application(tornado.web.Application):
 
         self.server_manager = ServerManager.ServerManager(self.db)
 
+        self._auth_cache = {}
+
         tornado.web.Application.__init__(self, handlers, **settings)
 
     def valid_api_key(self, key):
+        if key in self._auth_cache:
+            logging.debug("Key %s is in auth cache", key)
+
+            valid, cache_time = self._auth_cache[key]
+
+            # check if the cache has expired
+            # if it has expired, we remove the key from the cache and recache
+            if (time.time() - cache_time) > 120:
+                logging.debug("Cache for key has expired")
+                del self._auth_cache[key]
+
+            else:
+                # cache has not expired
+                logging.debug("Key is in cache and has not expired. Valid: %s", valid)
+                return valid
+
         logging.debug("Getting user details for API key %s", key)
 
         valid = False
@@ -85,10 +104,14 @@ class Application(tornado.web.Application):
             logging.exception("Exception when validating API key")
 
         finally:
-            if cursor:
+            if cursor and not cursor.closed:
                 cursor.close()
+
             if conn:
                 self.db.putconn(conn)
+
+            # add to cache 
+            self._auth_cache[key] = (valid, time.time())
 
             return valid
 

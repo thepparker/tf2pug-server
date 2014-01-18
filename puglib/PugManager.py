@@ -343,7 +343,7 @@ class PugManager(object):
         # and re-add the players normally
         players = data["players"]
         for pid in players:
-            pug.add_player(long(pid), players[pid])
+            pug._players[long(pid)] = players[pid]
 
         # do the same for player_votes and map_votes
         player_votes = data["player_votes"]

@@ -409,7 +409,7 @@ class PugManager(object):
                 cursor.execute("""INSERT INTO pugs (size, state, map, map_forced, players, admin,
                                                     player_votes, map_votes, map_vote_start, map_vote_end,
                                                     server_id, team_red, team_blue, api_key)
-                                  VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) 
+                                  VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) 
                                   RETURNING id""", (
                                     pug.size, pug.state, pug.map, pug.map_forced, hstore_dict(pug._players), 
                                     pug.admin, hstore_dict(pug.player_votes), hstore_dict(pug.map_votes), 

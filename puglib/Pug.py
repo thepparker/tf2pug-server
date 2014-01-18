@@ -33,6 +33,7 @@ class Pug(object):
         else:
             self.map_forced = False
 
+        self.admin = None
         self._players = collections.OrderedDict()
 
         self.player_votes = {}
@@ -52,11 +53,18 @@ class Pug(object):
         if self.full:
             return
 
+        if self.player_count == 0:
+            self.admin = player_id
+
         self._players[player_id] = player_name
 
     def remove_player(self, player_id):
         if player_id in self._players:
             del self._players[player_id]
+
+            # update the admin to the next person in the pug
+            if player_id == self.admin and self.player_count > 0:
+                self.admin = self._players.keys()[0]
 
         if player_id in self.player_votes:
             self._decrement_map_vote(self.player_votes[player_id])
@@ -128,10 +136,6 @@ class Pug(object):
     @property
     def full(self):
         return self.size == self.player_count
-
-    @property
-    def admin(self):
-        return self._players.keys()[0]
 
     @property
     def player_count(self):

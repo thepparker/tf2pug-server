@@ -24,6 +24,7 @@ pug_columns = (
         "map",
         "map_forced",
         "players",
+        "admin",
 
         "player_votes",
         "map_votes",
@@ -330,37 +331,41 @@ class PugManager(object):
         # data is a tuple in the form of pug_columns
         pug = Pug.Pug()
 
-        pug.id = data[0]
-        pug.size = data[1]
-        pug.state = data[2]
+        pug.id = data["id"]
+        pug.size = data["size"]
+        pug.state = data["state"]
 
-        pug.map = data[3]
-        pug.map_forced = data[4]
+        pug.map = data["map"]
+        pug.map_forced = data["map_forced"]
         
+        pug.admin = long(data["admin"])
         # IDs are returned as strings, so we convert them back to longs
         # and re-add the players normally
-        for pid in data[5]:
-            pug.add_player(long(pid), data[5][pid])
+        players = data["players"]
+        for pid in players:
+            pug.add_player(long(pid), players[pid])
 
         # do the same for player_votes and map_votes
-        for pid in data[6]:
-            pug.player_votes[long(pid)] = data[5][pid]
+        player_votes = data["player_votes"]
+        for pid in player_votes:
+            pug.player_votes[long(pid)] = player_votes[pid]
 
-        for mname in data[7]:
-            pug.map_votes[mname] = int(data[7][mname])
+        map_votes = data["map_votes"]
+        for mname in map_votes:
+            pug.map_votes[mname] = int(map_votes[mname])
 
-        pug.map_vote_start = data[8]
-        pug.map_vote_end = data[9]
+        pug.map_vote_start = data["map_vote_start"]
+        pug.map_vote_end = data["map_vote_end"]
 
-        pug.server_id = data[10]
+        pug.server_id = data["server_id"]
         if pug.server_id >= 0:
             pug.server = self.server_manager.get_server_by_id(pug.server_id)
 
             pug.server.pug = pug
             pug.server.pug_id = pug.id
 
-        pug.team_red = data[11]
-        pug.team_blue = data[12]
+        pug.team_red = data["team_red"]
+        pug.team_blue = data["team_blue"]
 
         return pug
 
@@ -401,13 +406,13 @@ class PugManager(object):
             try:
                 psycopg2.extras.register_hstore(cursor)
 
-                cursor.execute("""INSERT INTO pugs (size, state, map, map_forced, players, player_votes, 
-                                                    map_votes, map_vote_start, map_vote_end,
+                cursor.execute("""INSERT INTO pugs (size, state, map, map_forced, players, admin,
+                                                    player_votes, map_votes, map_vote_start, map_vote_end,
                                                     server_id, team_red, team_blue, api_key)
                                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) 
                                   RETURNING id""", (
                                     pug.size, pug.state, pug.map, pug.map_forced, hstore_dict(pug._players), 
-                                    hstore_dict(pug.player_votes), hstore_dict(pug.map_votes), 
+                                    pug.admin, hstore_dict(pug.player_votes), hstore_dict(pug.map_votes), 
                                     pug.map_vote_start, pug.map_vote_end, pug.server_id, pug.team_red, 
                                     pug.team_blue, self.api_key
                                 )
@@ -439,12 +444,12 @@ class PugManager(object):
                 psycopg2.extras.register_hstore(cursor)
 
                 cursor.execute("""UPDATE pugs SET size = %s, state = %s, map = %s, map_forced = %s, players = %s, 
-                    player_votes = %s, map_votes = %s, map_vote_start = %s, map_vote_end = %s, server_id = %s,
+                    admin = %s, player_votes = %s, map_votes = %s, map_vote_start = %s, map_vote_end = %s, server_id = %s,
                     team_red = %s, team_blue = %s WHERE pugs.id = %s""", (
-                            pug.size, pug.state, 
-                            pug.map, pug.map_forced, hstore_dict(pug._players), hstore_dict(pug.player_votes),
-                            hstore_dict(pug.map_votes), pug.map_vote_start, pug.map_vote_end, 
-                            pug.server_id, pug.team_red, pug.team_blue, pug.id
+                            pug.size, pug.state, pug.map, pug.map_forced, hstore_dict(pug._players), 
+                            pug.admin, hstore_dict(pug.player_votes), hstore_dict(pug.map_votes), 
+                            pug.map_vote_start, pug.map_vote_end, pug.server_id, pug.team_red,
+                            pug.team_blue, pug.id
                         )
                     )
 
@@ -471,7 +476,7 @@ class PugManager(object):
 
         try:
             conn = self.db.getconn()
-            curs = conn.cursor()
+            curs = conn.cursor(cursor_factory = psycopg2.extras.DictCursor)
 
             return (conn, curs)
         

@@ -15,6 +15,6 @@ CREATE TABLE pugs (id serial, size integer, state integer, map varchar(32),
                    map_forced boolean, players hstore, player_votes hstore,
                    map_votes hstore, map_vote_start bigint, 
                    map_vote_end bigint, server_id integer, team_red bigint[],
-                   team_blue bigint[], 
+                   team_blue bigint[], admin bigint, 
                    api_key text references api_keys(key) ON UPDATE CASCADE
                 );

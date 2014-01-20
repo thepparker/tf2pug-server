@@ -127,8 +127,11 @@ class Pug(object):
         else:
             self.map_votes[map_name] = 0
 
-    def shuffle_teams(self):
-        pass
+    def shuffle_teams(self, team_data):
+        if not self.full:
+            return
+
+        # HOW TO GENERATE TEAMS???
 
     def has_player(self, player_id):
         return player_id in self._players

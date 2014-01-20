@@ -331,6 +331,17 @@ class PugManager(object):
 
         return None
 
+    def map_vote_check(self, curr_ctime):
+        for pug in self._pugs:
+            if pug.state == Pug.states["MAP_VOTING"] and curr_ctime > pug.map_vote_end:
+                logging.debug("Map vote period is over for pug %d", pug.id)
+                # END MAP VOTING FOR THIS PUG
+                pug.end_map_vote()
+
+                # shuffle teams
+                pug.shuffle_teams()
+
+
 
     def __hydrate_pug(self, data):
         logging.debug("HYDRATING PUG. DB DATA: %s", data)
@@ -492,7 +503,7 @@ class PugManager(object):
         except:
             logging.exception("Exception getting db objects")
 
-            if curs:
+            if curs and not curs.closed:
                 curs.close()
 
             if conn:

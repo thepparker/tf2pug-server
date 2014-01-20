@@ -12,7 +12,7 @@ import tornado.ioloop
 import psycopg2
 import psycopg2.pool
 
-from puglib import PugManager, Pug
+from puglib import PugManager
 from handlers import ResponseHandler, WebHandler
 from serverlib import ServerManager
 
@@ -127,7 +127,7 @@ class Application(tornado.web.Application):
 
         else:
             logging.debug("Getting new pug manager for key %s", key)
-            
+
             new_manager = PugManager.PugManager(key, self.db, self.server_manager)
 
             self._pug_managers[key] = new_manager
@@ -138,11 +138,7 @@ class Application(tornado.web.Application):
         curr_ctime = time.time()
 
         for manager in self._pug_managers.values():
-            for pug in manager.get_pugs():
-                if pug.state == Pug.states["MAP_VOTING"] and curr_ctime > pug.map_vote_end:
-                    logging.debug("Map vote period is over for pug %d", pug.id)
-                    # END MAP VOTING FOR THIS PUG
-                    pug.end_map_vote()
+            manager.map_vote_check(curr_ctime)
 
     def __load_pug_managers(self):
         logging.info("Loading pug managers for all users")

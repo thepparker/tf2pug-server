@@ -62,7 +62,7 @@ class Server(object):
         if not self.pug:
             return
 
-        rcon_command = "changelevel %s; sv_password %s" % (self.pug.map, self.password)
+        rcon_command = "kickall; changelevel %s; sv_password %s" % (self.pug.map, self.password)
         self.rcon(rcon_command)
 
     def _setup_listener(self):

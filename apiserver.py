@@ -145,18 +145,14 @@ class Application(tornado.web.Application):
     def __load_pug_managers(self):
         conn = None
         cursor = None
+        results = None
+
         try:
             conn = self.db.getconn()
             cursor = conn.cursor()
 
             cursor.execute("SELECT key FROM api_keys")
             results = cursor.fetchall()
-
-            logging.debug("API keys in database: %s", results)
-
-            if results:
-                for key in results:
-                    self.get_manager(key)
 
         except:
             logging.exception("Exception getting retrieving all API keys")
@@ -167,6 +163,12 @@ class Application(tornado.web.Application):
 
             if conn:
                 self.db.putconn(conn)
+
+        logging.debug("API keys in database: %s", results)
+
+        if results:
+            for key_tuple in results:
+                self.get_manager(key_tuple[0])
 
     def close(self):
         self._map_vote_timer.stop()

@@ -64,6 +64,8 @@ class Application(tornado.web.Application):
         self._map_vote_timer = tornado.ioloop.PeriodicCallback(self._map_vote_check, 2000)
         self._map_vote_timer.start()
 
+        self.__load_pug_managers()
+
         tornado.web.Application.__init__(self, handlers, **settings)
 
     def valid_api_key(self, key):
@@ -139,6 +141,32 @@ class Application(tornado.web.Application):
                     logging.debug("Map vote period is over for pug %d", pug.id)
                     # END MAP VOTING FOR THIS PUG
                     pug.end_map_vote()
+
+    def __load_pug_managers(self):
+        conn = None
+        cursor = None
+        try:
+            conn = self.db.getconn()
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT key FROM api_keys")
+            results = cursor.fetchall()
+
+            logging.debug("API keys in database: %s", results)
+
+            if results:
+                for key in results:
+                    self.get_manager(key)
+
+        except:
+            logging.exception("Exception getting retrieving all API keys")
+
+        finally:
+            if cursor and not cursor.closed:
+                cursor.close()
+
+            if conn:
+                self.db.putconn(conn)
 
     def close(self):
         self._map_vote_timer.stop()

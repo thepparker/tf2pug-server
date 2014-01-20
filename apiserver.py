@@ -12,7 +12,7 @@ import tornado.ioloop
 import psycopg2
 import psycopg2.pool
 
-from puglib import PugManager
+from puglib import PugManager, Pug
 from handlers import ResponseHandler, WebHandler
 from serverlib import ServerManager
 
@@ -59,6 +59,10 @@ class Application(tornado.web.Application):
         self.server_manager = ServerManager.ServerManager(self.db)
 
         self._auth_cache = {}
+
+        # perform the mapvote timer check every 2 seconds
+        self._map_vote_timer = tornado.ioloop.PeriodicCallback(self._map_vote_check, 2000)
+        self._map_vote_timer.start()
 
         tornado.web.Application.__init__(self, handlers, **settings)
 
@@ -118,6 +122,7 @@ class Application(tornado.web.Application):
     def get_manager(self, key):
         if key in self._pug_managers:
             return self._pug_managers[key]
+            
         else:
             new_manager = PugManager.PugManager(key, self.db, self.server_manager)
 
@@ -125,7 +130,19 @@ class Application(tornado.web.Application):
 
             return new_manager
 
+    def _map_vote_check(self):
+        curr_ctime = time.time()
+
+        for manager in self._pug_managers.values():
+            for pug in manager.get_pugs():
+                if pug.state == Pug.states["MAP_VOTING"] and curr_ctime > pug.map_vote_end:
+                    logging.debug("Map vote period is over for pug %d", pug.id)
+                    # END MAP VOTING FOR THIS PUG
+                    pug.end_map_vote()
+
     def close(self):
+        self._map_vote_timer.stop()
+
         # flush the managers to the database
         logging.info("Flushing pug managers")
         for manager in self._pug_managers.values():

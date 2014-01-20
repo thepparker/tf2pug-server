@@ -203,14 +203,21 @@ class PugManager(object):
         self._end_pug(pug)
 
     """
-    Ends the given pug (i.e deletes it from the manager, maybe does some
-    database shit at a later stage)
+    Ends the given pug. This means we set the state to game over, reset the
+    assigned server, close the logging socket and flush the pug/server.
 
     @param pug The pug to end
     """
     def _end_pug(self, pug):
-        # we need to delete this pug from the database
+        pug.state = Pug.states["GAME_OVER"]
 
+        # resetting the server automatically causes a server_manager flush
+        # also closes the logging socket? maybe?
+        self.server_manager.reset(pug.server)
+
+        self._flush_pug(pug)
+
+        # lastly, remove the pug from the list
         self._pugs.remove(pug)
 
     """
@@ -378,7 +385,9 @@ class PugManager(object):
         try:
             psycopg2.extras.register_hstore(cursor)
 
-            query = "SELECT %s FROM pugs WHERE state != '%s'" % (", ".join(pug_columns), Pug.states["GAME_OVER"])
+            query = "SELECT %s FROM pugs WHERE state != '%s' AND api_key = E'%s'" % (
+                ", ".join(pug_columns), Pug.states["GAME_OVER"], self.api_key)
+
             cursor.execute(query)
 
             results = cursor.fetchall()

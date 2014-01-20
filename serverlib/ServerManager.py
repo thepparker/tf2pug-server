@@ -5,6 +5,8 @@ change maps, etc.
 
 import logging
 
+import psycopg2.extras
+
 from Server import Server
 
 server_columns = (

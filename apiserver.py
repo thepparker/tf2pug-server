@@ -122,7 +122,7 @@ class Application(tornado.web.Application):
     def get_manager(self, key):
         if key in self._pug_managers:
             return self._pug_managers[key]
-            
+
         else:
             new_manager = PugManager.PugManager(key, self.db, self.server_manager)
 
@@ -162,7 +162,8 @@ if __name__ == "__main__":
                 settings.db_host, settings.db_port
             )
 
-    db = psycopg2.pool.SimpleConnectionPool(minconn = 1, maxconn = 1, dsn = dsn)
+    db = psycopg2.pool.SimpleConnectionPool(minconn = 1, maxconn = 1, 
+        dsn = dsn)
 
     api_server = Application(db)
 

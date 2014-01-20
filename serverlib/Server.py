@@ -34,6 +34,16 @@ class Server(object):
         res = self.rcon_connection.send_cmd(command)
         logging.debug("RCON RESULT: %s", res)
 
+        return res
+
+    def reset(self):
+        self.pug = None
+        self.pug_id = -1
+
+        self.rcon("say This server is being reset because the pug is over; kickall; sv_password getOuTPLZ")
+
+        self._end_listener()
+
     # reserves a server for a pug
     def reserve(self, pug):
         self.pug = pug
@@ -44,7 +54,7 @@ class Server(object):
 
         self.password = random_string(10)
 
-        self.rcon("sv_password %s" % self.password)
+        self.rcon("sv_password %s; say This server has been reserved for pug %d; kickall" % self.password, pug.id)
 
         self._setup_listener()
 
@@ -57,6 +67,11 @@ class Server(object):
 
     def _setup_listener(self):
         pass
+
+    def _end_listener(self):
+        #self.rcon("logaddress_del blah")
+
+        self.log_port = 0
 
     @property
     def in_use(self):

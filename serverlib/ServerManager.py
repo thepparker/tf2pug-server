@@ -38,7 +38,9 @@ class ServerManager(object):
         return None
 
     def reset(self, server):
-        pass
+        server.reset()
+
+        self._flush_server(server)
 
     def get_server_by_id(self, sid):
         for server in self._servers:
@@ -53,8 +55,8 @@ class ServerManager(object):
         conn, cursor = self._get_db_objects()
 
         try:
-            cursor.execute("UPDATE servers SET rcon_password = %s, password = %s, pug_id = %s, log_port = %s WHERE servers.id = %s", 
-                    (server.rcon_password, server.password, server.pug_id, server.log_port, server.id,)
+            cursor.execute("UPDATE servers SET password = %s, pug_id = %s, log_port = %s WHERE servers.id = %s", 
+                    (server.password, server.pug_id, server.log_port, server.id,)
                 )
 
             conn.commit()
@@ -75,13 +77,13 @@ class ServerManager(object):
         logging.debug("HYDRATING SERVER. DB RESULT: %s", db_result)
 
         server = Server()
-        server.id = db_result[0]
-        server.ip = db_result[1]
-        server.port = db_result[2]
-        server.rcon_password = db_result[3]
-        server.password = db_result[4]
-        server.pug_id = db_result[5]
-        server.log_port = db_result[6]
+        server.id = db_result["id"]
+        server.ip = db_result["ip"]
+        server.port = db_result["port"]
+        server.rcon_password = db_result["rcon_password"]
+        server.password = db_result["password"]
+        server.pug_id = db_result["pug_id"]
+        server.log_port = db_result["log_port"]
 
         return server
 
@@ -121,7 +123,7 @@ class ServerManager(object):
 
         try:
             conn = self.db.getconn()
-            curs = conn.cursor()
+            curs = conn.cursor(cursor_factory = psycopg2.extras.DictCursor)
 
             return (conn, curs)
         

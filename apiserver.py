@@ -126,6 +126,8 @@ class Application(tornado.web.Application):
             return self._pug_managers[key]
 
         else:
+            logging.debug("Getting new pug manager for key %s", key)
+            
             new_manager = PugManager.PugManager(key, self.db, self.server_manager)
 
             self._pug_managers[key] = new_manager
@@ -143,6 +145,7 @@ class Application(tornado.web.Application):
                     pug.end_map_vote()
 
     def __load_pug_managers(self):
+        logging.info("Loading pug managers for all users")
         conn = None
         cursor = None
         results = None

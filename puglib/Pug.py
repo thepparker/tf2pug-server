@@ -127,7 +127,7 @@ class Pug(object):
         else:
             self.map_votes[map_name] = 0
 
-    def shuffle_teams(self, team_data):
+    def shuffle_teams(self, stat_data):
         if not self.full:
             return
 
@@ -143,3 +143,8 @@ class Pug(object):
     @property
     def player_count(self):
         return len(self._players)
+
+    @property
+    def players_list(self):
+        return [ x for x in self._players ]
+

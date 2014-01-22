@@ -333,15 +333,38 @@ class PugManager(object):
 
     def map_vote_check(self, curr_ctime):
         for pug in self._pugs:
-            if pug.state == Pug.states["MAP_VOTING"] and curr_ctime > pug.map_vote_end:
+            if (pug.state == Pug.states["MAP_VOTING"]) and (curr_ctime > pug.map_vote_end):
                 logging.debug("Map vote period is over for pug %d", pug.id)
                 # END MAP VOTING FOR THIS PUG
                 pug.end_map_vote()
 
                 # shuffle teams
-                pug.shuffle_teams()
+                pug.shuffle_teams(self._pug_stat_data(pug))
+
+    def _pug_stat_data(self, pug):
+        # need to get player stats from livelogs, and med stats from pug db
+        pass
 
 
+    def __get_med_stats(self, pug):
+        conn, cursor = self._get_db_objects()
+
+        try:
+            cursor.execute("""SELECT steamid, games, played 
+                              FROM players 
+                              WHERE steamid IN %s""", (pug.players_list,))
+
+            results = cursor.fetchall()
+
+            if results:
+                for result in results:
+                    logging.debug("player stat row: %s", result)
+
+        except:
+            logging.exception("Exception getting player stats ")
+
+        finally:
+            self._close_db_objects((conn, cursor))
 
     def __hydrate_pug(self, data):
         logging.debug("HYDRATING PUG. DB DATA: %s", data)

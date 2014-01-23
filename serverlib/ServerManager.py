@@ -75,17 +75,17 @@ class ServerManager(object):
         for server in self._servers:
             self._flush_server(server)
 
-    def __hydrate_server(self, db_result):
-        logging.debug("HYDRATING SERVER. DB RESULT: %s", db_result)
+    def __hydrate_server(self, data):
+        logging.debug("HYDRATING SERVER. DB RESULT: %s", data)
 
         server = Server()
-        server.id = db_result["id"]
-        server.ip = db_result["ip"]
-        server.port = db_result["port"]
-        server.rcon_password = db_result["rcon_password"]
-        server.password = db_result["password"]
-        server.pug_id = db_result["pug_id"]
-        server.log_port = db_result["log_port"]
+        server.id = data["id"]
+        server.ip = data["ip"]
+        server.port = data["port"]
+        server.rcon_password = data["rcon_password"]
+        server.password = data["password"]
+        server.pug_id = data["pug_id"]
+        server.log_port = data["log_port"]
 
         return server
 

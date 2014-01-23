@@ -12,6 +12,8 @@ import collections
 
 import psycopg2.extras
 
+import livelogs.api
+
 import Pug
 
 from Exceptions import *

@@ -341,6 +341,8 @@ class PugManager(object):
                 # shuffle teams
                 pug.shuffle_teams(self._pug_stat_data(pug))
 
+                self.__flush_med_stats(pug)
+
     def _pug_stat_data(self, pug):
         # need to get player stats from livelogs, and med stats from pug db
         pass
@@ -350,7 +352,7 @@ class PugManager(object):
         conn, cursor = self._get_db_objects()
 
         try:
-            cursor.execute("""SELECT steamid, games, played 
+            cursor.execute("""SELECT steamid, games_since_med, games_played 
                               FROM players 
                               WHERE steamid IN %s""", (pug.players_list,))
 
@@ -360,8 +362,63 @@ class PugManager(object):
                 for result in results:
                     logging.debug("player stat row: %s", result)
 
+            return results
+
         except:
-            logging.exception("Exception getting player stats ")
+            logging.exception("Exception getting medic stats")
+
+        finally:
+            self._close_db_objects((conn, cursor))
+
+    def __flush_med_stats(self, pug):
+        conn, cursor = self._get_db_objects()
+
+        try:
+            medics = [ pug.medic_red, pug.medic_blue ]
+
+            nonmedics = [ x for x in pug._players if x not in medics ]
+
+            # do non-medics first
+            for cid in nonmedics:
+                insert_query = """INSERT INTO players (steamid, games_since_med, games_played)
+                                  VALUES ('%s', '%s', '%s')""" % (cid, 1, 1)
+
+                update_query = """UPDATE players
+                                  SET games_since_med = COALESCE(games_since_med, 0) + 1,
+                                      games_played = COALESCE(games_played, 0) + 1
+                                  WHERE steamid = '%s'""" % (cid)
+
+                cursor.execute("SELECT pgsql_upsert(%s, %s)", (insert_query, update_query,))
+
+            conn.commit()
+
+            for cid in medics:
+                insert_query = """INSERT INTO players (steamid, games_since_med, games_played)
+                                  VALUES ('%s', '%s', '%s')""" % (cid, 0, 1)
+
+                update_query = """UPDATE players
+                                  SET games_since_med = 0,
+                                      games_played = COALESCE(games_played, 0) + 1
+                                  WHERE steamid = '%s'""" % (cid)
+
+                cursor.execute("SELECT pgsql_upsert(%s, %s)", (insert_query, update_query,))
+
+            conn.commit()
+
+        except:
+            logging.exception("Exception flushing medic stats")
+
+        finally:
+            self._close_db_objects((conn, cursor))
+        
+
+    def __db_upsert(self, insert, update):
+        conn, cursor = self._get_db_objects()
+
+        try:
+            cursor.execute("SELECT pgsql_upsert(%s, %s)", (insert, update,))
+        except:
+            logging.exception("Exception performing upsert")
 
         finally:
             self._close_db_objects((conn, cursor))
@@ -369,7 +426,6 @@ class PugManager(object):
     def __hydrate_pug(self, data):
         logging.debug("HYDRATING PUG. DB DATA: %s", data)
 
-        # data is a tuple in the form of pug_columns
         pug = Pug.Pug()
 
         pug.id = data["id"]

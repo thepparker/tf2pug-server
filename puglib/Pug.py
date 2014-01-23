@@ -49,6 +49,9 @@ class Pug(object):
         self.team_red = []
         self.team_blue = []
 
+        self.medic_red = -1
+        self.medic_blue = -1
+
     def add_player(self, player_id, player_name):
         if self.full:
             return

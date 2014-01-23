@@ -345,11 +345,21 @@ class PugManager(object):
 
     def _pug_stat_data(self, pug):
         # need to get player stats from livelogs, and med stats from pug db
-        pass
+        med_stats = self.__get_med_stats(pug)
 
+        normal_stats = self.__get_livelogs_stats(pug)
+
+        # merge the dictionaries
+        return dict(med_stats.items() + normal_stats.items())
+
+
+    def __get_livelogs_stats(self, pug):
+        pass
 
     def __get_med_stats(self, pug):
         conn, cursor = self._get_db_objects()
+
+        stats = {}
 
         try:
             cursor.execute("""SELECT steamid, games_since_med, games_played 
@@ -358,11 +368,18 @@ class PugManager(object):
 
             results = cursor.fetchall()
 
+            # we change med stats into a dict with steamid as the root key
+
             if results:
                 for result in results:
                     logging.debug("player stat row: %s", result)
 
-            return results
+                    stats[result["steamid"]] = { 
+                            "games_since_med": result["games_since_med"],
+                            "games_played": result["games_played"]
+                        }
+
+            return stats
 
         except:
             logging.exception("Exception getting medic stats")

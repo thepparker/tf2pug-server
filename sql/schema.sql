@@ -18,3 +18,37 @@ CREATE TABLE pugs (id serial, size integer, state integer, map varchar(32),
                    team_blue bigint[], admin bigint, 
                    api_key text references api_keys(key) ON UPDATE CASCADE
                 );
+
+-- Player stats (games played, games since med) for medic choosing
+-- DROP TABLE IF EXISTS players;
+CREATE TABLE players (id serial, steamid bigint, games_since_med integer, 
+                      games_played integer);
+
+
+-- THIS FUNCTION TAKES TWO QUERIES, AN INSERT AND AN UPDATE QUERY. 
+-- IT ATTEMPTS TO RUN THE UPDATE QUERY FIRST, IF UNSUCCESSFUL IT 
+-- RUNS THE INSERT QUERY.
+-- The queries _MUST_ be safe before being passed to this function
+CREATE OR REPLACE FUNCTION pgsql_upsert (insert_query text, update_query text) 
+RETURNS void AS $_$
+BEGIN
+    LOOP
+        --UPDATE
+        EXECUTE update_query;
+        --CHECK IF SUCCESSFUL
+        IF found THEN
+            RETURN;
+        END IF;
+        
+        -- Couldn't update, so let's insert.
+        -- This is where the loop comes in. If two updates are attempted
+        -- at the same time it will cause a unique_violation. When this 
+        -- happens, we loop through again
+        BEGIN
+            EXECUTE insert_query;
+        EXCEPTION WHEN unique_violation THEN
+            RETURN;
+        END;
+    END LOOP;
+END;
+$_$ LANGUAGE 'plpgsql';

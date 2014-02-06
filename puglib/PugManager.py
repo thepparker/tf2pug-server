@@ -12,7 +12,7 @@ import collections
 
 import psycopg2.extras
 
-import livelogs.api
+import Livelogs
 
 import Pug
 

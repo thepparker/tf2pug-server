@@ -364,9 +364,19 @@ class PugManager(object):
         ll_api = Livelogs.API(settings.livelogs_api_key, settings.livelogs_api_address)
 
         # remember to cast the player list to a list of strings
-        stats = ll_api.get_player_stats([ str(x) for x in pug.players_list ])
+        tmpstats = ll_api.get_player_stats([ str(x) for x in pug.players_list ])
 
         del ll_api
+
+        # convert stat values to numbers
+        stats = {}
+        for tmpcid in tmpstats:
+            cid = long(tmpcid)
+            
+            stats[cid] = {}
+
+            for k, v in tmpstats[tmpcid]:
+                stats[cid][k] = float(v)
 
         return stats
 

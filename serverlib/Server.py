@@ -54,7 +54,7 @@ class Server(object):
 
         self.password = random_string(10)
 
-        self.rcon("sv_password %s; say This server has been reserved for pug %d; kickall" % self.password, pug.id)
+        self.rcon("sv_password %s; say This server has been reserved for pug %d; kickall" % (self.password, pug.id,))
 
         self._setup_listener()
 

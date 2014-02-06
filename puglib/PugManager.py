@@ -19,6 +19,8 @@ import Pug
 
 from Exceptions import *
 
+from pprint import pprint
+
 pug_columns = (
         "id",
         "size",
@@ -367,6 +369,8 @@ class PugManager(object):
         tmpstats = ll_api.get_player_stats([ str(x) for x in pug.players_list ])
 
         del ll_api
+
+        pprint(tmpstats)
 
         # convert stat values to numbers
         stats = {}

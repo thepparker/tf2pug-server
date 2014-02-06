@@ -376,11 +376,9 @@ class PugManager(object):
         stats = {}
 
         try:
-            player_string = "(" + ",".join([ str(x) for x in pug.players_list ]) + ")"
-
             cursor.execute("""SELECT steamid, games_since_med, games_played 
                               FROM players 
-                              WHERE steamid IN %s""", (player_string,))
+                              WHERE steamid IN %s""", (tuple(pug.players_list),))
 
             results = cursor.fetchall()
 

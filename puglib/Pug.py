@@ -203,16 +203,79 @@ class Pug(object):
         self.team_red.append(self.medic_red)
         self.team_blue.append(self.medic_blue)
 
-        self.__allocate_players(total_pr, sorted_ids)
+        self.__allocate_players(sorted_ids, stat_data)
 
-    def __allocate_players(self, total_pr, ids):
+    def __allocate_players(self, ids, stat_data):
         # each team needs to have approximately total_pr/2 skill rating, or
         # as close to this as possible, in order to be considered even.
         # therefore, we need to iterate over possible team combinations
         # until we have the most even
 
-        avg_rating = total_pr/2
+        red = []
+        red_score = 0
 
+        blue = []
+        blue_score = 0
+
+        # establish base teams, by alternating the assignment
+        count = 0
+        for pid in ids:
+            if (count % 2) == 0:
+                red.append(pid)
+                red_score += stat_data[pid]["score"]
+
+            else:
+                blue.append(pid)
+                blue_score += stat_data[pid]["score"]
+
+            count += 1
+
+        # each team now has (self.size/2 - 1) players in it. now we iterate
+        # over both teams and swap if there's an improvement. much like
+        # a quicksort
+        curr_score_diff = abs(red_score - blue_score)
+        i = 0
+        j = 0
+
+        while i < len(red):
+            pred = red[i]
+
+            while j < len(blue):
+                pblue = blue[j]
+                
+                # if we swapped pred and pblue, would the score difference become
+                # smaller? if yes, then we should swap them
+                new_red_score = red_score - stat_data[pred]["score"] + stat_data[pblue]["score"]
+                new_blue_score = blue_score + stat_data[pred]["score"] - stat_data[pblue]["score"]
+                new_diff = abs(new_red_score - new_blue_score)
+
+                if new_diff < curr_score_diff:
+                    # swap the players, and go onto the next red player
+                    red[i] = pblue
+                    blue[j] = pred
+
+                    curr_score_diff = new_diff
+                    red_score = new_red_score
+                    blue_score = new_blue_score
+
+                    logging.debug("%s swapped with %s. new difference: %s", pblue, pred)
+
+                    break
+
+                # else, check the next blue player
+                j += 1
+
+            i += 1
+
+        # our teams are now as balanced as we're going to get them, so merge
+        # the temp teams with the real teams
+        for pid in red:
+            self.team_red.append(pid)
+
+        for pid in blue:
+            self.team_blue.append(pid)
+
+        logging.info("Team allocation complete. Red: %s (%s), Blue: %s (%s)", self.team_red, red_score, self.team_blue, blue_score)
 
     def _player_score(self, pdata):
         # we need to establish a score for each player. we'll call this the 

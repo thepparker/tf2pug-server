@@ -374,7 +374,7 @@ class PugManager(object):
 
         del ll_api
 
-        pprint(tmpstats)
+        #pprint(tmpstats)
 
         # CONVERT ALL THE FUCKING UNICODE TO STRINGS AND NUMBERS
         stats = {}

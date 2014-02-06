@@ -258,7 +258,7 @@ class Pug(object):
                     red_score = new_red_score
                     blue_score = new_blue_score
 
-                    logging.debug("%s swapped with %s. new difference: %s", pblue, pred)
+                    logging.debug("%s swapped with %s. new difference: %s", pblue, pred, new_diff)
 
                     break
 

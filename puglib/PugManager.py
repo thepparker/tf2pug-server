@@ -372,15 +372,15 @@ class PugManager(object):
 
         pprint(tmpstats)
 
-        # convert stat values to numbers
+        # CONVERT ALL THE FUCKING UNICODE TO STRINGS AND NUMBERS
         stats = {}
         for tmpcid in tmpstats:
             cid = long(tmpcid)
             
             stats[cid] = {}
 
-            for k, v in tmpstats[tmpcid]:
-                stats[cid][k] = float(v)
+            for k, v in tmpstats[tmpcid].items():
+                stats[cid][str(k)] = float(v)
 
         return stats
 

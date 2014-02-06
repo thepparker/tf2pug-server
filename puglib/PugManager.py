@@ -363,7 +363,8 @@ class PugManager(object):
     def __get_livelogs_stats(self, pug):
         ll_api = Livelogs.API(settings.livelogs_api_key, settings.livelogs_api_address)
 
-        stats = ll_api.get_player_stats(pug._players)
+        # remember to cast the player list to a list of strings
+        stats = ll_api.get_player_stats([ str(x) for x in pug.players_list ])
 
         del ll_api
 
@@ -375,9 +376,11 @@ class PugManager(object):
         stats = {}
 
         try:
+            player_string = "(" + ",".join([ str(x) for x in pug.players_list ]) + ")"
+
             cursor.execute("""SELECT steamid, games_since_med, games_played 
                               FROM players 
-                              WHERE steamid IN %s""", (pug.players_list,))
+                              WHERE steamid IN %s""", (player_string,))
 
             results = cursor.fetchall()
 

@@ -13,7 +13,7 @@ states = {
     "GAME_OVER": 4
 }
 
-MAPVOTE_DURATION = 60
+MAPVOTE_DURATION = 2
 
 def rounded_ctime():
     return calendar.timegm(time.gmtime())
@@ -146,7 +146,7 @@ class Pug(object):
         for player in self._players:
             if player not in stat_data:
                 stat_data[player] = {
-                    "games_since_med": 0
+                    "games_since_med": 0,
                     "games_played": 0,
                     "kills": 0,
                     "assists": 0,
@@ -306,5 +306,5 @@ class Pug(object):
 
     @property
     def players_list(self):
-        return [ x for x in self._players ]
+        return self._players.keys()
 

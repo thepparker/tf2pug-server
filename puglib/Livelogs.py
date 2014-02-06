@@ -14,7 +14,7 @@ class API(object):
 
     def get_live_logs(self):
         params = {
-            "key": self.__api_key
+            "key": self.__api_key,
             "action": "get_live"
         }
 

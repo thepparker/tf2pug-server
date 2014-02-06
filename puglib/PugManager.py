@@ -12,6 +12,7 @@ import collections
 
 import psycopg2.extras
 
+import settings
 import Livelogs
 
 import Pug
@@ -351,12 +352,22 @@ class PugManager(object):
 
         normal_stats = self.__get_livelogs_stats(pug)
 
-        # merge the dictionaries
-        return dict(med_stats.items() + normal_stats.items())
+        # merge the dictionaries by adding med stats to the normal stats
+        for cid in med_stats:
+            for key, value in med_stats[cid]:
+                normal_stats[cid][key] = value
+
+        return normal_stats
 
 
     def __get_livelogs_stats(self, pug):
-        pass
+        ll_api = Livelogs.API(settings.livelogs_api_key, settings.livelogs_api_address)
+
+        stats = ll_api.get_player_stats(pug._players)
+
+        del ll_api
+
+        return stats
 
     def __get_med_stats(self, pug):
         conn, cursor = self._get_db_objects()

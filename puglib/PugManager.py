@@ -355,9 +355,13 @@ class PugManager(object):
         normal_stats = self.__get_livelogs_stats(pug)
 
         # merge the dictionaries by adding med stats to the normal stats
-        for cid in med_stats:
-            for key, value in med_stats[cid]:
-                normal_stats[cid][key] = value
+        for cid in normal_stats:
+            if cid in med_stats:
+                for key, value in med_stats[cid].items():
+                    normal_stats[cid][key] = value
+            else:
+                normal_stats[cid]["games_since_med"] = 0
+                normal_stats[cid]["games_played"] = 0
 
         return normal_stats
 

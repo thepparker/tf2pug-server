@@ -11,20 +11,24 @@ api_address = "http://192.168.106.128:51515/"
 def main():
     res = add_player(1, "rick")
     add_player(2, "steve")
-
-    remove_player(1)
-
-    add_player(3, "jimmy", int(res["pug"]["id"]))
-
-    res2 = create_pug(1, "rick", 18)
+    add_res = add_player(3, "jimmy", int(res["pug"]["id"]))
+    add_player(76561197976832968, "roight")
+    add_player(76561198031041077, "kaki")
+    add_player(76561198011707860, "shneaky")
+    add_player(76561198064565908, "Faithless")
+    add_player(76561197970805594, "Shuz")
+    add_player(76561197997976691, "hero")
+    add_player(76561198045479800, "zato")
+    add_player(76561198042997347, "chrome")
+    add_player(76561197997302892, "jak")
 
     player_list(int(res["pug"]["id"]))
     pug_status(int(res["pug"]["id"]))
 
     pug_list()
 
-    vote_map(1, "cp_granary")
-    vote_map(1, "cp_badlands")
+    vote_map(2, "cp_granary")
+    vote_map(3, "cp_badlands")
 
 
 

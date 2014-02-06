@@ -7,5 +7,5 @@ db_pass = "theapiforme"
 db_host = "127.0.0.1"
 db_port = 5432
 
-livelogs_api_address = "SET AN ADDRESS"
-livelogs_api_key = "SET A KEY"
+livelogs_api_address = "http://192.168.106.128/api/"
+livelogs_api_key = "new_api_key"

@@ -341,77 +341,59 @@ class PugManager(object):
                 pug.end_map_vote()
 
                 # shuffle teams
-                pug.shuffle_teams(self._pug_stat_data(pug))
+                pug.shuffle_teams(self._get_pug_stat_data(pug))
 
                 self.__flush_med_stats(pug)
 
-    def _pug_stat_data(self, pug):
+    def _get_pug_stat_data(self, pug):
         # need to get player stats from livelogs, and med stats from pug db
-        med_stats = self.__get_med_stats(pug)
+        stats = self.__get_pug_stats(pug)
 
-        normal_stats = self.__get_livelogs_stats(pug)
-
-        # merge the dictionaries by adding med stats to the normal stats
-        for cid in normal_stats:
-            if cid in med_stats:
-                for key, value in med_stats[cid].items():
-                    normal_stats[cid][key] = value
-            else:
-                normal_stats[cid]["games_since_med"] = 0
-                normal_stats[cid]["games_played"] = 0
-
-        return normal_stats
-
-
-    def __get_livelogs_stats(self, pug):
-        ll_api = Livelogs.API(settings.livelogs_api_key, settings.livelogs_api_address)
-
-        # remember to cast the player list to a list of strings
-        tmpstats = ll_api.get_player_stats([ str(x) for x in pug.players_list ])
-
-        del ll_api
-
-        #pprint(tmpstats)
-
-        # CONVERT ALL THE FUCKING UNICODE TO STRINGS AND NUMBERS
-        stats = {}
-        for tmpcid in tmpstats:
-            cid = long(tmpcid)
-            
-            stats[cid] = {}
-
-            for k, v in tmpstats[tmpcid].items():
-                stats[cid][str(k)] = float(v)
+        for cid in pug.player_list():
+            # if the CID has no pug data, they need to be added
+            if not (cid in stats):
+                stats[cid]["games_since_med"] = 0
+                stats[cid]["games_played"] = 0
+                stats[cid]["elo"] = 1500
 
         return stats
 
-    def __get_med_stats(self, pug):
+    """
+    Gets stat data for the given pug. The only stat data kept by the TF2Pug
+    server are games since med, number of games played, and the player's elo.
+    Everything else is done via Livelogs, or the client's chosen stat provider.
+
+    @param Pug pug The pug to get stat data for
+
+    @return dict The pug's stat data
+    """
+    def __get_pug_stats(self, pug):
         conn, cursor = self._get_db_objects()
 
         stats = {}
 
         try:
-            cursor.execute("""SELECT steamid, games_since_med, games_played 
+            cursor.execute("""SELECT steamid, games_since_med, games_played, elo
                               FROM players 
                               WHERE steamid IN %s""", (tuple(pug.players_list),))
 
             results = cursor.fetchall()
 
-            # we change med stats into a dict with steamid as the root key
-
+            # we change stats into a dict with steamid as the root key
             if results:
                 for result in results:
                     logging.debug("player stat row: %s", result)
 
                     stats[result["steamid"]] = { 
                             "games_since_med": result["games_since_med"],
-                            "games_played": result["games_played"]
+                            "games_played": result["games_played"],
+                            "elo": result["elo"]
                         }
 
             return stats
 
         except:
-            logging.exception("Exception getting medic stats")
+            logging.exception("Exception getting pug stats")
 
         finally:
             self._close_db_objects((conn, cursor))
@@ -456,6 +438,14 @@ class PugManager(object):
 
         finally:
             self._close_db_objects((conn, cursor))
+
+    """
+    Calculates the new ELO of players after the game and updates it in the database
+
+    @param pug The pug to update ELO for
+    """
+    def __update_elo(self, pug):
+        pass
         
 
     def __db_upsert(self, insert, update):
@@ -572,6 +562,8 @@ class PugManager(object):
                 else:
                     logging.error("No ID was returned when inserting pug. wat da fuk?")
                     pug.id = int(round(time.time()))
+
+                    # TODO: Make this case raise an exception
 
                 conn.commit()
 

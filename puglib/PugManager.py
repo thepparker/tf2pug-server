@@ -83,7 +83,7 @@ class PugManager(object):
     @return Pug The pug the player was added to or None
     """
     def add_player(self, player_id, player_name, pug_id = None, size = 12):
-        # first check if the player is already in a pug. If so, return that pug?
+        # first check if the player is already in a pug
         player_pug = self.get_player_pug(player_id)
         if player_pug is not None:
             raise PlayerInPugException("Player %s is in pug %d", (player_id, player_pug.id))
@@ -104,14 +104,9 @@ class PugManager(object):
                 pug.add_player(player_id, player_name)
 
         else:
-            # no pug id specified. add player to the first pug with space
-            pug = self._get_pug_with_space(size)
-            if pug:
-                pug.add_player(player_id, player_name)
+            #no pug id specified
+            raise InvalidPugException("No pug id speficied")
 
-            else:
-                # No pugs available with space. We need to make a new one!
-                return self.create_pug(player_id, player_name, size = size)
 
         # we now have a valid pug and the player has been aded. check if it's
         # full
@@ -162,12 +157,14 @@ class PugManager(object):
     @param map The map the pug will be on. If none, it means a vote will occur
                once the pug is full.
 
-    @return int The ID of the newly created pug, or -1 if not possible.
+    @return Pug The newly created pug
     """
     def create_pug(self, player_id, player_name, size = 12, pug_map = None):
+        # check if player is in a pug first
         if self._player_in_pug(player_id):
             raise PlayerInPugException("Player %s (%s) is already in a pug" % (player_name, player_id))
 
+        # player not in a pug. so let's make a new one
         pug = Pug.Pug(size = size, pmap = pug_map)
         
         # see if we can get a server before doing anything else

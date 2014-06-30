@@ -444,7 +444,7 @@ class PugManager(object):
 
     @param pug The pug to update ELO for
     """
-    def __update_elo(self, pug):
+    def __update_ratings(self, pug):
         pass
         
 

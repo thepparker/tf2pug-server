@@ -140,22 +140,8 @@ class Pug(object):
         # To select teams, we have to first select a medic for each team. 
         # After that we need to establish a score for each player and sort 
         # them by it
-
-        # firstly make sure every player has a key in the stat data. if any
-        # are missing, we'll give them blank stats
-        for player in self._players:
-            if player not in stat_data:
-                stat_data[player] = {
-                    "games_since_med": 0,
-                    "games_played": 0,
-                    "kills": 0,
-                    "assists": 0,
-                    "deaths": 0,
-                    "damage_dealt": 0,
-                    "numplayed": 0
-                }
         
-        # to select a medic, we loop over the players in the pug, picking
+        # To select a medic, we loop over the players in the pug, picking
         # whoever has played more games since last playing medic until we have
         # atleast 2 potential medics. then we randomly pick 2 from the list
 
@@ -163,11 +149,11 @@ class Pug(object):
         threshold = 4
         # need atleast 2 potential medics
         while len(potential_medics) < 2:
-            # add players who have played more games than the threshold until
-            # we have atleast 2 players. if we don't get 2 players on the
-            # first run, the threshold is decreased to incorporate more players
-            # until eventually the threshold may be 0 and every player is a
-            # candidate
+            # add players who have played more games (since last playing medic)
+            # than the threshold until we have atleast 2 players. If we don't 
+            # get 2 players on the first run, the threshold is decreased to 
+            # incorporate more players until eventually the threshold may be 0
+            # and every player is a candidate
             for cid in self._players:
                 if stat_data[cid]["games_since_med"] > threshold and cid not in potential_medics:
                     potential_medics.append(cid)
@@ -189,8 +175,7 @@ class Pug(object):
         # add player scores to the stat data
         total_pr = 0
         for cid in stat_data:
-            score = self._player_score(stat_data[cid])
-            stat_data[cid]["score"] = score
+            score = stat_data[cid]["elo"]
 
             total_pr += score
             logging.debug("PLAYER: %s, SCORE: %s. New total: %s", cid, score, total_pr)
@@ -230,16 +215,19 @@ class Pug(object):
 
             count += 1
 
-        # each team now has (self.size/2 - 1) players in it. now we iterate
-        # over both teams and swap if there's an improvement. much like
-        # a quicksort
+        # each possible team now has (self.size/2 - 1) players in it. now 
+        # we iterate over both teams and swap if there's an improvement. 
+        # much like a quicksort
         curr_score_diff = abs(red_score - blue_score)
         i = 0
         j = 0
 
+        # loop over all red players
         while i < len(red):
-            pred = red[i]
+            pred = red[i] #the current red player being checked
 
+            # loop over all blue players for each red player. if a swap occurs,
+            # we break from this inner loop and move to the next red player
             while j < len(blue):
                 pblue = blue[j]
                 
@@ -262,20 +250,18 @@ class Pug(object):
 
                     break
 
-                # else, check the next blue player
+                # Swapping these players wouldn't provide an improvement, so
+                # we just move onto the next blue player
                 j += 1
 
             i += 1
 
         # our teams are now as balanced as we're going to get them, so merge
         # the temp teams with the real teams
-        for pid in red:
-            self.team_red.append(pid)
+        self.team_red += red
+        self.team_blue += blue
 
-        for pid in blue:
-            self.team_blue.append(pid)
-
-        logging.info("Team allocation complete. Red: %s (%s), Blue: %s (%s)", self.team_red, red_score, self.team_blue, blue_score)
+        logging.info("Team allocation complete. Red: %s (Score: %s), Blue: %s (Score: %s)", self.team_red, red_score, self.team_blue, blue_score)
 
     def _player_score(self, pdata):
         # we need to establish a score for each player. we'll call this the 

@@ -60,22 +60,14 @@ class ResponseHandler(object):
 
         return response
 
-    def player_in_pug(self, pug):
-        response = self.pug_status(pug)
-
-        self.change_response_code(response, Response_PlayerInPug)
-
-        return response
+    def player_in_pug(self):
+        return { "response": Response_PlayerInPug }
 
     def player_not_in_pug(self):
         return { "response": Response_PlayerNotInPug }
 
     def pug_full(self, pug):
-        response = self.pug_status(pug)
-
-        self.change_response_code(response, Response_PugFull)
-
-        return response
+        return { "response": Response_PugFull }
 
     def invalid_pug(self):
         return { "response": Response_InvalidPug }

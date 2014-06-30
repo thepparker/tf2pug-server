@@ -109,9 +109,7 @@ class PugAddHandler(BaseHandler):
     # Parameters are as follows:
     # @steamid The SteamID to add
     # @name The name of the player being added
-    # @pugid (optional) The pug ID to add the player to.
-    # @size (optional) The size of the pug to add the player to. eg, size=12
-    #                  to only add to 6v6 pugs.
+    # @pugid The pug ID to add the player to
     def post(self):
         self.validate_api_key()
 
@@ -119,23 +117,22 @@ class PugAddHandler(BaseHandler):
             raise HTTPError(400)
 
         pug_id = self.pugid
-        size = self.size
 
         # the add_player method returns the pug the player was added to
         try:
-            pug = self.manager.add_player(self.player_id, self.player_name, pug_id = pug_id, size = size)
+            pug = self.manager.add_player(self.player_id, self.player_name, pug_id)
             # send the updated status of this pug (i.e which players are in it now)
 
             self.write(self.response_handler.player_added(pug))
 
         except PugManagerExceptions.PlayerInPugException:
-            self.write(self.response_handler.player_in_pug(self.manager.get_player_pug(self.player_id)))
+            self.write(self.response_handler.player_in_pug())
 
         except PugManagerExceptions.InvalidPugException:
             self.write(self.response_handler.invalid_pug())
 
         except PugManagerExceptions.PugFullException:
-            self.write(self.response_handler.pug_full(self.manager.get_pug_by_id(pug_id)))
+            self.write(self.response_handler.pug_full())
 
         except PugManagerExceptions.NoAvailableServersException:
             self.write(self.response_handler.no_available_servers())
@@ -202,7 +199,7 @@ class PugCreateHandler(BaseHandler):
             self.write(self.response_handler.pug_created(pug))
 
         except PugManagerExceptions.PlayerInPugException:
-            self.write(self.response_handler.player_in_pug(self.manager.get_player_pug(self.player_id)))
+            self.write(self.response_handler.player_in_pug())
 
         except PugManagerExceptions.InvalidMapException:
             self.write(self.response_handler.invalid_map())

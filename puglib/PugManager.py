@@ -82,7 +82,7 @@ class PugManager(object):
 
     @return Pug The pug the player was added to or None
     """
-    def add_player(self, player_id, player_name, pug_id = None, size = 12):
+    def add_player(self, player_id, player_name, pug_id):
         # first check if the player is already in a pug
         player_pug = self.get_player_pug(player_id)
         if player_pug is not None:

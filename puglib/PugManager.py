@@ -354,7 +354,7 @@ class PugManager(object):
             if not (cid in stats):
                 stats[cid]["games_since_med"] = 0
                 stats[cid]["games_played"] = 0
-                stats[cid]["elo"] = 1500
+                stats[cid]["rating"] = 1500
 
         return stats
 
@@ -373,7 +373,7 @@ class PugManager(object):
         stats = {}
 
         try:
-            cursor.execute("""SELECT steamid, games_since_med, games_played, elo
+            cursor.execute("""SELECT steamid, games_since_med, games_played, rating
                               FROM players 
                               WHERE steamid IN %s""", (tuple(pug.players_list),))
 
@@ -387,7 +387,7 @@ class PugManager(object):
                     stats[result["steamid"]] = { 
                             "games_since_med": result["games_since_med"],
                             "games_played": result["games_played"],
-                            "elo": result["elo"]
+                            "rating": result["rating"]
                         }
 
             return stats

@@ -22,7 +22,7 @@ CREATE TABLE pugs (id serial, size integer, state integer, map varchar(32),
 -- Player stats (games played, games since med) for medic choosing
 -- DROP TABLE IF EXISTS players;
 CREATE TABLE players (id serial, steamid bigint, games_since_med integer, 
-                      games_played integer, elo decimal DEFAULT 1500);
+                      games_played integer, rating decimal DEFAULT 1500);
 
 
 -- THIS FUNCTION TAKES TWO QUERIES, AN INSERT AND AN UPDATE QUERY. 

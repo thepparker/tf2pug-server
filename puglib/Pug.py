@@ -175,7 +175,7 @@ class Pug(object):
         # add player scores to the stat data
         total_pr = 0
         for cid in stat_data:
-            score = stat_data[cid]["elo"]
+            score = stat_data[cid]["rating"]
 
             total_pr += score
             logging.debug("PLAYER: %s, SCORE: %s. New total: %s", cid, score, total_pr)

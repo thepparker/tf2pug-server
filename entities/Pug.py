@@ -37,7 +37,7 @@ class Pug(object):
 
         self.admin = None
         #players is a dict in the form { cid: "name", ... }
-        self._players = collections.OrderedDict()
+        self._players = {}
 
         self.player_votes = {}
         self.map_votes = {}

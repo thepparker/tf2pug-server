@@ -29,6 +29,8 @@ class ServerManager(object):
         self.__load_servers()
 
     def allocate(self, pug):
+        self.__load_servers() # reload servers, in case any new ones were added
+
         for server in self._servers:
             if not server.in_use:
                 server.reserve(pug)
@@ -76,7 +78,7 @@ class ServerManager(object):
         return server
 
     def __load_servers(self):
-        # clear the server list first
+        # clear the server list first?
         del self._servers[:]
 
         results = self.db.get_servers(self.group)

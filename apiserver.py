@@ -55,10 +55,27 @@ class Application(tornado.web.Application):
         
         self.response_handler = ResponseHandler.ResponseHandler()
 
+        # pug managers are currently per API key
         self._pug_managers = {}
+
+        # server managers are per server group. each server group can have
+        # multiple pug managers attached to it
         self._server_managers = {}
 
+        """ Auth cache is in the following form:
+        { "key":
+            { 
+                "valid": true/false,
+                "name": name,
+                "pug_group": pug_group,
+                "server_group": server_group,
+                "cache_time": when this item was cached
+            }
+        }
+
+        """
         self._auth_cache = {}
+
 
         # perform the mapvote timer check every 2 seconds
         self._map_vote_timer = tornado.ioloop.PeriodicCallback(self._map_vote_check, 2000)
@@ -73,7 +90,8 @@ class Application(tornado.web.Application):
         if key in self._auth_cache:
             logging.debug("Key %s is in auth cache", key)
 
-            valid, cache_time = self._auth_cache[key]
+            valid = self._auth_cache[key]["valid"] 
+            cache_time = self._auth_cache[key]["cache_time"]
 
             # check if the cache has expired
             # if it has expired, we remove the key from the cache and recache
@@ -90,23 +108,42 @@ class Application(tornado.web.Application):
 
         logging.debug("User details for key %s: %s" (key, user_info))
         if user_info is None:
+            self.__cache_client_data(key, user_info)
             raise InvalidKeyException("Invalid API key %s" % (key))
         
         else:
             # cache and return true
-            self._auth_cache[key] = (True, time.time())
+            # user_info is currently [(0,1,2)], so we just get the tuple out
+            self.__cache_client_data(key, user_info[0])
+
             return True
 
-    def get_server_manager(self, key):
-        if key in self._server_managers:
-            return self._server_managers[key]
+    def __cache_client_data(self, key, user_info):
+        if user_info is None:
+            self._auth_cache[key] = {
+                "valid": False,
+                "cache_time": time.time(),
+            }
+        else:
+            # user_info = [(name, pug_group, server_group)]
+            self._auth_cache[key] = {
+                "valid": True,
+                "name": user_info[0],
+                "pug_group": user_info[1],
+                "server_group": user_info[2],
+                "cache_time": time.time(),
+            }
+
+    def get_server_manager(self, group):
+        if group in self._server_managers:
+            return self._server_managers[group]
 
         else:
-            logging.debug("Getting server manager for key %s", key)
+            logging.debug("Getting server manager for group %d", group)
 
-            new_manager = ServerManager.ServerManager(key, self.db)
+            new_manager = ServerManager.ServerManager(group, self.db)
 
-            self._server_managers[key] = new_manager
+            self._server_managers[group] = new_manager
 
             return new_manager
 
@@ -115,9 +152,12 @@ class Application(tornado.web.Application):
             return self._pug_managers[key]
 
         else:
+            # NOTE: If this is being called, the data will ALWAYS be in the cache
             logging.debug("Getting new pug manager for key %s", key)
 
-            new_manager = PugManager.PugManager(key, self.db, self.get_server_manager(key))
+            client_group = self._auth_cache[key]["server_group"]
+
+            new_manager = PugManager.PugManager(key, self.db, self.get_server_manager(client_group))
 
             self._pug_managers[key] = new_manager
 
@@ -138,7 +178,12 @@ class Application(tornado.web.Application):
 
         if results:
             for key_tuple in results:
-                self.get_pug_manager(key_tuple[2])
+                # key_tuple in the form (name, pug_group, server_group, key)
+                key = key_tuple[3]
+
+                self.__cache_client_data(key, key_tuple[0:3])
+
+                self.get_pug_manager(key_tuple[3])
 
     def close(self):
         self._map_vote_timer.stop()

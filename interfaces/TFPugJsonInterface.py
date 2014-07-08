@@ -10,11 +10,11 @@ class TFPugJsonInterface(BaseJsonInterface):
         # from base object class)
         obj_dict = pug.__dict__
 
-        return BaseJsonInterface.dumps(obj_dict)
+        return json.dumps(obj_dict)
 
     def loads(self, data):
         # load the data into a dictionary and then set a Pug object's fields
-        data_dict = BaseJsonInterface.loads(data)
+        data_dict = json.loads(data)
 
         pug = Pug.Pug()
 

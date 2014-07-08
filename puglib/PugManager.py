@@ -10,13 +10,11 @@ import logging
 import time
 import collections
 
-import psycopg2.extras
-
 import settings
 import Livelogs
 
 from entities import Pug
-from interfaces import TFPugJsonInterface
+from interfaces import TFPugJsonInterface.TFPugJsonInterface
 
 from Exceptions import *
 
@@ -447,79 +445,21 @@ class PugManager(object):
         # clear the pug list
         del self._pugs[:]
 
-        pug_json = self.db.get_pugs(self.api_key)
-        # pug_json is a list of JSONified pugs, or None if no pugs found
-        if pug_json:
-            jsoninterface = TFPugJsonInterface.TFPugJsonInterface()
-
-            self._pugs = [ jsoninterface.loads(x) for x in pug_json ]
-
+        self._pugs = self.db.get_pugs(self.api_key, TFPugJsonInterface().loads)
+        
     def _flush_pug(self, pug, new = False):
         logging.debug("Flushing pug to database. ID: %d", pug.id)
         if new:
-            # insert
-            conn, cursor = self._get_db_objects()
+            jsoninterface = TFPugJsonInterface()
 
-            logging.debug("Pug is new. Inserting")
-            try:
-                psycopg2.extras.register_hstore(cursor)
+            result = self.db.flush_new_pug(self.api_key, jsoninterface, pug)
 
-                cursor.execute("""INSERT INTO pugs (size, state, map, map_forced, players, admin,
-                                                    player_votes, map_votes, map_vote_start, map_vote_end,
-                                                    server_id, team_red, team_blue, api_key)
-                                  VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) 
-                                  RETURNING id""", (
-                                    pug.size, pug.state, pug.map, pug.map_forced, hstore_dict(pug._players), 
-                                    pug.admin, hstore_dict(pug.player_votes), hstore_dict(pug.map_votes), 
-                                    pug.map_vote_start, pug.map_vote_end, pug.server_id, pug.team_red, 
-                                    pug.team_blue, self.api_key
-                                )
-                            )
+            if result:
+                pug.id = result
 
-                return_data = cursor.fetchone()
-
-                if return_data:
-                    pug.id = return_data[0]
-                    logging.debug("New pug has ID %d", pug.id)
-
-                else:
-                    logging.error("No ID was returned when inserting pug. wat da fuk?")
-                    pug.id = int(round(time.time()))
-
-                    # TODO: Make this case raise an exception
-
-                conn.commit()
-
-            except:
-                logging.exception("Exception occured inserting pug")
-
-            finally:
-                self._close_db_objects((conn, cursor))
-
-        else:
-            conn, cursor = self._get_db_objects()
-
-            logging.debug("Pug is not new. Updating")
-            try:
-                psycopg2.extras.register_hstore(cursor)
-
-                cursor.execute("""UPDATE pugs SET size = %s, state = %s, map = %s, map_forced = %s, players = %s, 
-                    admin = %s, player_votes = %s, map_votes = %s, map_vote_start = %s, map_vote_end = %s, server_id = %s,
-                    team_red = %s, team_blue = %s WHERE pugs.id = %s""", (
-                            pug.size, pug.state, pug.map, pug.map_forced, hstore_dict(pug._players), 
-                            pug.admin, hstore_dict(pug.player_votes), hstore_dict(pug.map_votes), 
-                            pug.map_vote_start, pug.map_vote_end, pug.server_id, pug.team_red,
-                            pug.team_blue, pug.id
-                        )
-                    )
-
-                conn.commit()
-
-            except:
-                logging.exception("Exception occured updating pug")
-
-            finally:
-                self._close_db_objects((conn, cursor))
+        # if the pug isn't new, we're flushing it directly. if it is new, we're
+        # flushing it again so that the ID is stored in the pug data as well
+        self.db.flush_pug(self.api_key, jsoninterface, pug.id, pug)
 
     def flush_all(self):
         for pug in self._pugs:

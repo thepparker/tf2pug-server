@@ -342,8 +342,6 @@ class PugManager(object):
         return self.db.get_tf_player_stats(pug.player_list())
 
     def __flush_med_stats(self, pug):
-        conn, cursor = self._get_db_objects()
-
         medics = [ pug.medic_red, pug.medic_blue ]
 
         nonmedics = [ x for x in pug._players if x not in medics ]

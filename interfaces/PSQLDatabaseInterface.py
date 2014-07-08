@@ -1,6 +1,8 @@
 from BaseDatabaseInterface import BaseDatabaseInterface
 
 import logging
+
+import psycopg2.extras
 from psycopg2.extras import Json
 
 """
@@ -15,10 +17,11 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
             result = None
 
             if api_key:
-                cursor.execute("SELECT name, group FROM api_keys WHERE key = %s", (api_key,))
+                cursor.execute("""SELECT name, pug_group, server_group 
+                                  FROM api_keys WHERE key = %s""", (api_key,))
 
             else:
-                cursor.execute("SELECT name, group, key FROM api_keys")
+                cursor.execute("SELECT name, pug_group, server_group, key FROM api_keys")
             
             result = cursor.fetchall()
 
@@ -210,6 +213,46 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
         finally:
             self._close_db_objects(cursor, conn)
 
+    def get_servers(self, group):
+        conn, cursor = self._get_db_objects()
+
+        try:
+            # first close the normal cursor, because we want to use a dict
+            # for this method, which will automatically get each row as a
+            # dictionary for us. this also happens to be what we want to
+            # return!
+            cursor.close()
+            cursor = conn.cursor(cursor_factory = psycopg2.extras.DictCursor)
+
+            cursor.execute("""SELECT s.* FROM servers s
+                              WHERE s.group = %s""", [group])
+
+            return cursor.fetchall()
+
+        except:
+            logging.exception("An exception occurred getting servers")
+
+        finally:
+            self._close_db_objects(cursor, conn)
+
+    def flush_server(self, server):
+        conn, cursor = self._get_db_objects()
+
+        try:
+            cursor.execute("""UPDATE servers SET password = %s, pug_id = %s,
+                                log_port = %s
+                              WHERE id = %s""",
+                              [server.password, server.pug_id, server.log_port,
+                                server.id])
+
+            conn.commit()
+
+        except:
+            logging.exception("An exception occurred flushing a server")
+
+        finally:
+            self._close_db_objects(cursor, conn)
+
     """
     Gets a (connection, cursor) tuple from the database connection pool
     """
@@ -219,6 +262,8 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
 
         try:
             conn = self.db.getconn()
+
+            curs = conn.cursor()
 
             return (conn, curs)
         

@@ -54,22 +54,7 @@ class ServerManager(object):
 
     def _flush_server(self, server):
         # write server details to database
-
-        conn, cursor = self._get_db_objects()
-
-        try:
-            cursor.execute("UPDATE servers SET password = %s, pug_id = %s, log_port = %s WHERE servers.id = %s", 
-                    (server.password, server.pug_id, server.log_port, server.id,)
-                )
-
-            conn.commit()
-
-        except:
-            logging.exception("Exception flushing server")
-            conn.rollback()
-
-        finally:
-            self._close_db_objects((conn, cursor))
+        self.db.flush_server(server)
 
 
     def flush_all(self):
@@ -97,7 +82,7 @@ class ServerManager(object):
         results = self.db.get_servers(self.gro)
 
         if not results:
-            logging.error("THERE ARE NO CONFIGURED SERVERS FOR GROUP! %d", self.group)
+            logging.error("THERE ARE NO CONFIGURED SERVERS FOR GROUP %d!", self.group)
             return
 
         for result in results:

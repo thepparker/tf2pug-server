@@ -147,19 +147,21 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
             cursor.execute("""SELECT pug_entity_id
                               FROM pugs_index
                               WHERE api_key = %s AND finished = %s""",
-                              (api_key, finished))
-            pug_ids = [ x[0] for x in cursor.fetchall() ] # results is a list of entity ids
-
-            cursor.execute("""SELECT data
-                              FROM pugs
-                              WHERE id IN %s""", (tuple(pug_ids),))
-
-            results = cursor.fetchall()
-            if results:
-                results = [ jsoninterface.loads(x[0]) for x in cursor.fetchall() ]
+                              (api_key, include_finished))
             
-            # results is a list Pug objects, converted using the given loads
-            # method
+            results = cursor.fetchall()
+            pug_ids = [ x[0] for x in results ] # list of entity ids
+            if len(pug_ids) > 0:
+                cursor.execute("""SELECT data
+                                  FROM pugs
+                                  WHERE id IN %s""", [tuple(pug_ids)])
+
+                results = cursor.fetchall()
+                if results:
+                    results = [ jsoninterface.loads(x[0]) for x in cursor.fetchall() ]
+                
+                # results is a list of Pug objects, converted using the jsoninterface
+                
             return results
 
         except:

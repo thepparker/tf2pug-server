@@ -6,21 +6,24 @@ from pprint import pprint
 
 api_key = "123abc"
 
-api_address = "http://192.168.106.128:51515/"
+api_address = "http://192.168.106.129:51515/"
 
 def main():
-    res = add_player(1, "rick")
-    add_player(2, "steve")
-    add_res = add_player(3, "jimmy", int(res["pug"]["id"]))
-    add_player(76561197976832968, "roight")
-    add_player(76561198031041077, "kaki")
-    add_player(76561198011707860, "shneaky")
-    add_player(76561198064565908, "Faithless")
-    add_player(76561197970805594, "Shuz")
-    add_player(76561197997976691, "hero")
-    add_player(76561198045479800, "zato")
-    add_player(76561198042997347, "chrome")
-    add_player(76561197997302892, "jak")
+    res = create_pug(5, 'joebob')
+    pugid = int(res["pug"]["id"])
+
+    add_player(1, "rick", pugid)
+    add_player(2, "steve", pugid)
+    add_res = add_player(3, "jimmy", pugid)
+    add_player(76561197976832968, "roight", pugid)
+    add_player(76561198031041077, "kaki", pugid)
+    add_player(76561198011707860, "shneaky", pugid)
+    add_player(76561198064565908, "Faithless", pugid)
+    add_player(76561197970805594, "Shuz", pugid)
+    add_player(76561197997976691, "hero", pugid)
+    add_player(76561198045479800, "zato", pugid)
+    add_player(76561198042997347, "chrome", pugid)
+    add_player(76561197997302892, "jak", pugid)
 
     player_list(int(res["pug"]["id"]))
     pug_status(int(res["pug"]["id"]))

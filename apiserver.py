@@ -88,39 +88,15 @@ class Application(tornado.web.Application):
 
         logging.debug("Getting user details for API key %s", key)
 
-        valid = False
 
-        conn = None
-        cursor = None
-
-        try:
-            conn = self.db.getconn()
-
-            cursor = conn.cursor()
-            cursor.execute("SELECT name FROM api_keys WHERE key = %s", (key,))
-
-            results = cursor.fetchone()
-            logging.debug("Results: %s", results)
-
-            if results is None:
-                raise InvalidKeyException("Invalid API key %s" % (key))
-            else:
-                valid = True
-
-        except:
-            logging.exception("Exception when validating API key")
-
-        finally:
-            if cursor and not cursor.closed:
-                cursor.close()
-
-            if conn:
-                self.db.putconn(conn)
-
-            # add to cache 
-            self._auth_cache[key] = (valid, time.time())
-
-            return valid
+        user_info = self.db.get_user_info(key)
+        if user_info is None:
+            raise InvalidKeyException("Invalid API key %s" % (key))
+        
+        else:
+            # cache and return true
+            self._auth_cache[key] = (True, time.time())
+            return True
 
     def get_manager(self, key):
         if key in self._pug_managers:
@@ -143,32 +119,14 @@ class Application(tornado.web.Application):
 
     def __load_pug_managers(self):
         logging.info("Loading pug managers for all users")
-        conn = None
-        cursor = None
-        results = None
 
-        try:
-            conn = self.db.getconn()
-            cursor = conn.cursor()
+        results = self.db.get_user_info() # gets all user info from api keys table
 
-            cursor.execute("SELECT key FROM api_keys")
-            results = cursor.fetchall()
-
-        except:
-            logging.exception("Exception getting retrieving all API keys")
-
-        finally:
-            if cursor and not cursor.closed:
-                cursor.close()
-
-            if conn:
-                self.db.putconn(conn)
-
-        logging.debug("API keys in database: %s", results)
+        logging.debug("User info in database: %s", results)
 
         if results:
             for key_tuple in results:
-                self.get_manager(key_tuple[0])
+                self.get_manager(key_tuple[2])
 
     def close(self):
         self._map_vote_timer.stop()

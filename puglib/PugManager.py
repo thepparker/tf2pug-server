@@ -417,9 +417,8 @@ class PugManager(object):
         
     def _flush_pug(self, pug, new = False):
         logging.debug("Flushing pug to database. ID: %d", pug.id)
+        jsoninterface = TFPugJsonInterface()
         if new:
-            jsoninterface = TFPugJsonInterface()
-
             result = self.db.flush_new_pug(self.api_key, jsoninterface, pug)
 
             if result:

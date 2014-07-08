@@ -92,7 +92,12 @@ class Pug(object):
     def end_map_vote(self):
         sorted_votes = sorted(self.map_votes.keys(), key = lambda m: self.map_votes[m], reverse = True)
 
-        self.map = sorted_votes[0]
+        if len(sorted_votes) > 0:
+            self.map = sorted_votes[0]
+        
+        else:
+            # no one voted for a map, pick 1 at random
+            self.map = random.choice(self.maps)
 
         self.state = states["MAPVOTE_COMPLETED"]
 

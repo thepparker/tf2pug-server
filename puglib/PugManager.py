@@ -601,39 +601,3 @@ class PugManager(object):
     def flush_all(self):
         for pug in self._pugs:
             self._flush_pug(pug)
-
-
-    """
-    Retrieves a db connection and a cursor in a (conn, cursor) tuple from the
-    db pool
-    """
-    def _get_db_objects(self):
-        conn = None
-        curs = None
-
-        try:
-            conn = self.db.getconn()
-            curs = conn.cursor(cursor_factory = psycopg2.extras.DictCursor)
-
-            return (conn, curs)
-        
-        except:
-            logging.exception("Exception getting db objects")
-
-            if curs and not curs.closed:
-                curs.close()
-
-            if conn:
-                self.db.putconn(conn)
-
-    """
-    Takes a tuple of (conn, cursor), closes the cursor and puts the conn back
-    into the pool
-    """
-    def _close_db_objects(self, objects):
-        if objects[1] and not objects[1].closed:
-            objects[1].close()
-
-        if objects[0]:
-            objects[0].rollback() # perform a rollback just incase something fucked up happened
-            self.db.putconn(objects[0])

@@ -359,7 +359,7 @@ class PugManager(object):
         del self._pugs[:]
         logging.debug("Attempting to load pugs under API key %s", self.api_key)
  
-        pugs = self.db.get_pugs(self.api_key, TFPugJsonInterface().loads)
+        pugs = self.db.get_pugs(self.api_key, TFPugJsonInterface())
 
         logging.debug("Pugs loaded: %s", pugs)
 

@@ -87,21 +87,21 @@ class BaseDatabaseInterface(object):
         raise NotImplementedError("This must be implemented")
 
     """
-    Gets all servers pertaining to the specified API key. Returns a list of
-    dictionaries, which each list item being a server table row.
+    Gets all servers pertaining to the specified group. Multiple pug managers, 
+    or clients, can be part of the same group. Returns a list of dictionaries, 
+    which each list item being a server table row.
 
-    @param api_key The API key to get servers for
+    @param group The group to get servers for.
 
     @return List of dictionaries for each server
     """
-    def get_servers(self, api_key):
+    def get_servers(self, group):
         raise NotImplementedError("This must be implemented")
 
     """
     Flushes a server to the database
 
-    @param api_key The API key (Not necessary?)
     @param server The server to flush
     """
-    def flush_server(self, api_key, server):
+    def flush_server(self, server):
         raise NotImplementedError("This must be implemented")

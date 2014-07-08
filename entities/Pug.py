@@ -291,6 +291,9 @@ class Pug(object):
     def has_player(self, player_id):
         return player_id in self._players
 
+    def player_list(self):
+        return self._players.keys()
+
     @property
     def full(self):
         return self.size == self.player_count
@@ -298,10 +301,6 @@ class Pug(object):
     @property
     def player_count(self):
         return len(self._players)
-
-    @property
-    def player_list(self):
-        return self._players.keys()
 
     @property
     def game_over(self):

@@ -335,7 +335,7 @@ class PugManager(object):
     @return dict The pug's stat data
     """
     def __get_pug_stats(self, pug):
-        return self.db.get_tf_player_stats(pug.player_list)
+        return self.db.get_tf_player_stats(pug.player_list())
 
     def __flush_med_stats(self, pug):
         conn, cursor = self._get_db_objects()

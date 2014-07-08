@@ -22,5 +22,12 @@ class BaseJsonInterface(json):
     def dumps(self, obj):
         raise NotImplementedError("You need to override this method")
 
+    """
+    Takes a JSON object and converts it to a Pug object
+
+    @param data The JSON object string
+
+    @return Pug A Pug object
+    """
     def loads(self, data):
         raise NotImplementedError("You need to override this method")

@@ -300,7 +300,7 @@ class Pug(object):
         return len(self._players)
 
     @property
-    def players_list(self):
+    def player_list(self):
         return self._players.keys()
 
     @property

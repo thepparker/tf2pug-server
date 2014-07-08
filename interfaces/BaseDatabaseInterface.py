@@ -3,7 +3,7 @@ A base database interface class. This class is used to interface with your
 database of choice, and must implement all methods, which are used by the
 application.
 
-An implementation for PostgreSQL is provided
+An implementation for PostgreSQL is provided in PSQLDatabaseInterface.py
 """
 
 class BaseDatabaseInterface(object):
@@ -13,7 +13,7 @@ class BaseDatabaseInterface(object):
     """
     Gets all user info from the auth table. If an api key is specified, will
     only get data pertaining to that key. If no api key is specified, will get
-    all user info.
+    all user info. Independent of game.
 
     @param api_key (optional) The API key to get user info for
 
@@ -23,32 +23,33 @@ class BaseDatabaseInterface(object):
         raise NotImplementedError("This must be implemented")
 
     """
-    Required by the pug manager. Gets info pertaining to the given list of
-    64bit SteamIDs. Such info includes games since playing medic, total number
-    of games played, and the player rating.
+    Gets TF2 stat info pertaining to the given list of 64bit SteamIDs. 
+    Such info includes games since playing medic, total number of games played,
+    and the player rating.
 
     @param ids The list of 64bit IDs to get data for
 
     @return A dictionary of stats with respect to each individual ID
     """
-    def get_player_stats(self, ids):
+    def get_tf_player_stats(self, ids):
         raise NotImplementedError("This must be implemented")
 
     """
     Updates medic stats from a pug. The list of medics given is the medics
     playing medic for the pug, non medics is the list of players in the pug who
-    are not medics
+    are not medics.
 
     @param medics List of 64bit SteamIDs who are playing medic
     @param nonmedics List of 64bit SteamIDS who are not playing medic
     """
-    def flush_med_stats(self, medics, nonmedics):
+    def flush_tf_pug_med_stats(self, medics, nonmedics):
         raise NotImplementedError("This must be implemented")
 
     """
     Gets pug data pertaining to a specified API key, and returns it as a list
     of JSON objects, which can be parsed through the JSON interface by the
-    caller to get pug objects.
+    caller to get pug objects. Pug management methods are independent of game,
+    and simply take or return json objects.
 
     @param api_key The api key to get pugs for
     @param include_finished Whether or not to include games that are finished
@@ -60,18 +61,19 @@ class BaseDatabaseInterface(object):
         raise NotImplementedError("This must be implemented")
 
     """
-    Flushes a JSONised pug to the database. Maintains the pug index in another
-    table. This method is only used for non-new pugs.
+    Flushes a JSONised pug to the database. This method is only used for 
+    non-new pugs, which already have an ID.
 
     @param api_key The API key the pug is under (not necessary?)
-    @param id The ID of the pug
+    @param pid The ID of the pug
     @param pug_json A pug object converted to JSON
     """
-    def flush_pug(self, api_key, id, pug_json):
+    def flush_pug(self, api_key, pid, pug_json):
         raise NotImplementedError("This must be implemented")
 
     """
-    Flushes a new pug to the database, returning the ID
+    Flushes a new pug to the database, returning the ID. Maintains the index
+    table.
 
     @param api_key The API key the pug is under
     @param pug_json A Pug object converted to JSON

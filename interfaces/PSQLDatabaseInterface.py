@@ -77,7 +77,7 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
             # function.
 
             # non medics first
-            cursor.execute("SELECT steamid FROM players WHERE steamd IN %s", (tuple(nonmedics),))
+            cursor.execute("SELECT steamid FROM players WHERE steamid IN %s", (tuple(nonmedics),))
             results = cursor.fetchall()
             if results:
                 results = [ x[0] for x in results ] # make results a simple list of IDs
@@ -130,7 +130,7 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
             logging.exception("An exception occurred flushing med stats")
 
         finally:
-            self._close_db_objects()
+            self._close_db_objects(cursor, conn)
 
     def get_pugs(self, api_key, jsoninterface, include_finished = False):
         conn, cursor = self._get_db_objects()

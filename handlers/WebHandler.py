@@ -17,7 +17,7 @@ class BaseHandler(tornado.web.RequestHandler):
 
     @property
     def manager(self):
-        return self.application.get_manager(self.request_key)
+        return self.application.get_pug_manager(self.request_key)
 
     @property
     def request_key(self):

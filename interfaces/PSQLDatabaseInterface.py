@@ -151,6 +151,7 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
             
             results = cursor.fetchall()
             pug_ids = [ x[0] for x in results ] # list of entity ids
+            pugs = []
             if len(pug_ids) > 0:
                 cursor.execute("""SELECT data
                                   FROM pugs
@@ -158,14 +159,11 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
 
                 results = cursor.fetchall()
                 if results:
-                    results = [ jsoninterface.loads(x[0]) for x in cursor.fetchall() ]
+                    pugs = [ jsoninterface.loads(x[0]) for x in results ]
                 
                 # results is a list of Pug objects, converted using the jsoninterface
 
-            if results is None:
-                return []
-            else:
-                return results
+            return pugs
 
         except:
             logging.exception("An exception occurred getting pug data")

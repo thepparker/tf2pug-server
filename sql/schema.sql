@@ -14,8 +14,9 @@ CREATE TABLE servers (id serial, ip cidr NOT NULL, port integer NOT NULL,
 --DROP TABLE IF EXISTS pugs;
 CREATE TABLE pugs (id serial, data text NOT NULL);
 
-CREATE TABLE pug_index(id serial, pug_entity_id integer UNIQUE NOT NULL,
-                       state integer NOT NULL,
+--DROP TABLE IF EXISTS pugs_index;
+CREATE TABLE pugs_index(id serial, pug_entity_id integer UNIQUE NOT NULL,
+                       finished boolean NOT NULL,
                        api_key text references api_keys(key) ON UPDATE CASCADE
                     );
 

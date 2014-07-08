@@ -1,4 +1,5 @@
 import BaseDatabaseInterface.BaseDatabaseInterface
+
 import logging
 
 """
@@ -28,7 +29,7 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
         finally:
             self._close_db_objects(cursor, conn)
 
-    def get_player_stats(self, ids):
+    def get_tf_player_stats(self, ids):
         conn, cursor = self._get_db_objects()
 
         # ids is a list of 64 bit steamids (i.e pug.players_list)
@@ -58,7 +59,7 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
         finally:
             self._close_db_objects(cursor, conn)
 
-    def flush_pug_med_stats(self, medics, nonmedics):
+    def flush_tf_pug_med_stats(self, medics, nonmedics):
         conn, cursor = self._get_db_objects()
 
         try:
@@ -74,7 +75,10 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
             # non medics first
             cursor.execute("SELECT steamid FROM players WHERE steamd IN %s", (tuple(nonmedics),))
             results = cursor.fetchall()
-            results = [ x[0] for x in results ] # make results a simple list of IDs
+            if results:
+                results = [ x[0] for x in results ] # make results a simple list of IDs
+            else:
+                results = []
 
             # now get all ids in nonmedics that are NOT in results
             insert_ids = [ x for x in nonmedics if x not in results ]
@@ -97,7 +101,10 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
             # now medics, do the same as we did for non-medics
             cursor.execute("SELECT steamid FROM players WHERE steamid IN %s", (tuple(medics),))
             results = cursor.fetchall()
-            results = [ x[0] for x in results ]
+            if results:
+                results = [ x[0] for x in results ]
+            else:
+                results = []
 
             insert_ids = [ x for x in medics if x not in results ]
             if len(insert_ids) > 0:
@@ -132,16 +139,34 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
                               (api_key, finished))
             pug_ids = [ x[0] for x in cursor.fetchall() ] # results is a list of entity ids
 
-            cursor.execute("""SELECT id, data
+            cursor.execute("""SELECT data
                               FROM pugs
                               WHERE id IN %s""", (tuple(pug_ids),))
 
-            results = cursor.fetchall() 
-            # results is a list of tuples containing (id, pug data as JSON)
-
+            results = cursor.fetchall()
+            if results:
+                results = [ x[0] for x in cursor.fetchall() ]
+            
+            # results is a list of JSONified pugs
+            return results
 
         except:
             logging.exception("An exception occurred getting pug data")
+
+        finally:
+            self._close_db_objects(cursor, conn)
+
+    def flush_pug(self, api_key, pid, pug_json):
+        # this method is for existing pugs (pug that have already been flushed)
+        # at least once, such that the id already exists
+        conn, cursor = self._get_db_objects()
+
+        try:
+            cursor.execute("UPDATE pugs SET data = %s WHERE id = %s", (pug_json, pid))
+            conn.commit()
+
+        except:
+            logging.exception("An exception occurred flushing pug %d" % pid)
 
         finally:
             self._close_db_objects(cursor, conn)

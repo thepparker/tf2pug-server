@@ -71,11 +71,9 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
             # mogrifying inserts. we need to check who is NOT in the database.
             # to do this, we use the given list of IDs, get the results, and
             # for any IDs NOT in the result, we perform an insert.
-            # we do this so that we minimize the number of queries required, so
-            # that worst case is O(n+2) instead of ALWAYS being O(n+2) when 
-            # inserts are required. If everyone is being updated, efficiency is
-            # O(n+2). It also removes the need for using the dirty upsert 
-            # function.
+            # psycopg2 will setup and use a stored procedure for executemany,
+            # and doing it like this removes the need for a user-defined upsert
+            # function
 
             # non medics first
             cursor.execute("SELECT steamid FROM players WHERE steamid IN %s", (tuple(nonmedics),))
@@ -89,7 +87,7 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
             insert_ids = [ x for x in nonmedics if x not in results ]
             if len(insert_ids) > 0: # obviously only perform if we have ids to insert...
                 # create the list of tuples for insertion
-                data = tuple([ (x, 1, 1) for x in insert_ids ])
+                data = [ (x, 1, 1) for x in insert_ids ]
 
                 cursor.executemany("""INSERT INTO players (steamid, games_since_med, games_played)
                                       VALUES ('%s', '%s', '%s')""", data)
@@ -113,7 +111,7 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
 
             insert_ids = [ x for x in medics if x not in results ]
             if len(insert_ids) > 0:
-                data = tuple([ (x, 0, 1) for x in insert_ids ])
+                data = [ (x, 0, 1) for x in insert_ids ]
 
                 cursor.executemany("""INSERT INTO players (steamid, games_since_med, games_played)
                                   VALUES ('%s', '%s', '%s')""", data)

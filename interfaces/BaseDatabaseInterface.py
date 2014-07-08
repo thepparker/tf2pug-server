@@ -52,12 +52,13 @@ class BaseDatabaseInterface(object):
     and simply take or return json objects.
 
     @param api_key The api key to get pugs for
+    @param jsoninterface The JSON interface to be used to convert from JSON
     @param include_finished Whether or not to include games that are finished
                             i.e in the "GAME_OVER" state
 
-    @return List of JSON objects
+    @return List of Pug objects
     """
-    def get_pugs(self, api_key, include_finished = False):
+    def get_pugs(self, api_key, jsoninterface, include_finished = False):
         raise NotImplementedError("This must be implemented")
 
     """
@@ -65,10 +66,11 @@ class BaseDatabaseInterface(object):
     non-new pugs, which already have an ID.
 
     @param api_key The API key the pug is under (not necessary?)
+    @param jsoninterface The JSON interface to convert to JSON
     @param pid The ID of the pug
-    @param pug_json A pug object converted to JSON
+    @param pug A Pug object
     """
-    def flush_pug(self, api_key, pid, pug_json):
+    def flush_pug(self, api_key, jsoninterface, pid, pug):
         raise NotImplementedError("This must be implemented")
 
     """
@@ -76,11 +78,12 @@ class BaseDatabaseInterface(object):
     table.
 
     @param api_key The API key the pug is under
-    @param pug_json A Pug object converted to JSON
+    @param jsoninterface The JSON interface to convert to JSON
+    @param pug A Pug object
 
     @return ID The ID of the new pug
     """
-    def flush_new_pug(self, api_key, pug_json):
+    def flush_new_pug(self, api_key, jsoninterface, pug):
         raise NotImplementedError("This must be implemented")
 
     """

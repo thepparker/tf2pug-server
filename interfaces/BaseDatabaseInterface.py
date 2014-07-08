@@ -17,7 +17,7 @@ class BaseDatabaseInterface(object):
 
     @param api_key (optional) The API key to get user info for
 
-    @return Undecided on format
+    @return A list of tuples, with each tuple being a row in the api_keys table
     """
     def get_user_info(self, api_key = None):
         raise NotImplementedError("This must be implemented")
@@ -27,11 +27,11 @@ class BaseDatabaseInterface(object):
     64bit SteamIDs. Such info includes games since playing medic, total number
     of games played, and the player rating.
 
-    @param ids The list of IDs to get data for
+    @param ids The list of 64bit IDs to get data for
 
     @return A dictionary of stats with respect to each individual ID
     """
-    def get_pug_stats(self, ids):
+    def get_player_stats(self, ids):
         raise NotImplementedError("This must be implemented")
 
     """

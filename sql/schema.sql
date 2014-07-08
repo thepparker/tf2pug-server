@@ -9,7 +9,7 @@ CREATE TABLE api_keys (name text NOT NULL, pug_group integer NOT NULL,
 CREATE TABLE servers (id serial, ip cidr NOT NULL, port integer NOT NULL, 
                       rcon_password text NOT NULL, password text, 
                       pug_id integer NOT NULL, log_port integer,
-                      server_group integer
+                      server_group integer NOT NULL
                     );
 
 -- The pugs

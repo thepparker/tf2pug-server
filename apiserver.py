@@ -106,7 +106,7 @@ class Application(tornado.web.Application):
 
         user_info = self.db.get_user_info(key)
 
-        logging.debug("User details for key %s: %s" (key, user_info))
+        logging.debug("User details for key %s: %s", key, user_info)
         if user_info is None:
             self.__cache_client_data(key, user_info)
             raise InvalidKeyException("Invalid API key %s" % (key))

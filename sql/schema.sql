@@ -1,4 +1,3 @@
-CREATE EXTENSION hstore;
 -- Contains user auth keys
 --DROP TABLE IF EXISTS api_keys;
 CREATE TABLE api_keys (name text NOT NULL, pug_group integer NOT NULL, 
@@ -10,7 +9,7 @@ CREATE TABLE api_keys (name text NOT NULL, pug_group integer NOT NULL,
 CREATE TABLE servers (id serial, ip cidr NOT NULL, port integer NOT NULL, 
                       rcon_password text NOT NULL, password text, 
                       pug_id integer NOT NULL, log_port integer,
-                      server_group integer references api_keys(server_group) ON UPDATE CASCADE
+                      server_group integer
                     );
 
 -- The pugs
@@ -27,7 +26,7 @@ RETURNS TRIGGER AS $_$
   END;
 $_$ LANGUAGE 'plpgsql';
 
-CREATE TRIGGER update_pugs_modtime BEFORE UPDATE ON pugs 
+CREATE TRIGGER update_pugs_modtime BEFORE UPDATE ON pugs
   FOR EACH ROW EXECUTE PROCEDURE update_modified_time();
 
 --DROP TABLE IF EXISTS pugs_index;

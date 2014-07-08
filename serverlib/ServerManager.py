@@ -79,7 +79,7 @@ class ServerManager(object):
         # clear the server list first
         del self._servers[:]
 
-        results = self.db.get_servers(self.gro)
+        results = self.db.get_servers(self.group)
 
         if not results:
             logging.error("THERE ARE NO CONFIGURED SERVERS FOR GROUP %d!", self.group)

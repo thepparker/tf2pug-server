@@ -138,42 +138,11 @@ class ResponseHandler(object):
         return response
 
     def _pug_status_packet(self, pug):
-        packet = {
-            "id": pug.id,
-            "admin": pug.admin,
+        packet = pug.__dict__.copy()
 
-            # state is an enum style variable which lets us know what stage
-            # the pug is at
-            "state": pug.state,
-
-            "size": pug.size,
-
-            "map_forced": pug.map_forced,
-            "map": pug.map,
-            "maps": pug.maps,
-
-            "ip": pug.server.ip,
-            "port": pug.server.port,
-            "password": pug.server.password,
-
-            "mumble": "",
-
-            # players is converted to a proper json array
-            "players": self._pug_players_list(pug),
-            "team_red": pug.team_red,
-            "team_blue": pug.team_blue,
-
-            # must convert votes to json arrays too
-            "player_votes": self._pug_vote_list(pug),
-            "map_vote_counts": self._pug_vote_count_list(pug),
-
-            # these fields store the times that map voting has begun and when
-            # it will end. this is required so that clients know when they
-            # should get an updated status after map voting
-            "map_vote_start": pug.map_vote_start,
-            "map_vote_end": pug.map_vote_end,
-            "map_vote_duration": pug.map_vote_duration
-        }
+        packet["players"] = self._pug_players_list(pug)
+        packet["map_vote_counts"] = self._pug_vote_count_list(pug)
+        packet["player_votes"] = self._pug_vote_list(pug)
 
         return packet
 

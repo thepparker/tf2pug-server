@@ -15,7 +15,8 @@ import psycopg2.extras
 import settings
 import Livelogs
 
-import Pug
+from entities import Pug
+from interfaces import TFPugJsonInterface
 
 from Exceptions import *
 
@@ -368,7 +369,7 @@ class PugManager(object):
     @return dict The pug's stat data
     """
     def __get_pug_stats(self, pug):
-        return self.db.get_player_stats(pug.players_list)
+        return self.db.get_tf_player_stats(pug.players_list)
 
     def __flush_med_stats(self, pug):
         conn, cursor = self._get_db_objects()
@@ -377,7 +378,7 @@ class PugManager(object):
 
         nonmedics = [ x for x in pug._players if x not in medics ]
 
-        self.db.flush_pug_med_stats(medics, nonmedics)
+        self.db.flush_tf_pug_med_stats(medics, nonmedics)
 
     """
     Calculates the new ELO of players after the game and updates it in the database
@@ -446,30 +447,12 @@ class PugManager(object):
         # clear the pug list
         del self._pugs[:]
 
-        conn, cursor = self._get_db_objects()
+        pug_json = self.db.get_pugs(self.api_key)
+        # pug_json is a list of JSONified pugs, or None if no pugs found
+        if pug_json:
+            jsoninterface = TFPugJsonInterface.TFPugJsonInterface()
 
-        try:
-            psycopg2.extras.register_hstore(cursor)
-
-            query = "SELECT %s FROM pugs WHERE state != '%s' AND api_key = E'%s'" % (
-                ", ".join(pug_columns), Pug.states["GAME_OVER"], self.api_key)
-
-            cursor.execute(query)
-
-            results = cursor.fetchall()
-
-            if results:
-                for data in results:
-                    pug = self.__hydrate_pug(data)
-
-                    self._pugs.append(pug)
-
-        except:
-            logging.exception("Exception while loading pugs")
-
-        finally:
-            self._close_db_objects((conn, cursor))
-
+            self._pugs = [ jsoninterface.loads(x) for x in pug_json ]
 
     def _flush_pug(self, pug, new = False):
         logging.debug("Flushing pug to database. ID: %d", pug.id)

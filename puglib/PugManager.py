@@ -353,67 +353,18 @@ class PugManager(object):
     """
     def __update_ratings(self, pug):
         pass
-        
-
-    def __db_upsert(self, insert, update):
-        conn, cursor = self._get_db_objects()
-
-        try:
-            cursor.execute("SELECT pgsql_upsert(%s, %s)", (insert, update,))
-        except:
-            logging.exception("Exception performing upsert")
-
-        finally:
-            self._close_db_objects((conn, cursor))
-
-    def __hydrate_pug(self, data):
-        logging.debug("HYDRATING PUG. DB DATA: %s", data)
-
-        pug = Pug.Pug()
-
-        pug.id = data["id"]
-        pug.size = data["size"]
-        pug.state = data["state"]
-
-        pug.map = data["map"]
-        pug.map_forced = data["map_forced"]
-        
-        pug.admin = long(data["admin"])
-        # IDs are returned as strings, so we convert them back to longs
-        # and re-add the players normally
-        players = data["players"]
-        for pid in players:
-            pug._players[long(pid)] = players[pid]
-
-        # do the same for player_votes and map_votes
-        player_votes = data["player_votes"]
-        for pid in player_votes:
-            pug.player_votes[long(pid)] = player_votes[pid]
-
-        map_votes = data["map_votes"]
-        for mname in map_votes:
-            pug.map_votes[mname] = int(map_votes[mname])
-
-        pug.map_vote_start = data["map_vote_start"]
-        pug.map_vote_end = data["map_vote_end"]
-
-        pug.server_id = data["server_id"]
-        if pug.server_id >= 0:
-            pug.server = self.server_manager.get_server_by_id(pug.server_id)
-
-            pug.server.pug = pug
-            pug.server.pug_id = pug.id
-
-        pug.team_red = data["team_red"]
-        pug.team_blue = data["team_blue"]
-
-        return pug
 
     def __load_pugs(self):
         # clear the pug list
         del self._pugs[:]
  
         self._pugs = self.db.get_pugs(self.api_key, TFPugJsonInterface().loads)
+
+        for pug in self._pugs:
+            logging.debug("Loaded pug id %d. Server id: %d", pug.id, pug.server_id)
+
+            pug.server = self.server_manager.get_server_by_id(pug.server_id)
+
         
     def _flush_pug(self, pug, new = False):
         logging.debug("Flushing pug to database. ID: %d", pug.id)

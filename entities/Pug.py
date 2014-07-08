@@ -44,7 +44,7 @@ class Pug(object):
         self.map_vote_start = -1
         self.map_vote_end = -1
         self.map_vote_duration = MAPVOTE_DURATION
-        self.maps = [ "cp_granary", "cp_badlands" ]
+        self.maps = [ u"cp_granary", u"cp_badlands" ]
 
         self.server = None
         self.server_id = -1
@@ -132,6 +132,10 @@ class Pug(object):
 
         else:
             self.map_votes[map_name] = 0
+
+    def force_map(self, map_name):
+        self.map_forced = True
+        self.map = map_name
 
     def shuffle_teams(self, stat_data):
         if not self.full:

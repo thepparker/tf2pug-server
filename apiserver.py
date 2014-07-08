@@ -56,8 +56,7 @@ class Application(tornado.web.Application):
         self.response_handler = ResponseHandler.ResponseHandler()
 
         self._pug_managers = {}
-
-        self.server_manager = ServerManager.ServerManager(self.db)
+        self._server_managers = {}
 
         self._auth_cache = {}
 
@@ -65,6 +64,7 @@ class Application(tornado.web.Application):
         self._map_vote_timer = tornado.ioloop.PeriodicCallback(self._map_vote_check, 2000)
         self._map_vote_timer.start()
 
+        # loading the pug managers will also load all server managers
         self.__load_pug_managers()
 
         tornado.web.Application.__init__(self, handlers, **settings)
@@ -97,14 +97,27 @@ class Application(tornado.web.Application):
             self._auth_cache[key] = (True, time.time())
             return True
 
-    def get_manager(self, key):
+    def get_server_manager(self, key):
+        if key in self._server_managers:
+            return self._server_managers[key]
+
+        else:
+            logging.debug("Getting server manager for key %s", key)
+
+            new_manager = ServerManager.ServerManager(key, self.db)
+
+            self._server_managers[key] = new_manager
+
+            return new_manager
+
+    def get_pug_manager(self, key):
         if key in self._pug_managers:
             return self._pug_managers[key]
 
         else:
             logging.debug("Getting new pug manager for key %s", key)
 
-            new_manager = PugManager.PugManager(key, self.db, self.server_manager)
+            new_manager = PugManager.PugManager(key, self.db, self.get_server_manager(key))
 
             self._pug_managers[key] = new_manager
 
@@ -125,7 +138,7 @@ class Application(tornado.web.Application):
 
         if results:
             for key_tuple in results:
-                self.get_manager(key_tuple[2])
+                self.get_pug_manager(key_tuple[2])
 
     def close(self):
         self._map_vote_timer.stop()

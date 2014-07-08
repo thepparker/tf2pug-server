@@ -20,7 +20,8 @@ server_columns = (
     )
 
 class ServerManager(object):
-    def __init__(self, db):
+    def __init__(self, api_key, db):
+        self.api_key = api_key
         self.db = db
 
         self._servers = []
@@ -90,10 +91,10 @@ class ServerManager(object):
         return server
 
     def __load_servers(self):
-        conn, cursor = self._get_db_objects()
-
         # clear the server list first
         del self._servers[:]
+
+        self.db.get_servers(self.api_key)
 
         try:
             cursor.execute("SELECT %s FROM servers" % (", ".join(server_columns)))

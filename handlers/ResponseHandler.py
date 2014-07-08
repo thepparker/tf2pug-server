@@ -144,6 +144,8 @@ class ResponseHandler(object):
     def _pug_status_packet(self, pug):
         packet = pug.__dict__.copy()
 
+        del packet["server"]
+
         packet["players"] = self._pug_players_list(pug)
         packet["map_vote_counts"] = self._pug_vote_count_list(pug)
         packet["player_votes"] = self._pug_vote_list(pug)

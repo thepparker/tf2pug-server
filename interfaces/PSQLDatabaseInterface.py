@@ -196,7 +196,7 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
         try:
             pid = None
             cursor.execute("INSERT INTO pugs (data) VALUES (%s) RETURNING id", 
-                            [Json(pug_json, dumps=jsoninterface.dumps)])
+                            [Json(pug, dumps=jsoninterface.dumps)])
 
             result = cursor.fetchone()
             pid = None

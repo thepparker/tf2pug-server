@@ -188,7 +188,7 @@ class RconConnection(object):
             junk = self._receive_data() # get junk packet pre-auth
             response = self._receive_data()
 
-            logging.info("Auth response: (junk): %s, (auth): %s", repr(junk), repr(response))
+            logging.debug("Auth response: (junk): %s, (auth): %s", repr(junk), repr(response))
 
             if response[1] == SERVERDATA_AUTH_RESPONSE:
                 if response[0] == -1:

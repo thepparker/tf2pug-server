@@ -8,7 +8,9 @@ class TFPugJsonInterface(BaseJsonInterface):
         # need to establish a dictionary, and then dump it into a json string
         # to do this, we use the object's inbuilt __dict__ method (inherited
         # from base object class)
-        obj_dict = pug.__dict__
+        obj_dict = pug.__dict__.copy()
+
+        obj_dict["server"] = None # remove the server reference
 
         return json.dumps(obj_dict)
 

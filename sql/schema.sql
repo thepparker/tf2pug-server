@@ -29,8 +29,8 @@ CREATE TRIGGER update_pugs_modtime BEFORE UPDATE ON pugs
 
 --DROP TABLE IF EXISTS pugs_index;
 CREATE TABLE pugs_index(id serial, pug_entity_id integer UNIQUE NOT NULL,
-                       finished boolean NOT NULL, 
-                       api_key text references api_keys(key) ON UPDATE CASCADE
+                        finished boolean NOT NULL, 
+                        api_key text references api_keys(key) ON UPDATE CASCADE
                     );
 
 -- Player stats (games played, games since med) for medic choosing

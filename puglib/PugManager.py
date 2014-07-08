@@ -20,38 +20,6 @@ from Exceptions import *
 
 from pprint import pprint
 
-pug_columns = (
-        "id",
-        "size",
-        "state",
-
-        "map",
-        "map_forced",
-        "players",
-        "admin",
-
-        "player_votes",
-        "map_votes",
-        "map_vote_start",
-        "map_vote_end",
-
-        "server_id",
-
-        "team_red",
-        "team_blue"
-    )
-
-# convert a dictionary to a postgresql hstore-safe dict
-# this means that keys and values of the dict are converted to strings
-def hstore_dict(dictionary):
-    new_dict = {}
-
-    for key in dictionary:
-        new_dict[str(key)] = str(dictionary[key])
-
-    return new_dict
-
-
 class PugManager(object):
     def __init__(self, api_key, db, server_manager):
         self.api_key = api_key

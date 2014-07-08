@@ -194,8 +194,9 @@ class Application(tornado.web.Application):
             manager.flush_all()
 
 
-        logging.info("Flushing server manager")
-        self.server_manager.flush_all()
+        logging.info("Flushing server managers")
+        for manager in self._server_managers.values():
+            manager.flush_all()
 
         logging.info("Managers successfully flushed")
 

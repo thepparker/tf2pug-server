@@ -1,6 +1,7 @@
 import BaseDatabaseInterface.BaseDatabaseInterface
 
 import logging
+from psycopg2.extras import Json
 
 """
 Implements the DatabaseInterface for PostgreSQL databases. This is currently
@@ -128,9 +129,16 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
         finally:
             self._close_db_objects()
 
-    def get_pugs(self, api_key, include_finished = False):
+    def get_pugs(self, api_key, jsoninterface, include_finished = False):
         conn, cursor = self._get_db_objects()
 
+        # if using pg version 9.2+, you can simply use
+        # psycopg2.extras.register_default_json(cursor, loads=jsoninterface.loads)
+        # which will register the given loads method with the cursor, and any
+        # json data field will be passed to the loads method. Since pg 9.1 only
+        # supports json through an extension, this code is based on using a
+        # text field to store json data, and then converting the results 
+        # manually
         try:
             # first we get the pug ids we're after from the index table
             cursor.execute("""SELECT pug_entity_id
@@ -145,9 +153,10 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
 
             results = cursor.fetchall()
             if results:
-                results = [ x[0] for x in cursor.fetchall() ]
+                results = [ jsoninterface.loads(x[0]) for x in cursor.fetchall() ]
             
-            # results is a list of JSONified pugs
+            # results is a list Pug objects, converted using the given loads
+            # method
             return results
 
         except:
@@ -156,17 +165,42 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
         finally:
             self._close_db_objects(cursor, conn)
 
-    def flush_pug(self, api_key, pid, pug_json):
-        # this method is for existing pugs (pug that have already been flushed)
-        # at least once, such that the id already exists
+    def flush_pug(self, api_key, jsoninterface, pid, pug):
+        # this method is for existing pugs (pug that have already been flushed
+        # at least once), such that the id already exists
         conn, cursor = self._get_db_objects()
 
         try:
-            cursor.execute("UPDATE pugs SET data = %s WHERE id = %s", (pug_json, pid))
+            cursor.execute("UPDATE pugs SET data = %s WHERE id = %s", 
+                            [Json(pug, dumps=jsoninterface.dumps), pid])
+
             conn.commit()
 
         except:
             logging.exception("An exception occurred flushing pug %d" % pid)
+
+        finally:
+            self._close_db_objects(cursor, conn)
+
+    def flush_new_pug(self, api_key, jsoninterface, pug):
+        conn, cursor = self._get_db_objects()
+
+        try:
+            pid = None
+            cursor.execute("INSERT INTO pugs (data) VALUES (%s) RETURNING id", 
+                            [Json(pug_json, dumps=jsoninterface.dumps)])
+
+            result = cursor.fetchone()
+
+            conn.commit()
+            
+            if result:
+                return result[0]
+            else:
+                return None
+
+        except:
+            logging.exception("An exception occurred flushing new pug")
 
         finally:
             self._close_db_objects(cursor, conn)
@@ -180,7 +214,6 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
 
         try:
             conn = self.db.getconn()
-            curs = conn.cursor(cursor_factory = psycopg2.extras.DictCursor)
 
             return (conn, curs)
         

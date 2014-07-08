@@ -319,9 +319,11 @@ class PugManager(object):
         for cid in pug.player_list():
             # if the CID has no pug data, they need to be added
             if not (cid in stats):
-                stats[cid]["games_since_med"] = 0
-                stats[cid]["games_played"] = 0
-                stats[cid]["rating"] = 1500
+                stats[cid] = {
+                    "games_since_med": 0,
+                    "games_played": 0,
+                    "rating": 1500
+                }
 
         return stats
 

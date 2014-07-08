@@ -12,11 +12,24 @@ CREATE TABLE servers (id serial, ip cidr NOT NULL, port integer NOT NULL,
 
 -- The pugs
 --DROP TABLE IF EXISTS pugs;
-CREATE TABLE pugs (id serial, data text NOT NULL);
+CREATE TABLE pugs (id serial, data text NOT NULL, 
+                   modified TIMESTAMP DEFAULT current_timestamp);
+
+-- Update trigger for pugs
+CREATE OR REPLACE FUNCTION update_modified_time() 
+RETURNS TRIGGER AS $_$
+  BEGIN
+    NEW.modified = now();
+    RETURN new;
+  END;
+$_$ LANGUAGE 'plpgsql';
+
+CREATE TRIGGER update_pugs_modtime BEFORE UPDATE ON pugs 
+  FOR EACH ROW EXECUTE PROCEDURE update_modified_time();
 
 --DROP TABLE IF EXISTS pugs_index;
 CREATE TABLE pugs_index(id serial, pug_entity_id integer UNIQUE NOT NULL,
-                       finished boolean NOT NULL,
+                       finished boolean NOT NULL, 
                        api_key text references api_keys(key) ON UPDATE CASCADE
                     );
 

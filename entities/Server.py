@@ -3,7 +3,7 @@ import logging
 import string
 import random
 
-import Rcon
+from serverlib import Rcon
 
 def random_string(len=24, chars=string.ascii_lowercase + string.ascii_uppercase + string.digits):
     #generates a random string of length len

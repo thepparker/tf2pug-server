@@ -14,7 +14,7 @@ import settings
 import Livelogs
 
 from entities import Pug
-from interfaces import TFPugJsonInterface.TFPugJsonInterface
+from interfaces.TFPugJsonInterface import TFPugJsonInterface
 
 from Exceptions import *
 

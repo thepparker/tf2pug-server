@@ -7,7 +7,7 @@ import logging
 
 import psycopg2.extras
 
-from entities import Server.Server
+from entities.Server import Server
 
 server_columns = (
         "id", 

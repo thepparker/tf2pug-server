@@ -86,10 +86,9 @@ class Application(tornado.web.Application):
                 logging.debug("Key is in cache and has not expired. Valid: %s", valid)
                 return valid
 
-        logging.debug("Getting user details for API key %s", key)
-
-
         user_info = self.db.get_user_info(key)
+
+        logging.debug("User details for key %s: %s" (key, user_info))
         if user_info is None:
             raise InvalidKeyException("Invalid API key %s" % (key))
         

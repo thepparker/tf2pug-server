@@ -368,76 +368,16 @@ class PugManager(object):
     @return dict The pug's stat data
     """
     def __get_pug_stats(self, pug):
-        conn, cursor = self._get_db_objects()
-
-        stats = {}
-
-        try:
-            cursor.execute("""SELECT steamid, games_since_med, games_played, rating
-                              FROM players 
-                              WHERE steamid IN %s""", (tuple(pug.players_list),))
-
-            results = cursor.fetchall()
-
-            # we change stats into a dict with steamid as the root key
-            if results:
-                for result in results:
-                    logging.debug("player stat row: %s", result)
-
-                    stats[result["steamid"]] = { 
-                            "games_since_med": result["games_since_med"],
-                            "games_played": result["games_played"],
-                            "rating": result["rating"]
-                        }
-
-            return stats
-
-        except:
-            logging.exception("Exception getting pug stats")
-
-        finally:
-            self._close_db_objects((conn, cursor))
+        return self.db.get_player_stats(pug.players_list)
 
     def __flush_med_stats(self, pug):
         conn, cursor = self._get_db_objects()
 
-        try:
-            medics = [ pug.medic_red, pug.medic_blue ]
+        medics = [ pug.medic_red, pug.medic_blue ]
 
-            nonmedics = [ x for x in pug._players if x not in medics ]
+        nonmedics = [ x for x in pug._players if x not in medics ]
 
-            # do non-medics first
-            for cid in nonmedics:
-                insert_query = """INSERT INTO players (steamid, games_since_med, games_played)
-                                  VALUES ('%s', '%s', '%s')""" % (cid, 1, 1)
-
-                update_query = """UPDATE players
-                                  SET games_since_med = COALESCE(games_since_med, 0) + 1,
-                                      games_played = COALESCE(games_played, 0) + 1
-                                  WHERE steamid = '%s'""" % (cid)
-
-                cursor.execute("SELECT pgsql_upsert(%s, %s)", (insert_query, update_query,))
-
-            conn.commit()
-
-            for cid in medics:
-                insert_query = """INSERT INTO players (steamid, games_since_med, games_played)
-                                  VALUES ('%s', '%s', '%s')""" % (cid, 0, 1)
-
-                update_query = """UPDATE players
-                                  SET games_since_med = 0,
-                                      games_played = COALESCE(games_played, 0) + 1
-                                  WHERE steamid = '%s'""" % (cid)
-
-                cursor.execute("SELECT pgsql_upsert(%s, %s)", (insert_query, update_query,))
-
-            conn.commit()
-
-        except:
-            logging.exception("Exception flushing medic stats")
-
-        finally:
-            self._close_db_objects((conn, cursor))
+        self.db.flush_pug_med_stats(medics, nonmedics)
 
     """
     Calculates the new ELO of players after the game and updates it in the database

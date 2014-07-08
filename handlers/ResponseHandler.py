@@ -70,7 +70,7 @@ class ResponseHandler(object):
     def player_not_in_pug(self):
         return { "response": Response_PlayerNotInPug }
 
-    def pug_full(self, pug):
+    def pug_full(self):
         return { "response": Response_PugFull }
 
     def invalid_pug(self):
@@ -145,6 +145,7 @@ class ResponseHandler(object):
         packet = pug.__dict__.copy()
 
         del packet["server"]
+        del packet["_players"]
 
         packet["players"] = self._pug_players_list(pug)
         packet["map_vote_counts"] = self._pug_vote_count_list(pug)

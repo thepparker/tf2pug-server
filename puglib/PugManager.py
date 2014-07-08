@@ -363,7 +363,7 @@ class PugManager(object):
 
         logging.debug("Pugs loaded: %s", pugs)
 
-        for pug in self._pugs:
+        for pug in pugs:
             pug.server = self.server_manager.get_server_by_id(pug.server_id)
 
             logging.debug("Loaded pug id %d. Server id: %d", pug.id, pug.server_id)

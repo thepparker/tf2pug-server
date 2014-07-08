@@ -47,12 +47,13 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
 
             if results:
                 for result in results:
-                    logging.debug("player stat row: %s" % result)
-
-                    stats[result["steamid"]] = { 
-                            "games_since_med": result["games_since_med"],
-                            "games_played": result["games_played"],
-                            "rating": result["rating"]
+                    logging.debug("player stat row: %s", result)
+                    # result is tuple in the form 
+                    # (steamid, games_since_med, games_played, rating)
+                    stats[result[0]] = { 
+                            "games_since_med": result[1],
+                            "games_played": result[2],
+                            "rating": float(result[3]) # Decimal -> Float
                         }
 
             return stats

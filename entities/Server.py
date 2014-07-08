@@ -25,6 +25,8 @@ class Server(object):
         # the log port being used by this server (for log_address)
         self.log_port = 0
 
+        self.group = 0
+
         self.rcon_connection = None
 
     def rcon(self, command):

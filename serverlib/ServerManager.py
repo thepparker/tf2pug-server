@@ -64,6 +64,7 @@ class ServerManager(object):
         server.password = data["password"]
         server.pug_id = data["pug_id"]
         server.log_port = data["log_port"]
+        server.group = data["server_group"]
 
         return server
 

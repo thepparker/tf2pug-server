@@ -35,7 +35,7 @@ class RconConnectionInterruptedError(Exception):
     pass
 
 class RconConnection(object):
-    def __init__(self, ip, port, rcon_password, timeout=5.0, once=False):
+    def __init__(self, ip, port, rcon_password, timeout=2.0, once=False):
         self.ip = ip
         self.port = port
         self.rcon_password = rcon_password

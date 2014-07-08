@@ -1,13 +1,16 @@
 CREATE EXTENSION hstore;
 -- Contains user auth keys
 --DROP TABLE IF EXISTS api_keys;
-CREATE TABLE api_keys (name text NOT NULL, key text UNIQUE NOT NULL, group integer NOT NULL);
+CREATE TABLE api_keys (name text NOT NULL, pug_group integer NOT NULL, 
+                       server_group integer NOT NULL, key text UNIQUE NOT NULL
+                    );
 
 -- Servers available for use in pugs
 --DROP TABLE IF EXISTS servers;
 CREATE TABLE servers (id serial, ip cidr NOT NULL, port integer NOT NULL, 
                       rcon_password text NOT NULL, password text, 
-                      pug_id integer NOT NULL, log_port integer
+                      pug_id integer NOT NULL, log_port integer,
+                      group integer references api_keys(server_group) ON UPDATE CASCADE
                     );
 
 -- The pugs

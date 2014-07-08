@@ -11,7 +11,7 @@ with PostgreSQL 9.2+ and JSON fields. You can of course use it to convert
 Pug objects to JSON and store it in string fields, or any applicable data
 field in your database of choice.
 """
-class BaseJsonInterface(json):
+class BaseJsonInterface(object):
     """ 
     Takes a Pug object and converts it into a JSON object
     @param obj The pug object

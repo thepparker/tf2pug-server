@@ -9,6 +9,8 @@ from tornado.web import HTTPError
 # Therefore, we can import directly from the toplevel, because this module is
 # not standalone.
 from puglib import Exceptions as PugManagerExceptions
+from serverlib import Exceptions as ServerManagerException
+from serverlib import Rcon
 
 # The base handler class sets up properties and useful methods
 class BaseHandler(tornado.web.RequestHandler):
@@ -206,6 +208,9 @@ class PugCreateHandler(BaseHandler):
 
         except PugManagerExceptions.NoAvailableServersException:
             self.write(self.response_handler.no_available_servers())
+
+        except Rcon.RconConnectionError:
+            self.write(self.response_handler.server_connection_error())
 
         except:
             logging.exception("Unknown exception occurred during pug creation")

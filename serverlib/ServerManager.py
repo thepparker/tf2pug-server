@@ -9,16 +9,6 @@ import psycopg2.extras
 
 from entities.Server import Server
 
-server_columns = (
-        "id", 
-        "HOST(ip) as ip", 
-        "port", 
-        "rcon_password",
-        "password", 
-        "pug_id",
-        "log_port"
-    )
-
 class ServerManager(object):
     def __init__(self, group, db):
         self.group = group

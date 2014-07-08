@@ -23,6 +23,7 @@ Response_MapVoteNotInProgress = 1203
 Response_InvalidMap = 1204
 
 Response_NoAvailableServers = 1300
+Response_ServerConnectionError = 1301
 
 class ResponseHandler(object):
     def __init__(self):
@@ -35,6 +36,9 @@ class ResponseHandler(object):
 
     def no_available_servers(self):
         return { "response": Response_NoAvailableServers }
+
+    def server_connection_error(self):
+        return { "response": Response_ServerConnectionError }
 
     def pug_vote_added(self, pug):
         response = self.pug_status(pug)

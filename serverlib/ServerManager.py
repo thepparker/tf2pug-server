@@ -20,8 +20,8 @@ server_columns = (
     )
 
 class ServerManager(object):
-    def __init__(self, api_key, db):
-        self.api_key = api_key
+    def __init__(self, group, db):
+        self.group = group
         self.db = db
 
         self._servers = []
@@ -94,58 +94,13 @@ class ServerManager(object):
         # clear the server list first
         del self._servers[:]
 
-        self.db.get_servers(self.api_key)
+        results = self.db.get_servers(self.gro)
 
-        try:
-            cursor.execute("SELECT %s FROM servers" % (", ".join(server_columns)))
+        if not results:
+            logging.error("THERE ARE NO CONFIGURED SERVERS FOR GROUP! %d", self.group)
+            return
 
-            results = cursor.fetchall()
+        for result in results:
+            server = self.__hydrate_server(result)
 
-            if not results:
-                logging.error("THERE ARE NO CONFIGURED SERVERS")
-                return
-
-            for result in results:
-                server = self.__hydrate_server(result)
-
-                self._servers.append(server)
-
-        except:
-            logging.exception("Exception loading servers")
-
-        finally:
-            self._close_db_objects((conn, cursor))
-
-    """
-    Retrieves a db connection and a cursor in a (conn, cursor) tuple from the
-    db pool
-    """
-    def _get_db_objects(self):
-        conn = None
-        curs = None
-
-        try:
-            conn = self.db.getconn()
-            curs = conn.cursor(cursor_factory = psycopg2.extras.DictCursor)
-
-            return (conn, curs)
-        
-        except:
-            logging.exception("Exception getting db objects")
-
-            if curs:
-                curs.close()
-
-            if conn:
-                self.db.putconn(conn)
-
-    """
-    Takes a tuple of (conn, cursor), closes the cursor and puts the conn back
-    into the pool
-    """
-    def _close_db_objects(self, objects):
-        if objects[1] and not objects[1].closed:
-            objects[1].close()
-
-        if objects[0]:
-            self.db.putconn(objects[0])
+            self._servers.append(server)

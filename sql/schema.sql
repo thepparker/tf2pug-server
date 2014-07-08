@@ -1,6 +1,7 @@
+CREATE EXTENSION hstore;
 -- Contains user auth keys
 --DROP TABLE IF EXISTS api_keys;
-CREATE TABLE api_keys (name text, key text UNIQUE);
+CREATE TABLE api_keys (name text NOT NULL, key text UNIQUE NOT NULL, group integer NOT NULL);
 
 -- Servers available for use in pugs
 --DROP TABLE IF EXISTS servers;
@@ -11,18 +12,18 @@ CREATE TABLE servers (id serial, ip cidr NOT NULL, port integer NOT NULL,
 
 -- The pugs
 --DROP TABLE IF EXISTS pugs;
-CREATE TABLE pugs (id serial, size integer, state integer, map varchar(32), 
-                   map_forced boolean, players hstore, player_votes hstore,
-                   map_votes hstore, map_vote_start bigint, 
-                   map_vote_end bigint, server_id integer, team_red bigint[],
-                   team_blue bigint[], admin bigint, 
+CREATE TABLE pugs (id serial, data text NOT NULL, 
                    api_key text references api_keys(key) ON UPDATE CASCADE
                 );
 
+CREATE TABLE pug_index(id serial, pug_entity_id integer UNIQUE NOT NULL,
+                       state integer NOT NULL
+                    );
+
 -- Player stats (games played, games since med) for medic choosing
 -- DROP TABLE IF EXISTS players;
-CREATE TABLE players (id serial, steamid bigint, games_since_med integer, 
-                      games_played integer, rating decimal DEFAULT 1500);
+CREATE TABLE players (id serial, steamid bigint UNIQUE NOT NULL, games_since_med integer NOT NULL, 
+                      games_played integer NOT NULL, rating decimal DEFAULT 1500);
 
 
 -- THIS FUNCTION TAKES TWO QUERIES, AN INSERT AND AN UPDATE QUERY. 

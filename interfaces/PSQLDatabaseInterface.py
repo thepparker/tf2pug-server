@@ -161,8 +161,11 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
                     results = [ jsoninterface.loads(x[0]) for x in cursor.fetchall() ]
                 
                 # results is a list of Pug objects, converted using the jsoninterface
-                
-            return results
+
+            if results is None:
+                return []
+            else:
+                return results
 
         except:
             logging.exception("An exception occurred getting pug data")

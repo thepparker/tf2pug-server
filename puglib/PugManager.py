@@ -413,10 +413,7 @@ class PugManager(object):
         # clear the pug list
         del self._pugs[:]
  
-        pugs = self.db.get_pugs(self.api_key, TFPugJsonInterface().loads)
-
-        if pugs:
-            self._pugs = pugs
+        self._pugs = self.db.get_pugs(self.api_key, TFPugJsonInterface().loads)
         
     def _flush_pug(self, pug, new = False):
         logging.debug("Flushing pug to database. ID: %d", pug.id)

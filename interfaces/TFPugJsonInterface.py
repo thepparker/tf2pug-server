@@ -1,4 +1,4 @@
-import BaseJsonInterface.BaseJsonInterface
+from BaseJsonInterface import BaseJsonInterface
 from entities import Pug
 
 import json

@@ -1,4 +1,4 @@
-import BaseDatabaseInterface.BaseDatabaseInterface
+from BaseDatabaseInterface import BaseDatabaseInterface
 
 import logging
 from psycopg2.extras import Json

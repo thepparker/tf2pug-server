@@ -182,6 +182,7 @@ class Pug(object):
         del stat_data[self.medic_red]
 
         # add player scores to the stat data
+        logging.debug("Medics - Red: %s Blue: %s. Now calculating the rest of team", self.medic_red, self.medic_blue)
         total_pr = 0
         for cid in stat_data:
             score = stat_data[cid]["rating"]
@@ -191,7 +192,7 @@ class Pug(object):
 
         # now we can sort by score. we'll get a list of sorted ids out
         # in order of highest score to lowest
-        sorted_ids = sorted(stat_data, key = lambda k: stat_data[k]["score"], reverse = True)
+        sorted_ids = sorted(stat_data, key = lambda k: stat_data[k]["rating"], reverse = True)
 
         # now just setup the teams. SIMPLE, RIGHT? WRONG
         self.team_red.append(self.medic_red)
@@ -216,11 +217,11 @@ class Pug(object):
         for pid in ids:
             if (count % 2) == 0:
                 red.append(pid)
-                red_score += stat_data[pid]["score"]
+                red_score += stat_data[pid]["rating"]
 
             else:
                 blue.append(pid)
-                blue_score += stat_data[pid]["score"]
+                blue_score += stat_data[pid]["rating"]
 
             count += 1
 
@@ -242,8 +243,8 @@ class Pug(object):
                 
                 # if we swapped pred and pblue, would the score difference become
                 # smaller? if yes, then we should swap them
-                new_red_score = red_score - stat_data[pred]["score"] + stat_data[pblue]["score"]
-                new_blue_score = blue_score + stat_data[pred]["score"] - stat_data[pblue]["score"]
+                new_red_score = red_score - stat_data[pred]["rating"] + stat_data[pblue]["rating"]
+                new_blue_score = blue_score + stat_data[pred]["rating"] - stat_data[pblue]["rating"]
                 new_diff = abs(new_red_score - new_blue_score)
 
                 if new_diff < curr_score_diff:

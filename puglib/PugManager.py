@@ -316,6 +316,8 @@ class PugManager(object):
         # need to get player stats from livelogs, and med stats from pug db
         stats = self.__get_pug_stats(pug)
 
+        logging.debug("Player stats: %s", stats)
+
         for cid in pug.player_list():
             # if the CID has no pug data, they need to be added
             if not (cid in stats):

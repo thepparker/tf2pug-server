@@ -191,13 +191,18 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
                             [Json(pug_json, dumps=jsoninterface.dumps)])
 
             result = cursor.fetchone()
-
-            conn.commit()
-            
+            pid = None
             if result:
-                return result[0]
+                pid = result[0]
             else:
-                return None
+                raise Exception("No ID returned when inserting new pug")
+
+            cursor.execute("""INSERT INTO pugs_index (pug_entity_id, finished, api_key) 
+                              VALUES (%s, %s, %s)""", [pid, pug.game_over, api_key])
+            
+            conn.commit()
+
+            return pid
 
         except:
             logging.exception("An exception occurred flushing new pug")

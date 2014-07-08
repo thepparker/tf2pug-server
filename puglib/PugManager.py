@@ -357,14 +357,18 @@ class PugManager(object):
     def __load_pugs(self):
         # clear the pug list
         del self._pugs[:]
+        logging.debug("Attempting to load pugs under API key %s", self.api_key)
  
-        self._pugs = self.db.get_pugs(self.api_key, TFPugJsonInterface().loads)
+        pugs = self.db.get_pugs(self.api_key, TFPugJsonInterface().loads)
+
+        logging.debug("Pugs loaded: %s", pugs)
 
         for pug in self._pugs:
-            logging.debug("Loaded pug id %d. Server id: %d", pug.id, pug.server_id)
-
             pug.server = self.server_manager.get_server_by_id(pug.server_id)
 
+            logging.debug("Loaded pug id %d. Server id: %d", pug.id, pug.server_id)
+
+            self._pugs.append(pug)
         
     def _flush_pug(self, pug, new = False):
         logging.debug("Flushing pug to database. ID: %d", pug.id)

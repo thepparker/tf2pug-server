@@ -10,13 +10,14 @@ CREATE TABLE api_keys (name text NOT NULL, pug_group integer NOT NULL,
 CREATE TABLE servers (id serial, ip cidr NOT NULL, port integer NOT NULL, 
                       rcon_password text NOT NULL, password text, 
                       pug_id integer NOT NULL, log_port integer,
-                      group integer references api_keys(server_group) ON UPDATE CASCADE
+                      server_group integer references api_keys(server_group) ON UPDATE CASCADE
                     );
 
 -- The pugs
 --DROP TABLE IF EXISTS pugs;
 CREATE TABLE pugs (id serial, data text NOT NULL, 
                    modified TIMESTAMP DEFAULT current_timestamp);
+
 -- Update trigger for pugs
 CREATE OR REPLACE FUNCTION update_modified_time() 
 RETURNS TRIGGER AS $_$

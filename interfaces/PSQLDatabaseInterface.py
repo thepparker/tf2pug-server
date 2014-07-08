@@ -225,7 +225,7 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
             cursor = conn.cursor(cursor_factory = psycopg2.extras.DictCursor)
 
             cursor.execute("""SELECT s.* FROM servers s
-                              WHERE s.group = %s""", [group])
+                              WHERE s.server_group = %s""", [group])
 
             return cursor.fetchall()
 

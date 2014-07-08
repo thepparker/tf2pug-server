@@ -294,3 +294,7 @@ class Pug(object):
     def players_list(self):
         return self._players.keys()
 
+    @property
+    def game_over(self):
+        return self.state == states["GAME_OVER"]
+

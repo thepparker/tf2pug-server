@@ -14,7 +14,6 @@ CREATE TABLE servers (id serial, ip cidr NOT NULL, port integer NOT NULL,
 --DROP TABLE IF EXISTS pugs;
 CREATE TABLE pugs (id serial, data text NOT NULL, 
                    modified TIMESTAMP DEFAULT current_timestamp);
-
 -- Update trigger for pugs
 CREATE OR REPLACE FUNCTION update_modified_time() 
 RETURNS TRIGGER AS $_$
@@ -36,8 +35,12 @@ CREATE TABLE pugs_index(id serial, pug_entity_id integer UNIQUE NOT NULL,
 -- Player stats (games played, games since med) for medic choosing
 -- DROP TABLE IF EXISTS players;
 CREATE TABLE players (id serial, steamid bigint UNIQUE NOT NULL, games_since_med integer NOT NULL, 
-                      games_played integer NOT NULL, rating decimal DEFAULT 1500);
+                      games_played integer NOT NULL, rating decimal DEFAULT 1500,
+                      modified TIMESTAMP DEFAULT current_timestamp);
 
+-- Trigger for players modified (last playtime)
+CREATE TRIGGER update_players_modtime BEFORE UPDATE ON players
+  FOR EACH ROW EXECUTE PROCEDURE update_modified_time();
 
 -- THIS FUNCTION TAKES TWO QUERIES, AN INSERT AND AN UPDATE QUERY. 
 -- IT ATTEMPTS TO RUN THE UPDATE QUERY FIRST, IF UNSUCCESSFUL IT 

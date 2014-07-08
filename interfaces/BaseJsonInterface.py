@@ -1,5 +1,4 @@
 import json
-
 """
 A JSON Interface class, which will encode/decode Pug objects into/from JSON.
 This is nice to have because psycopg2 lets us specify methods for converting
@@ -20,7 +19,7 @@ class BaseJsonInterface(json):
     @return JSON A JSON (string) object
     """
     def dumps(self, obj):
-        raise NotImplementedError("You need to override this method")
+        return json.dumps(obj)
 
     """
     Takes a JSON object and converts it to a Pug object
@@ -30,4 +29,4 @@ class BaseJsonInterface(json):
     @return Pug A Pug object
     """
     def loads(self, data):
-        raise NotImplementedError("You need to override this method")
+        return json.loads(data)

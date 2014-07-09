@@ -41,14 +41,6 @@ class Server(object):
 
         return res
 
-    def reset(self):
-        self.pug = None
-        self.pug_id = -1
-
-        self.rcon("say This server is being reset because the pug is over; kickall; sv_password getOuTPLZ")
-
-        self._end_listener()
-
     # reserves a server for a pug
     def reserve(self, pug):
         self.pug = pug
@@ -70,14 +62,30 @@ class Server(object):
         rcon_command = "kickall; changelevel %s; sv_password %s" % (self.pug.map, self.password)
         self.rcon(rcon_command)
 
+    def start_game(self, start_time = 10):
+        if not pug.live:
+            self.rcon("!!! The game is starting in %(st)s !!!; mp_restartgame %(st)s" % { 
+                        "st": start_time
+                    })
+
+            pug.begin_game()
+
+    def reset(self):
+        self.pug = None
+        self.pug_id = -1
+
+        self.rcon("say This server is being reset because the pug is over; kickall; sv_password getOuTPLZ")
+
+        self._end_listener()
+
     def _setup_listener(self, log_port = 0):
         if log_port is None:
             log_port = 0
-            
+
         # make an instance of udp server, log interface, and start the listener
         server_address = (settings.listen_ip, log_port) # bind to any available IP
 
-        self._log_interface = TFLogInterface.TFLogInterface(self)
+        self._log_interface = TFLogInterface.TFLogInterface(self, self.pug)
 
         self._listener = UDPServer.UDPServer(server_address, self._log_interface.parse)
         self._listener.start()
@@ -86,19 +94,19 @@ class Server(object):
 
         self.rcon("logaddress_add %s:%s" % self._listener.server_address)
 
-    def late_loaded(self):
-        # if there was last a pug in progress on this server, re-establish
-        # the listener... it doesn't really need to be the same port, it could
-        # be any port
-        if self.pug_id > 0:
-            self._setup_listener(self.log_port)
-
     def _end_listener(self):
         self.rcon("logaddress_del %s:%s" % self._listener.server_address)
         self._listener.close()
 
         self._log_interface = None
         self.log_port = 0
+
+    def late_loaded(self):
+        # if there was last a pug in progress on this server, re-establish
+        # the listener... it doesn't really need to be the same port, it could
+        # be any port
+        if self.pug_id > 0:
+            self._setup_listener(self.log_port)
 
     @property
     def in_use(self):

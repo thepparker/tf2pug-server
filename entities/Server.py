@@ -71,6 +71,9 @@ class Server(object):
         self.rcon(rcon_command)
 
     def _setup_listener(self, log_port = 0):
+        if log_port is None:
+            log_port = 0
+            
         # make an instance of udp server, log interface, and start the listener
         server_address = (settings.listen_ip, log_port) # bind to any available IP
 

@@ -5,7 +5,6 @@ as examples
 """
 
 import socket
-import time
 import logging
 
 from tornado import ioloop

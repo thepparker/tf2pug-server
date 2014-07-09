@@ -15,7 +15,7 @@ import time
 
 def basicListener():
     server_address = (settings.listen_ip, 0)
-    iface = TFLogInterface.TFLogInterface(None)
+    iface = TFLogInterface.TFLogInterface(None, None)
 
     listener = UDPServer.UDPServer(server_address, iface.parse)
     listener_address = listener.server_address
@@ -57,11 +57,15 @@ def message_basicTest(d):
     newsocket.connect(('127.0.0.1', d.listener_address[1]))
 
     newsocket.send("BASIC TEST")
+    newsocket.send("BASIC TEST")
+    newsocket.send("BASIC TEST")
     newsocket.close()
 
 def message_serverTest(d):
     newsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     newsocket.connect(('127.0.0.1', d.server_address[1]))
+    newsocket.send("SERVER TEST!")
+    newsocket.send("SERVER TEST!")
     newsocket.send("SERVER TEST!")
 
     newsocket.close()

@@ -1,15 +1,15 @@
+import logging
+logging.basicConfig()
+
 import UDPServer
 from interfaces import TFLogInterface, PSQLDatabaseInterface
 from entities import Server
 from serverlib import ServerManager
 from tornado import ioloop
 import settings
-import logging
 import psycopg2
 import threading
 import socket
-
-logging.basicConfig(level=logging.DEBUG)
 
 server = None
 listener = None
@@ -61,8 +61,15 @@ def message_serverTest():
     newsocket.close()
 
 def main():
-    thread = threading.thread(target = start)
+    thread = threading.Thread(target = start)
     thread.start()
 
+    while listener is None:
+        time.sleep(1)
+
     message_basicTest()
+
+    while server is None:
+        time.sleep(1)
+        
     message_serverTest()

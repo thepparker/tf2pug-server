@@ -13,9 +13,6 @@ import threading
 import socket
 import time
 
-server_address = None
-listener_address = None
-
 def basicListener():
     server_address = (settings.listen_ip, 0)
     iface = TFLogInterface.TFLogInterface(None)
@@ -24,6 +21,8 @@ def basicListener():
     listener_address = listener.server_address
 
     listener.start()
+    print "listener test is up"
+    return listener_address
 
 def serverListener():
     dsn = "dbname=%s user=%s password=%s host=%s port=%s" % (
@@ -42,41 +41,47 @@ def serverListener():
     server._setup_listener(50000)
     logging.info("server addr: %s", server._listener.server_address)
     server_address = server._listener.server_address
+    print "server test is up"
+    return server_address
 
-def start():
-    basicListener()
-    serverListener()
+def start(d):
+    d.listener_address = basicListener()
+    d.server_address = serverListener()
     try:
         ioloop.IOLoop.instance().start()
     except:
         quit()
 
-def message_basicTest():
+def message_basicTest(d):
     newsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    newsocket.connect(('127.0.0.1', listener_address[1]))
+    newsocket.connect(('127.0.0.1', d.listener_address[1]))
 
     newsocket.send("BASIC TEST")
     newsocket.close()
 
-def message_serverTest():
+def message_serverTest(d):
     newsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    newsocket.connect(('127.0.0.1', server_address[1]))
+    newsocket.connect(('127.0.0.1', d.server_address[1]))
     newsocket.send("SERVER TEST!")
 
     newsocket.close()
 
+class data(object):
+    listener_address = None
+    server_address = None
+
 def main():
-    thread = threading.Thread(target = start)
-    try:
-        thread.start()
+    d = data()
+    thread = threading.Thread(target = start, args=(d,))
+    thread.daemon = True
+    thread.start()
 
-        while listener_address is None and server_address is None:
-            print "don't have addresses yet zzzz"
+    while d.listener_address is None or d.server_address is None:
+        #print "dont have addresses yetttttt"
+        pass
 
-        message_basicTest()
-        message_serverTest()
+    message_basicTest(d)
+    message_serverTest(d)
     
-    except:
-        quit()
 
 main()

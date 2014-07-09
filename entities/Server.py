@@ -81,14 +81,20 @@ class Server(object):
 
         listener_ip, self.log_port = self._listener.server_address
 
-        self.rcon("logaddress_add %s:%s" % (self._listener.server_address))
+        self.rcon("logaddress_add %s:%s" % self._listener.server_address)
 
     def late_loaded(self):
-        self._setup_listener(self.log_port)
+        # if there was last a pug in progress on this server, re-establish
+        # the listener... it doesn't really need to be the same port, it could
+        # be any port
+        if self.pug_id > 0:
+            self._setup_listener(self.log_port)
 
     def _end_listener(self):
-        #self.rcon("logaddress_del blah")
+        self.rcon("logaddress_del %s:%s" % self._listener.server_address)
+        self._listener.close()
 
+        self._log_interface = None
         self.log_port = 0
 
     @property

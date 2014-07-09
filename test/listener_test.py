@@ -8,18 +8,20 @@ from serverlib import ServerManager
 from tornado import ioloop
 import settings
 import psycopg2
+import psycopg2.pool
 import threading
 import socket
+import time
 
-server = None
-listener = None
+server_address = None
+listener_address = None
 
 def basicListener():
     server_address = (settings.listen_ip, 0)
     iface = TFLogInterface.TFLogInterface(None)
 
     listener = UDPServer.UDPServer(server_address, iface.parse)
-    print listener.server_address
+    listener_address = listener.server_address
 
     listener.start()
 
@@ -39,37 +41,42 @@ def serverListener():
 
     server._setup_listener(50000)
     logging.info("server addr: %s", server._listener.server_address)
+    server_address = server._listener.server_address
 
 def start():
     basicListener()
     serverListener()
-
-    ioloop.IOLoop.instance().start()
+    try:
+        ioloop.IOLoop.instance().start()
+    except:
+        quit()
 
 def message_basicTest():
     newsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    newsocket.connect(('127.0.0.1', listener.server_address[1]))
+    newsocket.connect(('127.0.0.1', listener_address[1]))
 
     newsocket.send("BASIC TEST")
     newsocket.close()
 
 def message_serverTest():
     newsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    newsocket.connect(('127.0.0.1', 50000))
+    newsocket.connect(('127.0.0.1', server_address[1]))
     newsocket.send("SERVER TEST!")
 
     newsocket.close()
 
 def main():
     thread = threading.Thread(target = start)
-    thread.start()
+    try:
+        thread.start()
 
-    while listener is None:
-        time.sleep(1)
+        while listener_address is None and server_address is None:
+            print "don't have addresses yet zzzz"
 
-    message_basicTest()
+        message_basicTest()
+        message_serverTest()
+    
+    except:
+        quit()
 
-    while server is None:
-        time.sleep(1)
-        
-    message_serverTest()
+main()

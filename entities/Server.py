@@ -4,6 +4,9 @@ import string
 import random
 
 from serverlib import Rcon
+from interfaces import TFLogInterface
+import UDPServer
+import settings
 
 def random_string(len=24, chars=string.ascii_lowercase + string.ascii_uppercase + string.digits):
     #generates a random string of length len
@@ -67,8 +70,21 @@ class Server(object):
         rcon_command = "kickall; changelevel %s; sv_password %s" % (self.pug.map, self.password)
         self.rcon(rcon_command)
 
-    def _setup_listener(self):
-        pass
+    def _setup_listener(self, log_port = 0):
+        # make an instance of udp server, log interface, and start the listener
+        server_address = (settings.listen_ip, log_port) # bind to any available IP
+
+        self._log_interface = TFLogInterface.TFLogInterface(self)
+
+        self._listener = UDPServer.UDPServer(server_address, self._log_interface.parse)
+        self._listener.start()
+
+        listener_ip, self.log_port = self._listener.server_address
+
+        self.rcon("logaddress_add %s:%s" % (self._listener.server_address))
+
+    def late_loaded(self):
+        self._setup_listener(self.log_port)
 
     def _end_listener(self):
         #self.rcon("logaddress_del blah")

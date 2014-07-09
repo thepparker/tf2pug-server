@@ -81,4 +81,7 @@ class ServerManager(object):
         for result in results:
             server = self.__hydrate_server(result)
 
+            # we need to re-establish the listener and shiz
+            server.late_loaded()
+
             self._servers.append(server)

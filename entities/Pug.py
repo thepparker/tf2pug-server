@@ -52,6 +52,11 @@ class Pug(object):
         self.team_red = []
         self.team_blue = []
 
+        self.game_scores = {
+            "red": 0,
+            "blue": 0
+        }
+
         self.medic_red = -1
         self.medic_blue = -1
 
@@ -288,6 +293,11 @@ class Pug(object):
 
         return score
 
+    def begin_game(self):
+        self.state = states["GAME_STARTED"]
+
+    def update_score(self, team, score):
+        self.game_scores[team] = score
 
     def has_player(self, player_id):
         return player_id in self._players

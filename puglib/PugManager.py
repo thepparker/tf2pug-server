@@ -312,6 +312,21 @@ class PugManager(object):
 
                 self.__flush_med_stats(pug)
 
+    def pug_ended_check(self):
+        # shallow copy because we cannot modify a list as we are iterating
+        # over it
+        for pug in self._pugs.copy():
+            if (pug.state == Pug.states["GAME_OVER"]):
+                # game is over! we need to update player rating based on the
+                # results, flush the pug one final time, and then discard
+                # the pug object
+                self.__update_ratings(pug)
+
+                self._flush_pug(pug)
+
+                self._pugs.discard(pug)
+
+
     def _get_pug_stat_data(self, pug):
         # need to get player stats from livelogs, and med stats from pug db
         stats = self.__get_pug_stats(pug)
@@ -354,7 +369,12 @@ class PugManager(object):
     @param pug The pug to update ELO for
     """
     def __update_ratings(self, pug):
-        pass
+        for team in pug.teams:
+            team_game_score = pug.game_scores[team]
+            team_players = pug.teams[team]
+            team_elo = pug.teams["rating"][team]
+
+
 
     def __load_pugs(self):
         # clear the pug list

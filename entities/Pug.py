@@ -59,8 +59,10 @@ class Pug(object):
             "blue": 0
         }
 
-        self.medic_red = -1
-        self.medic_blue = -1
+        self.medics = {
+            "red": -1,
+            "blue": -1
+        }
 
     def add_player(self, player_id, player_name):
         if self.full:
@@ -187,8 +189,8 @@ class Pug(object):
         random.shuffle(potential_medics)
         logging.debug("Potential medics shuffled: %s", potential_medics)
 
-        self.medic_blue = potential_medics.pop()
-        self.medic_red = potential_medics.pop()
+        self.medics["blue"] = potential_medics.pop()
+        self.medics["red"] = potential_medics.pop()
 
         # now that we have our medics, we can remove them from the player stats
         # & calculate player scores
@@ -196,7 +198,8 @@ class Pug(object):
         del stat_data[self.medic_red]
 
         # add player scores to the stat data
-        logging.debug("Medics - Red: %s Blue: %s. Now calculating the rest of team", self.medic_red, self.medic_blue)
+        logging.debug("Medics - Red: %s Blue: %s. Now calculating the rest of team", 
+                        self.medics["red"], self.medics["blue"])
         total_pr = 0
         for cid in stat_data:
             score = stat_data[cid]["rating"]
@@ -210,8 +213,8 @@ class Pug(object):
 
         # now just setup the teams. SIMPLE, RIGHT? WRONG
 
-        self.__add_to_team("red", self.medic_red)
-        self.__add_to_team("blue", self.medic_blue)
+        self.__add_to_team("red", self.medics["red"])
+        self.__add_to_team("blue", self.medics["blue"])
 
         self.__allocate_players(sorted_ids, stat_data)
 
@@ -283,10 +286,11 @@ class Pug(object):
 
         # our teams are now as balanced as we're going to get them, so merge
         # the temp teams with the real teams
-        self.team_red += red
-        self.team_blue += blue
+        self.__add_to_team("red", red)
+        self.__add_to_team("blue", blue)
 
-        logging.info("Team allocation complete. Red: %s (Score: %s), Blue: %s (Score: %s)", self.team_red, red_score, self.team_blue, blue_score)
+        logging.info("Team allocation complete. Red: %s (Score: %s), Blue: %s (Score: %s)", 
+                        self.teams["red"], red_score, self.teams["blue"], blue_score)
 
     def _player_score(self, pdata):
         # we need to establish a score for each player. we'll call this the 

@@ -49,8 +49,10 @@ class Pug(object):
         self.server = None
         self.server_id = -1
 
-        self.team_red = []
-        self.team_blue = []
+        self.teams = {
+            "red": []
+            "blue": []
+        }
 
         self.game_scores = {
             "red": 0,
@@ -68,6 +70,13 @@ class Pug(object):
             self.admin = player_id
 
         self._players[player_id] = player_name
+
+    """
+    Add a player to the specified team list. Player can also be a list, as
+    per __allocate_players.
+    """
+    def __add_to_team(self, team, player):
+        self.teams[team] += list(player)
 
     def remove_player(self, player_id):
         if player_id in self._players:
@@ -200,8 +209,9 @@ class Pug(object):
         sorted_ids = sorted(stat_data, key = lambda k: stat_data[k]["rating"], reverse = True)
 
         # now just setup the teams. SIMPLE, RIGHT? WRONG
-        self.team_red.append(self.medic_red)
-        self.team_blue.append(self.medic_blue)
+
+        self.__add_to_team("red", self.medic_red)
+        self.__add_to_team("blue", self.medic_blue)
 
         self.__allocate_players(sorted_ids, stat_data)
 

@@ -38,6 +38,7 @@ class Pug(object):
         self.admin = None
         #players is a dict in the form { cid: "name", ... }
         self._players = {}
+        self.player_stats = {}
 
         self.player_votes = {}
         self.map_votes = {}
@@ -52,6 +53,10 @@ class Pug(object):
         self.teams = {
             "red": []
             "blue": []
+            "rating": {
+                "red": 0,
+                "blue": 0
+            }
         }
 
         self.game_scores = {
@@ -162,6 +167,9 @@ class Pug(object):
         if not self.full:
             return
 
+        # keep all player stats for rating updating post-game
+        self.player_stats = stat_data
+
         # To select teams, we have to first select a medic for each team. 
         # After that we need to establish a score for each player and sort 
         # them by it
@@ -189,34 +197,27 @@ class Pug(object):
         random.shuffle(potential_medics)
         logging.debug("Potential medics shuffled: %s", potential_medics)
 
-        self.medics["blue"] = potential_medics.pop()
-        self.medics["red"] = potential_medics.pop()
+        medics = []
+        for team in self.teams:
+            medic = potential_medics.pop()
 
-        # now that we have our medics, we can remove them from the player stats
-        # & calculate player scores
-        del stat_data[self.medic_blue]
-        del stat_data[self.medic_red]
+            self.medics[team] = medic
+            self.__add_to_team(team, medic)
+            medics.append(medic)
 
-        # add player scores to the stat data
         logging.debug("Medics - Red: %s Blue: %s. Now calculating the rest of team", 
                         self.medics["red"], self.medics["blue"])
-        total_pr = 0
-        for cid in stat_data:
-            score = stat_data[cid]["rating"]
-
-            total_pr += score
-            logging.debug("PLAYER: %s, SCORE: %s. New total: %s", cid, score, total_pr)
 
         # now we can sort by score. we'll get a list of sorted ids out
         # in order of highest score to lowest
         sorted_ids = sorted(stat_data, key = lambda k: stat_data[k]["rating"], reverse = True)
+        
+        # remove the medics from the sorted ids, so we don't process them again
+        # when allocating the rest of the players
+        player_ids = [ x for x in sorted_ids if x not in medics ]
 
         # now just setup the teams. SIMPLE, RIGHT? WRONG
-
-        self.__add_to_team("red", self.medics["red"])
-        self.__add_to_team("blue", self.medics["blue"])
-
-        self.__allocate_players(sorted_ids, stat_data)
+        self.__allocate_players(player_ids, stat_data)
 
     def __allocate_players(self, ids, stat_data):
         # each team needs to have approximately total_pr/2 skill rating, or
@@ -312,6 +313,10 @@ class Pug(object):
 
     def update_score(self, team, score):
         self.game_scores[team] = score
+
+    def end_game(self):
+        self.state = states["GAME_OVER"]
+        # do we need to do anything else here..? rest is handled by the manager
 
     def has_player(self, player_id):
         return player_id in self._players

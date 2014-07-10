@@ -77,9 +77,10 @@ class Application(tornado.web.Application):
         self._auth_cache = {}
 
 
-        # perform the mapvote timer check every 2 seconds
-        self._map_vote_timer = tornado.ioloop.PeriodicCallback(self._map_vote_check, 2000)
-        self._map_vote_timer.start()
+        # check pug status every 2 seconds. this status includes map vote,
+        # ending, etc.
+        self._pug_status_timer = tornado.ioloop.PeriodicCallback(self._pug_status_check, 2000)
+        self._pug_status_timer.start()
 
         # loading the pug managers will also load all server managers
         self.__load_pug_managers()
@@ -163,11 +164,15 @@ class Application(tornado.web.Application):
 
             return new_manager
 
-    def _map_vote_check(self):
+    def _pug_status_check(self):
         curr_ctime = time.time()
 
         for manager in self._pug_managers.values():
+            # first check map votes
             manager.map_vote_check(curr_ctime)
+
+            # now check for ended pugs
+            manager.pug_ended_check()
 
     def __load_pug_managers(self):
         logging.info("Loading pug managers for all users")
@@ -186,7 +191,7 @@ class Application(tornado.web.Application):
                 self.get_pug_manager(key_tuple[3])
 
     def close(self):
-        self._map_vote_timer.stop()
+        self._pug_status_timer.stop()
 
         # flush the managers to the database
         logging.info("Flushing pug managers")

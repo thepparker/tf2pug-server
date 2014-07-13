@@ -53,10 +53,11 @@ class Pug(object):
         self.teams = {
             "red": []
             "blue": []
-            "rating": {
-                "red": 0,
-                "blue": 0
-            }
+        }
+
+        self.team_ratings {
+            "red": 0,
+            "blue": 0
         }
 
         self.game_scores = {
@@ -289,6 +290,9 @@ class Pug(object):
         # the temp teams with the real teams
         self.__add_to_team("red", red)
         self.__add_to_team("blue", blue)
+
+        self.team_ratings["red"] = red_score
+        self.team_ratings["blue"] = blue_score
 
         logging.info("Team allocation complete. Red: %s (Score: %s), Blue: %s (Score: %s)", 
                         self.teams["red"], red_score, self.teams["blue"], blue_score)

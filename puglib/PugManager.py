@@ -357,22 +357,57 @@ class PugManager(object):
         return self.db.get_tf_player_stats(pug.player_list())
 
     def __flush_med_stats(self, pug):
-        medics = [ pug.medic_red, pug.medic_blue ]
+        medics = pug.medics.values()
 
         nonmedics = [ x for x in pug._players if x not in medics ]
 
         self.db.flush_tf_pug_med_stats(medics, nonmedics)
 
     """
-    Calculates the new ELO of players after the game and updates it in the database
+    Calculates the new rating of players after the game and updates it in the 
+    database
 
-    @param pug The pug to update ELO for
+    @param pug The pug to update ratings for
     """
     def __update_ratings(self, pug):
+        team1, team2 = pug.teams.keys()
+        opposition = {
+            team1: team2,
+            team2: team1
+        }
+
         for team in pug.teams:
             team_game_score = pug.game_scores[team]
             team_players = pug.teams[team]
-            team_elo = pug.teams["rating"][team]
+            team_rating = pug.team_ratings[team]
+
+            opponent = opposition[team]
+
+            opponent_game_score = pug.game_scores[opponent]
+            opponent_players = pug.teams[opponent]
+            opponent_rating = pug.team_ratings[opponent]
+
+            rating_diff = opponent_rating - team_rating
+
+            expected_score = 1/(1+10^(rating_diff/400)) # 0 < E < 1
+            """
+            We use an elo implementation to calculate a player's new
+            rating based on the actual and expected outcome of the game.
+            For the elo algorithm, please see the following:
+            https://en.wikipedia.org/wiki/Elo_rating_system#Mathematical_details
+
+
+            """
+            if team_game_score > opponent_game_score:
+                pass
+
+            # if this team lost, we need to subtract elo from the team
+            elif team_game_score < opponent_game_score:
+                pass
+
+            # else, it's a draw. in this case, should we do anything?
+            else:
+                pass
 
 
 

@@ -69,19 +69,37 @@ class ServerManager(object):
         return server
 
     def __load_servers(self):
-        # clear the server list first?
-        del self._servers[:]
-
         results = self.db.get_servers(self.group)
 
         if not results:
             logging.error("THERE ARE NO CONFIGURED SERVERS FOR GROUP %d!", self.group)
             return
 
-        for result in results:
-            server = self.__hydrate_server(result)
+        new_servers = [ self.__hydrate_server(x) for x in results ]
+        new_list = []
 
-            # we need to re-establish the listener and shiz
-            server.late_loaded()
+        for new_server in new_servers:
+            existing_server = self.get_server_by_id(new_server.id)
+            if existing_server is not None:
+                # this server exists in the server list already, so we just
+                # update some params
+                existing_server.ip = new_server.ip
+                existing_server.port = new_server.port
+                existing_server.rcon_password = new_server.rcon_password
 
-            self._servers.append(server)
+                new_list.append(existing_server)
+            
+            else:
+                # this is a new server coming into this manager (it may be 
+                # a fresh load), so we late load it, and append it to the
+                # new list
+                new_server.late_loaded()
+
+                new_list.append(new_server)
+
+
+        # we now have a list of all the servers belonging to this manager's
+        # server group. if a server was removed from the group in the db,
+        # it will be reflected here as well. likewise if a new server was
+        # added
+        self._servers = new_list

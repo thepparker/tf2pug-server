@@ -11,7 +11,7 @@ import time
 import collections
 
 import settings
-import Livelogs
+import rating
 
 from entities import Pug
 from interfaces.TFPugJsonInterface import TFPugJsonInterface
@@ -413,40 +413,39 @@ class PugManager(object):
             team2: team1
         }
 
+        # we need to construct 2 lists of Rating, one for each team. These will
+        # be passed to the rating calculator
+        ratings = {
+            team1: [],
+            team2: []
+        }
+
+        # rank in order of winning team. i.e [0, 1] = team 1 > team 2
+        # [1, 0] = team 1 < team 2
+        # we'll always put it in order of team 1 - team 2
+        ranking = [0, 1]
+
         for team in pug.teams:
-            # this is a bit inefficient, in that it gets this data twice,
-            # but it avoids code duplication so whatever
-            team_game_score = pug.game_scores[team]
-            team_players = pug.teams[team]
-            team_rating = pug.team_ratings[team]
+            ratings[team] = [ rating.Rating(pug.player_stats[x]["rating"]) for x in pug.teams[team] ]
 
-            opponent = opposition[team]
+        team1_game_score = pug.game_scores[team1]
+        team2_game_score = pug.game_scores[team2]
 
-            opponent_game_score = pug.game_scores[opponent]
-            opponent_players = pug.teams[opponent]
-            opponent_rating = pug.team_ratings[opponent]
+        if team1_game_score > team2_game_score:
+            ranking = [0, 1]
 
-            if team_game_score > opponent_game_score:
-                actual_score = 1
-                for p in pug.teams[team]:
-                    p_rating = pug.player_stats[p]["rating"]
-                    duel_sum = 0
-                    for e in pug.teams[opponent]:
-                        e_rating = pug.player_stats[e]["rating"]
-                        expected_score = 1/(1+10^((e_rating-p_rating)/400)) # 0 < E < 1
-                        rating_gain = K_factor*(actual_score-expected_score)
+        elif team1_game_score < team2_game_score:
+            ranking = [1, 0]
+            
+        else:
+            ranking = [0, 0]
 
-                        duel_sum += rating_gain
+        elo_calc = rating.EloDuel()
+        new_ratings = elo_calc.calculate_ratings([ratings[team1], ratings[team2]], ranking)
 
-                    new_rating = p_rating + duel_sum/len(pug.teams[opponent])
-
-            # if this team lost, we need to subtract elo from the team
-            elif team_game_score < opponent_game_score:
-                actual_score = 0
-                
-            else:
-                actual_score = 0.5
-
+        # new_ratings is a tuple in the form (team1_new, team2_new), where each
+        # teamX_new is a list of player ratings in the same order they were
+        # passed in
 
 
     def __load_pugs(self):

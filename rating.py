@@ -46,7 +46,7 @@ class Rating(object):
 
     def __repr__(self):
         t = type(self)
-        return "%s(rating = %0.2f)" % (".".join([t.__module__, t.__name__]), self.rating)
+        return "%s(rating = %0.3f)" % (".".join([t.__module__, t.__name__]), self.rating)
 
     def __add__(self, other):
         if isinstance(other, Rating):
@@ -130,8 +130,8 @@ def calculate_rating(teams, rank):
                 new_rating = float(p) + duel_sum/num_e_players
                 new[i].append(Rating(new_rating))
 
-    # make new immutable
-    new = tuple([ tuple(x) for x in new ])
+    # make new teams immutable
+    new = [ tuple(x) for x in new ]
 
     return new
 

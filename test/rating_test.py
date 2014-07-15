@@ -16,7 +16,6 @@ def rate_4v4_1500():
     team1 = [ Rating(1570+x) for x in range(4) ]
     team2 = [ Rating(1500+20*x) for x in range(4) ]
     
-    print (team1,team2)
     assert calculate_rating([team1, team2], [0, 1]) == [
             (Rating(rating = 1580.630), Rating(rating = 1581.596), 
                 Rating(rating = 1582.562), Rating(rating = 1583.528)), 
@@ -42,8 +41,20 @@ def rate_1v1_cross_tier():
     team1 = [ Rating(1850) ]
     team2 = [ Rating(1750) ]
 
-    print (team1, team2)
-    print calculate_rating([team1, team2], [1, 0])
+    assert calculate_rating([team1, team2], [1, 0]) == [
+            (Rating(rating = 1843.599),), 
+            (Rating(rating = 1756.401),)
+        ]
+
+    assert calculate_rating([team1, team2], [0, 1]) == [
+            (Rating(rating = 1852.879),), 
+            (Rating(rating = 1747.121),)
+        ]
+
+    assert calculate_rating([team1, team2], [0, 0]) == [
+            (Rating(rating = 1848.599),), 
+            (Rating(rating = 1751.401),)
+        ]
 
 test_rating()
 rate_4v4_1500()

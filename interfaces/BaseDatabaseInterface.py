@@ -46,6 +46,12 @@ class BaseDatabaseInterface(object):
         raise NotImplementedError("This must be implemented")
 
     """
+    Updates player ratings.
+    """
+    def flush_updated_ratings(self, ratings_tuple):
+        raise NotImplementedError("This must be implemented")
+
+    """
     Gets pug data pertaining to a specified API key, and returns it as a list
     of JSON objects, which can be parsed through the JSON interface by the
     caller to get pug objects. Pug management methods are independent of game,

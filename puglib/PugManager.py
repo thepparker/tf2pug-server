@@ -370,6 +370,43 @@ class PugManager(object):
     @param pug The pug to update ratings for
     """
     def __update_ratings(self, pug):
+        """
+        We use an Elo implementation to calculate a player's new
+        rating based on the actual and expected outcome of the game.
+        For the basic elo algorithm, please see the following:
+        https://en.wikipedia.org/wiki/Elo_rating_system#Mathematical_details
+
+        Because of the fact that we have teams, we cannot use a simple 1v1
+        method of taking/giving points. To use Elo with teams, we use a 
+        'duels' method. That is, each player is considered to have dueled
+        each player on the other team, and the points gained (or lost) is
+        the average of the sum.
+        For example, player 1 on team 1 has 1700 rating. Team 1 won. If we
+        were to calculate the points he'd gain, we'd calculate the gain for
+        each player of the opposition, sum it, and then divide it by the
+        number of players (average it).
+
+
+        There are also other algorithms that could be used, such as TrueSkill,
+        or Glicko, which both have their ups and downs. For TrueSkill, I feel 
+        that the player's rating can vary greatly after a match. Sometimes
+        increasing after a win, sometimes decreasing depending on the team
+        ratings. The amount that the scores change by can vary significantly
+        too, such as an increase of ~60 for a player with 1700 rating when 
+        winning against a team with players all of lower rating. That being
+        said, it is probably more suitable to a team game than a hacked elo
+        based system. There is a python library available for TrueSkill.
+
+        Glicko, like Elo, is designed for chess. Therefore, to use it, it would
+        be necessary to hack it together for a team-based game, such as using
+        the duels method. The algorithm is a bit more complex, but not too
+        difficult to implement. It utilises a guassian distribution, and
+        uncertainty factors into the rating. There is also a python library
+        available for Glicko2
+
+        If a duel-based Elo system does not work out, implementing TrueSkill
+        or Glicko will not be too hard.
+        """
         team1, team2 = pug.teams.keys()
         opposition = {
             team1: team2,
@@ -377,6 +414,8 @@ class PugManager(object):
         }
 
         for team in pug.teams:
+            # this is a bit inefficient, in that it gets this data twice,
+            # but it avoids code duplication so whatever
             team_game_score = pug.game_scores[team]
             team_players = pug.teams[team]
             team_rating = pug.team_ratings[team]
@@ -387,27 +426,26 @@ class PugManager(object):
             opponent_players = pug.teams[opponent]
             opponent_rating = pug.team_ratings[opponent]
 
-            rating_diff = opponent_rating - team_rating
-
-            expected_score = 1/(1+10^(rating_diff/400)) # 0 < E < 1
-            """
-            We use an elo implementation to calculate a player's new
-            rating based on the actual and expected outcome of the game.
-            For the elo algorithm, please see the following:
-            https://en.wikipedia.org/wiki/Elo_rating_system#Mathematical_details
-
-
-            """
             if team_game_score > opponent_game_score:
-                pass
+                actual_score = 1
+                for p in pug.teams[team]:
+                    p_rating = pug.player_stats[p]["rating"]
+                    duel_sum = 0
+                    for e in pug.teams[opponent]:
+                        e_rating = pug.player_stats[e]["rating"]
+                        expected_score = 1/(1+10^((e_rating-p_rating)/400)) # 0 < E < 1
+                        rating_gain = K_factor*(actual_score-expected_score)
+
+                        duel_sum += rating_gain
+
+                    new_rating = p_rating + duel_sum/len(pug.teams[opponent])
 
             # if this team lost, we need to subtract elo from the team
             elif team_game_score < opponent_game_score:
-                pass
-
-            # else, it's a draw. in this case, should we do anything?
+                actual_score = 0
+                
             else:
-                pass
+                actual_score = 0.5
 
 
 

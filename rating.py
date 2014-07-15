@@ -33,7 +33,7 @@ DRAW = 0.5
 
 class Rating(object):
     def __init__(self, rating):
-        self.rating = rating
+        self.rating = round(rating, 3)
 
     def __int__(self):
         return int(self.rating)

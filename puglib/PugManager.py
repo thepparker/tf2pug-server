@@ -310,8 +310,6 @@ class PugManager(object):
                 # shuffle teams
                 pug.shuffle_teams(self._get_pug_stat_data(pug))
 
-                self.__flush_med_stats(pug)
-
     def pug_ended_check(self):
         # shallow copy because we cannot modify a list as we are iterating
         # over it
@@ -320,6 +318,7 @@ class PugManager(object):
                 # game is over! we need to update player rating based on the
                 # results, flush the pug one final time, and then discard
                 # the pug object
+                self.__flush_med_stats(pug)
                 self.__update_ratings(pug)
 
                 self._flush_pug(pug)
@@ -450,7 +449,8 @@ class PugManager(object):
         mapper = lambda t, r: (t, float(r))
         ratings_tupled = map(mapper, pug.teams[team1], team1_rating) + map(mapper, pug.teams[team2], team2_rating)
         logging.debug("Players with new ratings: %s", ratings_tupled)
-        
+
+        self.db.flush_updated_ratings(ratings_tupled)
 
     def __load_pugs(self):
         # clear the pug list

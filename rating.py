@@ -14,7 +14,9 @@ K_table = {
 def K_lookup(rating):
     rating = float(rating)
 
-    lookup_key = round(rating/1000, 1)
+    # convert rating to nearest 10, floor it, then convert to nearest 1 with
+    # 1 decimal place. i.e 1580/100 = 15.8, floor(15.8) = 15.0, k = 15/10 = 1.5
+    lookup_key = math.floor(round(rating/100, 1))/10
     if lookup_key > 2:
         lookup_key = 2
     if lookup_key < 1.4:

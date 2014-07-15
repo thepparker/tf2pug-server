@@ -423,7 +423,7 @@ class PugManager(object):
         # rank in order of winning team. i.e [0, 1] = team 1 > team 2
         # [1, 0] = team 1 < team 2
         # we'll always put it in order of team 1 - team 2
-        ranking = [0, 1]
+        ranking = []
 
         for team in pug.teams:
             ratings[team] = [ rating.Rating(pug.player_stats[x]["rating"]) for x in pug.teams[team] ]
@@ -440,13 +440,17 @@ class PugManager(object):
         else:
             ranking = [0, 0]
 
-        elo_calc = rating.EloDuel()
-        new_ratings = elo_calc.calculate_ratings([ratings[team1], ratings[team2]], ranking)
+        new_ratings = rating.calculate_ratings([ratings[team1], ratings[team2]], ranking)
 
-        # new_ratings is a tuple in the form (team1_new, team2_new), where each
-        # teamX_new is a list of player ratings in the same order they were
-        # passed in
+        # new_ratings is a list in the form [team1_new, team2_new], where each
+        # teamX_new is a tuple of player ratings in the same order they were
+        # passed in (as Rating objects)
+        team1_rating, team2_rating = new_ratings
 
+        mapper = lambda t, r: (t, float(r))
+        ratings_tupled = map(mapper, pug.teams[team1], team1_rating) + map(mapper, pug.teams[team2], team2_rating)
+        logging.debug("Players with new ratings: %s", ratings_tupled)
+        
 
     def __load_pugs(self):
         # clear the pug list

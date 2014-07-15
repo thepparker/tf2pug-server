@@ -338,7 +338,7 @@ class PugManager(object):
                 stats[cid] = {
                     "games_since_med": 0,
                     "games_played": 0,
-                    "rating": 1500
+                    "rating": rating.BASE
                 }
 
         return stats

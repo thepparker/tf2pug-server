@@ -24,9 +24,10 @@ def K_lookup(rating):
 
     return K_table[str(lookup_key)]
 
+# base rating (start point for everyone)
+BASE = 1500
 
-MU = 1500
-
+# weight of win/loss/draw
 WIN = 1
 LOSS = 0
 DRAW = 0.5

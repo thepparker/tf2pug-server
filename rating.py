@@ -73,13 +73,13 @@ class Rating(object):
         return self.rating == other.rating
 
     def __ge__(self, other):
-        return self.__eq__(other) or self.__gt__(other)
+        return self.rating >= other.rating
 
     def __le__(self, other):
-        return self.__eq__(other) or self.__lt__(other)
+        return self.rating <= other.rating
 
 
-def calculate_rating(self, teams, rank):
+def calculate_rating(teams, rank):
     if len(teams) != len(rank):
         raise ValueError("Dimension mismatch. len(teams) must match len(rank)")
 

@@ -1,4 +1,6 @@
 
+import math
+
 K_table = {
     "2": 6,
     "1.9": 7,
@@ -9,7 +11,7 @@ K_table = {
     "1.4": 32
 }
 
-def K_lookup(self, rating):
+def K_lookup(rating):
     rating = float(rating)
 
     lookup_key = round(rating/1000, 1)
@@ -93,9 +95,11 @@ def calculate_rating(teams, rank):
                 continue
 
             actual_score = 0
-            if rank[i] > rank[j]:
+            # rank is reverse sorted (i.e 0,1,2,3), so we need to do this 
+            # comparison backwards!
+            if rank[i] < rank[j]:
                 actual_score = WIN
-            elif rank[i] < rank[j]:
+            elif rank[i] > rank[j]:
                 actual_score = LOSS
             else:
                 actual_score = DRAW
@@ -109,7 +113,7 @@ def calculate_rating(teams, rank):
                 duel_sum = 0
                 num_e_players = len(e_team)
                 for e in e_team:
-                    expected_score = 1/(1+10^((e-p)/400)) # 0 < E < 1
+                    expected_score = 1/(1+math.pow(10,((float(e)-float(p))/400))) # 0 < E < 1
 
                     if actual_score == LOSS or (actual_score == DRAW and p > e):
                         # if p team lost => use the opponent's K-factor.
@@ -121,6 +125,11 @@ def calculate_rating(teams, rank):
 
                     duel_sum += rating_gain
 
-                new_rating = p + duel_sum/num_e_players
-                new[i].append(p)
+                new_rating = float(p) + duel_sum/num_e_players
+                new[i].append(Rating(new_rating))
+
+    # make new immutable
+    new = tuple([ tuple(x) for x in new ])
+
+    return new
 

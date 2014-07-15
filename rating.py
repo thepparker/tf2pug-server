@@ -44,47 +44,83 @@ class Rating(object):
         t = type(self)
         return "%s(rating = %0.2f)" % (".".join([t.__module__, t.__name__]), self.rating)
 
-class EloDuel(object):
-    def __init__(self, mu = MU):
-        self.mu = mu
-
-    def new_rating(self, rating=None):
-        if rating is None:
-            return Rating(self.mu)
-
+    def __add__(self, other):
+        if isinstance(other, Rating):
+            return Rating(self.rating + other.rating)
         else:
-            return Rating(rating)
+            raise TypeError("%s cannot add to %s" % (repr(self), repr(other)))
 
-    def calculate_rating(self, teams, rank):
-        for team in teams:
-            # team is a list of Rating objects
-            for p in team_players:
-                p_rating = pug.player_stats[p]["rating"]
+    def __sub__(self, other):
+        if isinstance(other, Rating):
+            return Rating(self.rating - other.rating)
+        else:
+            raise TypeError("unsupported operand type(s) for -: '%s' and '%s'" % (
+                                type(self).__name__, type(other).__name__))
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rsub__(self, other):
+        return other - self
+
+    def __gt__(self, other):
+        return self.rating > other.rating
+
+    def __lt__(self, other):
+        return self.rating < other.rating
+
+    def __eq__(self, other):
+        return self.rating == other.rating
+
+    def __ge__(self, other):
+        return self.__eq__(other) or self.__gt__(other)
+
+    def __le__(self, other):
+        return self.__eq__(other) or self.__lt__(other)
+
+
+def calculate_rating(self, teams, rank):
+    if len(teams) != len(rank):
+        raise ValueError("Dimension mismatch. len(teams) must match len(rank)")
+
+    K = lambda r: K_lookup(r)
+
+    new = [ [] for x in range(len(teams)) ]
+    for i, team in enumerate(teams):
+        # team is a list of Rating objects
+        for j, e_team in enumerate(teams):
+            if team == e_team: #skip if same team
+                continue
+
+            actual_score = 0
+            if rank[i] > rank[j]:
+                actual_score = WIN
+            elif rank[i] < rank[j]:
+                actual_score = LOSS
+            else:
+                actual_score = DRAW
+
+            for p in team:
                 # we need to do some lookup to find the K-factor for these
                 # players. always use the winner's K-factor, or in the case of
                 # a draw, the lower player's K-factor
-                K_factor = K(1500) # default K-factor
+                K_factor = K(p) # default K-factor
 
                 duel_sum = 0
-                for e in opponent_players:
-                    e_rating = pug.player_stats[e]["rating"]
-                    expected_score = 1/(1+10^((e_rating-p_rating)/400)) # 0 < E < 1
+                num_e_players = len(e_team)
+                for e in e_team:
+                    expected_score = 1/(1+10^((e-p)/400)) # 0 < E < 1
 
-                    if actual_score == 1:
-                        # current player's K factor
-                        K_factor = K(p_rating)
-                    elif actual_score == 0:
-                        # use the opponent's K-factor
-                        K_factor = K(e_rating)
-                    elif p_rating > e_rating:
-                        # who ever has the lowest rating's K-factor
-                        K_factor = K(e_rating)
-                    else:
-                        K_factor = K(p_rating)
+                    if actual_score == LOSS or (actual_score == DRAW and p > e):
+                        # if p team lost => use the opponent's K-factor.
+                        # or, if draw and p rating > e rating, use e rating
+                        # because it's the smallest
+                        K_factor = K(e)
 
                     rating_gain = K_factor*(actual_score-expected_score)
 
                     duel_sum += rating_gain
 
-                new_rating = p_rating + duel_sum/len(opponent_players)
+                new_rating = p + duel_sum/num_e_players
+                new[i].append(p)
 

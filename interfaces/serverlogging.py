@@ -31,3 +31,11 @@ class BaseLogInterface(object):
 
     def team_score(self, team, score):
         self.pug.update_score(team, score)
+
+from BaseLogInterface import BaseLogInterface
+
+import logging
+
+class TFLogInterface(BaseLogInterface):
+    def parse(self, data):
+        logging.debug("Received data: %s", data)

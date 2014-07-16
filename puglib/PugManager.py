@@ -14,7 +14,7 @@ import settings
 import rating
 
 from entities import Pug
-from interfaces.TFPugJsonInterface import TFPugJsonInterface
+from interfaces.json import TFPugJsonInterface
 
 from Exceptions import *
 
@@ -446,8 +446,10 @@ class PugManager(object):
         # passed in (as Rating objects)
         team1_rating, team2_rating = new_ratings
 
-        mapper = lambda t, r: (t, float(r))
-        ratings_tupled = map(mapper, pug.teams[team1], team1_rating) + map(mapper, pug.teams[team2], team2_rating)
+        # map player rating to player id, store as list of tuples which can be
+        # easily inserted into the db
+        mapper = lambda r, t: (float(r), t)
+        ratings_tupled = map(mapper, team1_rating, pug.teams[team1]) + map(mapper, team2_rating, pug.teams[team2])
         logging.debug("Players with new ratings: %s", ratings_tupled)
 
         self.db.flush_updated_ratings(ratings_tupled)

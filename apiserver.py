@@ -15,7 +15,7 @@ import psycopg2.pool
 from puglib import PugManager
 from handlers import ResponseHandler, WebHandler
 from serverlib import ServerManager
-from interfaces import PSQLDatabaseInterface
+from interfaces.database import PSQLDatabaseInterface
 
 from tornado.options import define, options, parse_command_line
 

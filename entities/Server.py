@@ -4,7 +4,7 @@ import string
 import random
 
 from serverlib import Rcon
-from interfaces import TFLogInterface
+from interfaces.serverlogging import TFLogInterface
 import UDPServer
 import settings
 

@@ -83,7 +83,7 @@ class Server(object):
             log_port = 0
 
         # make an instance of udp server, log interface, and start the listener
-        server_address = (settings.listen_ip, log_port) # bind to any available IP
+        server_address = (settings.logging_listen_ip, log_port) # bind to set ip?
 
         self._log_interface = TFLogInterface.TFLogInterface(self, self.pug)
 

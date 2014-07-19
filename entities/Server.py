@@ -32,9 +32,18 @@ class Server(object):
 
         self.rcon_connection = None
 
-    def rcon(self, command):
+    def rcon(self, msg, *args):
         if not self.rcon_connection or self.rcon_connection.closed:
             self.rcon_connection = Rcon.RconConnection(self.ip, self.port, self.rcon_password)
+
+        command = msg
+
+        if args:
+            # support parsing of a dict as args for string substitution
+            if len(args) == 1 and isinstance(args[0], dict) and args[0]:
+                args = args[0]
+
+            command = command % args
 
         res = self.rcon_connection.send_cmd(command)
         logging.debug("RCON RESULT: %s", res)
@@ -51,22 +60,24 @@ class Server(object):
 
         self.password = random_string(10)
 
-        self.rcon("sv_password %s; say This server has been reserved for pug %d; kickall" % (self.password, pug.id,))
+        self.rcon("sv_password %s; say This server has been reserved for pug %d; kickall", 
+                    self.password, pug.id)
 
         self._setup_listener()
 
     def setup(self):
         if not self.pug:
             return
-
-        rcon_command = "kickall; changelevel %s; sv_password %s" % (self.pug.map, self.password)
-        self.rcon(rcon_command)
+        
+        self.rcon("kickall; changelevel %s; sv_password %s", self.pug.map, 
+                    self.password)
 
     def start_game(self, start_time = 10):
         if not pug.live:
-            self.rcon("!!! The game is starting in %(st)s !!!; mp_restartgame %(st)s" % { 
-                        "st": start_time
-                    })
+            self.rcon("!!! The game is starting in %(st)s !!!; mp_restartgame %(st)s", 
+                        { 
+                            "st": start_time
+                        })
 
             pug.begin_game()
 
@@ -77,6 +88,9 @@ class Server(object):
         self.rcon("say This server is being reset because the pug is over; kickall; sv_password getOuTPLZ")
 
         self._end_listener()
+
+    def kick_player(self, steamid, reason = "Good bye"):
+        self.rcon("kickid %s %s", steamid, reason)
 
     def _setup_listener(self, log_port = 0):
         if log_port is None:
@@ -105,7 +119,7 @@ class Server(object):
         # if there was last a pug in progress on this server, re-establish
         # the listener... it doesn't really need to be the same port, it could
         # be any port
-        if self.pug_id > 0:
+        if self.pug_id > 0 and self.pug is not None:
             self._setup_listener(self.log_port)
 
     @property

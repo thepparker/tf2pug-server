@@ -158,8 +158,10 @@ class TFLogInterface(BaseLogInterface):
             # do what?
             pass
         elif expr is round_start:
-            # do what?
-            pass
+            # if first round_start event and the pug hasn't technically
+            # started, let's start it!
+            if not self.pug.game_started:
+                self.start_game()
 
         pass
 

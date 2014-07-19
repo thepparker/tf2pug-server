@@ -30,9 +30,11 @@ class BaseLogInterface(object):
         self.start_game()
 
     def end_game(self):
+        self.pug.end_game()
+
         self.server.reset()
 
-    def team_score(self, team, score):
+    def update_score(self, team, score):
         self.pug.update_score(team, score)
 
 round_win = re.compile(r'^L [0-9\/]+ - [0-9\:]+: World triggered "Round_Win" \x28winner "(Blue|Red)"\x29$')
@@ -198,7 +200,7 @@ class TFLogInterface(BaseLogInterface):
 
             if not self.pug.has_player(cid):
                 # this player is not in the pug, so we need to kick this fucka
-                self.server.kick_player(sid, "Not in pug player list")
+                self.server.kick_player(sid, reason = "Not in pug player list")
 
 
         elif expr is player_validated:
@@ -208,10 +210,48 @@ class TFLogInterface(BaseLogInterface):
             pass
 
     def __parse_team_score(self, match, expr):
-        pass
+        if expr is team_score:
+            team = re_group(match, 1).lower()
+            score = re_group(match, 2)
+
+            self.update_score(team, score)
+
+        elif expr is final_team_score:
+            # final update, make sure scores are correct
+            team = re_group(match, 1).lower()
+            score = re_group(match, 2)
+
+            self.update_score(team, score)
+
+        elif expr is game_over:
+            # game is over!
+            self.end_game()
 
     def __parse_chat(self, match, expr):
-        pass
+        # this is the fun part............................................
+        if expr is chat_message:
+            sid = re_group(match, 3)
+
+            if sid == "Console":
+                return
+
+            cid = steamid_to_64bit(sid)
+            name = re_group(match, 1)
+
+            msg = re_group(match, 6)
+            msg_tok = msg.split(" ")
+            cmd = msg_tok[0].lower()
+
+            isadmin = self.pug.is_admin(cid)
+
+            if cmd == "!teams":
+                # we need to print teams to the server, with names, not sids
+
+            elif cmd == "!start" and isadmin:
+                self.start_game()
+
+            elif cmd == ""
+
 
 
 

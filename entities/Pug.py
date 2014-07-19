@@ -301,23 +301,12 @@ class Pug(object):
         logging.info("Team allocation complete. Red: %s (Score: %s), Blue: %s (Score: %s)", 
                         self.teams["red"], red_score, self.teams["blue"], blue_score)
 
-    def _player_score(self, pdata):
-        # we need to establish a score for each player. we'll call this the 
-        # 'pug rating', or PR
-        # the formula is as follows:
-        #   (100 + (kills + assists)/deaths + (damage_dealt/1000)/numplayed)^1.2
-        score = 100
-            
-        if pdata["numplayed"] > 0:
-            score += (pdata["kills"] + pdata["assists"]) / (pdata["deaths"] if pdata["deaths"] else 1)
-            score += (pdata["damage_dealt"] / 1000) / pdata["numplayed"]
-
-        score **= 1.2
-
-        return score
-
     def begin_game(self):
-        self.state = states["GAME_STARTED"]
+        if not self.game_started:
+            self.state = states["GAME_STARTED"]
+
+        else:
+            pass
 
     def update_score(self, team, score):
         self.game_scores[team] = score
@@ -368,6 +357,10 @@ class Pug(object):
     @property
     def player_count(self):
         return len(self._players)
+
+    @property
+    def game_started(self):
+        return self.state == states["GAME_STARTED"]
 
     @property
     def game_over(self):

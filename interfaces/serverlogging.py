@@ -37,6 +37,9 @@ class BaseLogInterface(object):
     def update_score(self, team, score):
         self.pug.update_score(team, score)
 
+    def print_teams(self):
+        self.server.print_teams()
+
 round_win = re.compile(r'^L [0-9\/]+ - [0-9\:]+: World triggered "Round_Win" \x28winner "(Blue|Red)"\x29$')
 round_overtime = re.compile(r'^L [0-9\/]+ - [0-9\:]+: World triggered "Round_Overtime"$')
 round_length = re.compile(r'^L [0-9\/]+ - [0-9\:]+: World triggered "Round_length" \x28seconds "(\d+)\.(\d+)"\x29$')
@@ -245,7 +248,7 @@ class TFLogInterface(BaseLogInterface):
             isadmin = self.pug.is_admin(cid)
 
             if cmd == "!teams":
-                # we need to print teams to the server, with names, not sids
+                self.print_teams()
 
             elif cmd == "!start" and isadmin:
                 self.start_game()

@@ -4,7 +4,7 @@ import string
 import random
 
 from serverlib import Rcon
-from interfaces.serverlogging import TFLogInterface
+from interfaces import get_log_interface
 import UDPServer
 import settings
 
@@ -13,7 +13,7 @@ def random_string(len=24, chars=string.ascii_lowercase + string.ascii_uppercase 
     return ''.join(random.choice(chars) for x in range(len))
 
 class Server(object):
-    def __init__(self):
+    def __init__(self, game):
         self.id = -1
         # server details
         self.ip = ""
@@ -29,6 +29,7 @@ class Server(object):
         self.log_port = 0
 
         self.group = 0
+        self.game = game
 
         self.rcon_connection = None
 
@@ -110,8 +111,9 @@ class Server(object):
 
         # make an instance of udp server, log interface, and start the listener
         server_address = (settings.logging_listen_ip, log_port) # bind to set ip?
+        log_iface_cls = get_log_interface(self.game)
 
-        self._log_interface = TFLogInterface.TFLogInterface(self, self.pug)
+        self._log_interface = log_iface_cls(self, self.pug)
 
         self._listener = UDPServer.UDPServer(server_address, self._log_interface.parse)
         self._listener.start()

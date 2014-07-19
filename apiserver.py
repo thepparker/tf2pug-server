@@ -15,7 +15,8 @@ import psycopg2.pool
 from puglib import PugManager
 from handlers import ResponseHandler, WebHandler
 from serverlib import ServerManager
-from interfaces.database import PSQLDatabaseInterface
+
+from .interfaces import get_db_interface
 
 from tornado.options import define, options, parse_command_line
 
@@ -216,7 +217,9 @@ if __name__ == "__main__":
     db = psycopg2.pool.SimpleConnectionPool(minconn = 1, maxconn = 1, 
         dsn = dsn)
 
-    dbinterface = PSQLDatabaseInterface.PSQLDatabaseInterface(db)
+    dbinterface_cls = interfaces.get_db_interface("PGSQL")
+
+    dbinterface = dbinterface_cls(db)
 
     api_server = Application(dbinterface)
 

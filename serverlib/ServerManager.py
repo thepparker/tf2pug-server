@@ -11,6 +11,7 @@ from entities.Server import Server
 
 class ServerManager(object):
     def __init__(self, group, db):
+        self.game = "TF2"
         self.group = group
         self.db = db
 
@@ -56,7 +57,7 @@ class ServerManager(object):
     def __hydrate_server(self, data):
         logging.debug("HYDRATING SERVER. DB RESULT: %s", data)
 
-        server = Server()
+        server = Server(self.game)
         server.id = data["id"]
         server.ip = data["ip"]
         server.port = data["port"]

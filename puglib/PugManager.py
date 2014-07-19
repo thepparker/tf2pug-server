@@ -14,7 +14,7 @@ import settings
 import rating
 
 from entities import Pug
-from interfaces.json import TFPugJsonInterface
+from interfaces import get_json_interface
 
 from Exceptions import *
 
@@ -22,6 +22,10 @@ from pprint import pprint
 
 class PugManager(object):
     def __init__(self, api_key, db, server_manager):
+        self.game = "TF2"
+
+        self._json_iface_cls = get_json_interface(self.game)
+
         self.api_key = api_key
         self.db = db
 
@@ -459,7 +463,7 @@ class PugManager(object):
         del self._pugs[:]
         logging.debug("Attempting to load pugs under API key %s", self.api_key)
  
-        pugs = self.db.get_pugs(self.api_key, TFPugJsonInterface())
+        pugs = self.db.get_pugs(self.api_key, self._json_iface_cls())
 
         logging.debug("Pugs loaded: %s", pugs)
 
@@ -473,7 +477,7 @@ class PugManager(object):
         
     def _flush_pug(self, pug, new = False):
         logging.debug("Flushing pug to database. ID: %d", pug.id)
-        jsoninterface = TFPugJsonInterface()
+        jsoninterface = self._json_iface_cls()
         if new:
             result = self.db.flush_new_pug(self.api_key, jsoninterface, pug)
 

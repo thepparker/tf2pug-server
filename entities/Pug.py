@@ -9,8 +9,9 @@ states = {
     "GATHERING_PLAYERS": 0,
     "MAP_VOTING": 1,
     "MAPVOTE_COMPLETED": 2,
-    "GAME_STARTED": 3,
-    "GAME_OVER": 4
+    "TEAMS_SHUFFLED": 3,
+    "GAME_STARTED": 4,
+    "GAME_OVER": 5
 }
 
 MAPVOTE_DURATION = 2
@@ -165,7 +166,7 @@ class Pug(object):
         self.map = map_name
 
     def shuffle_teams(self, stat_data):
-        if not self.full:
+        if not self.full or self.teams_done:
             return
 
         # keep all player stats for rating updating post-game
@@ -220,6 +221,8 @@ class Pug(object):
 
         # now just setup the teams. SIMPLE, RIGHT? WRONG
         self.__allocate_players(player_ids, stat_data)
+
+        self.state = states["TEAMS_SHUFFLED"]
 
     def __allocate_players(self, ids, stat_data):
         # each team needs to have approximately total_pr/2 skill rating, or
@@ -334,12 +337,12 @@ class Pug(object):
 
     def named_teams(self):
         """
-        Returns a dictionary containing player names for each team instead of
-        cids
+        Returns a dictionary containing player names along with role for each 
+        team instead of just cids
         """
         named = {}
         for team in self.teams:
-            named[team] = [ self.player_name(x) for x in self.teams[team] ]
+            named[team] = [ (self.player_name(x), self.player_role(x)) for x in self.teams[team] ]
 
         return named
 
@@ -348,11 +351,15 @@ class Pug(object):
             return "Medic"
         
         else:
-            return "N/A"
+            return None
 
     def player_name(self, pid):
         if pid in self._players:
             return self._players[pid]
+
+    @property
+    def teams_done(self):
+        return self.state >= states["TEAMS_SHUFFLED"]
 
     @property
     def full(self):

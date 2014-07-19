@@ -217,7 +217,7 @@ if __name__ == "__main__":
     db = psycopg2.pool.SimpleConnectionPool(minconn = 1, maxconn = 1, 
         dsn = dsn)
 
-    dbinterface_cls = interfaces.get_db_interface("PGSQL")
+    dbinterface_cls = get_db_interface("PGSQL")
 
     dbinterface = dbinterface_cls(db)
 

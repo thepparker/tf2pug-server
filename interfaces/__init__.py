@@ -1,5 +1,5 @@
 from .tflogging import TFLogInterface
-from .json import TFPugJsonInterface
+from .jsonconverter import TFPugJsonInterface
 from .database import PSQLDatabaseInterface
 
 GAME_CODES = {
@@ -14,7 +14,7 @@ LOG_INTERFACE = {
     1: TFLogInterface
 }
 
-DB_INTERFACE: {
+DB_INTERFACE = {
     "PGSQL": PSQLDatabaseInterface
 }
 

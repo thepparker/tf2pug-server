@@ -52,11 +52,11 @@ class Pug(object):
         self.server_id = -1
 
         self.teams = {
-            "red": []
+            "red": [],
             "blue": []
         }
 
-        self.team_ratings {
+        self.team_ratings = {
             "red": 0,
             "blue": 0
         }

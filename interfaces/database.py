@@ -172,6 +172,7 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
 
         except:
             logging.exception("An exception occurred getting stats for %s" % ids)
+            raise
 
         finally:
             self._close_db_objects(cursor, conn)
@@ -281,6 +282,7 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
 
         except:
             logging.exception("An exception occurred getting pug data")
+            return []
 
         finally:
             self._close_db_objects(cursor, conn)
@@ -350,6 +352,7 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
 
         except:
             logging.exception("An exception occurred getting servers")
+            return []
 
         finally:
             self._close_db_objects(cursor, conn)

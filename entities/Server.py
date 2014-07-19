@@ -80,8 +80,6 @@ class Server(object):
                             "st": start_time
                         })
 
-            pug.begin_game()
-
     def reset(self):
         self.pug = None
         self.pug_id = -1

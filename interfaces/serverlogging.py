@@ -21,6 +21,7 @@ class BaseLogInterface(object):
 
     def start_game(self, start_time = 20):
         self.server.start_game(start_time)
+        self.pug.begin_game()
 
     def restart_game(self):
         # just start the game again?

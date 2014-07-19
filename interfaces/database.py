@@ -9,7 +9,7 @@ class BaseDatabaseInterface(object):
     database of choice, and must implement all methods, which are used by the
     application.
 
-    An implementation for PostgreSQL is provided in PSQLDatabaseInterface.py
+    An implementation for PostgreSQL is provided
     """
     def __init__(self, db):
         self.db = db

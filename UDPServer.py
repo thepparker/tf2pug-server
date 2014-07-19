@@ -1,5 +1,5 @@
 """
-A UDP listen server using tornado's IO loop. Using tornado IOStream and
+A UDP listen server using tornado's IO loop. Uses tornado IOStream and
 UDPStream (http://kyle.graehl.org/coding/2012/12/07/tornado-udpstream.html)
 as examples
 """

@@ -329,6 +329,31 @@ class Pug(object):
     def player_list(self):
         return self._players.keys()
 
+    def is_admin(self, pid):
+        return self.admin == pid
+
+    def named_teams(self):
+        """
+        Returns a dictionary containing player names for each team instead of
+        cids
+        """
+        named = {}
+        for team in self.teams:
+            named[team] = [ self.player_name(x) for x in self.teams[team] ]
+
+        return named
+
+    def player_role(self, pid):
+        if pid in self.medics.values():
+            return "Medic"
+        
+        else:
+            return "N/A"
+
+    def player_name(self, pid):
+        if pid in self._players:
+            return self._players[pid]
+
     @property
     def full(self):
         return self.size == self.player_count

@@ -222,4 +222,5 @@ class TFLogInterface(BaseLogInterface):
             elif cmd == "!start" and isadmin:
                 self.start_game()
 
-            elif cmd == ""
+            elif cmd == "":
+                pass

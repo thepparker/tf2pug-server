@@ -317,7 +317,7 @@ class PugManager(object):
     def pug_ended_check(self):
         # shallow copy because we cannot modify a list as we are iterating
         # over it
-        for pug in self._pugs.copy():
+        for pug in self._pugs[:]:
             if (pug.state == Pug.states["GAME_OVER"]):
                 # game is over! we need to update player rating based on the
                 # results, flush the pug one final time, and then discard

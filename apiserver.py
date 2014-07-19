@@ -16,7 +16,7 @@ from puglib import PugManager
 from handlers import ResponseHandler, WebHandler
 from serverlib import ServerManager
 
-from .interfaces import get_db_interface
+from interfaces import get_db_interface
 
 from tornado.options import define, options, parse_command_line
 

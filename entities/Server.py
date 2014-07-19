@@ -133,7 +133,7 @@ class Server(object):
         # if there was last a pug in progress on this server, re-establish
         # the listener... it doesn't really need to be the same port, it could
         # be any port
-        if self.pug_id > 0 and self.pug is not None:
+        if self.pug_id > 0:
             self._setup_listener(self.log_port)
 
     @property

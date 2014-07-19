@@ -92,6 +92,18 @@ class Server(object):
     def kick_player(self, steamid, reason = "Good bye"):
         self.rcon("kickid %s %s", steamid, reason)
 
+    def print_teams(self):
+        teams = self.pug.named_teams()
+
+        # let's change this into something we can print easier
+        mapper = lambda (p, r): "%s" % p if r is None else "%s (%s)" % (p, r) 
+
+        # teams is a dict in the form { TEAM_NAME: [ ("name", "role"), .. ], ..}
+        a = [ "say %s: " % x + " - ".join(map(mapper, teams[x])) for x in teams ]
+
+        self.rcon(";".join(a))
+
+
     def _setup_listener(self, log_port = 0):
         if log_port is None:
             log_port = 0

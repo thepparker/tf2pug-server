@@ -72,7 +72,7 @@ class Server(object):
         self.pug.password = self.password
 
         self.rcon("sv_password %s; say This server has been reserved for pug %d; kickall", 
-                    self.password, pug.id)
+                    self.password, self.pug_id)
 
         self._setup_listener()
 

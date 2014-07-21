@@ -77,23 +77,9 @@ class BaseDatabaseInterface(object):
 
     @param api_key The API key the pug is under (not necessary?)
     @param jsoninterface The JSON interface to convert to JSON
-    @param pid The ID of the pug
     @param pug A Pug object
     """
-    def flush_pug(self, api_key, jsoninterface, pid, pug):
-        raise NotImplementedError("This must be implemented")
-
-    """
-    Flushes a new pug to the database, returning the ID. Maintains the index
-    table.
-
-    @param api_key The API key the pug is under
-    @param jsoninterface The JSON interface to convert to JSON
-    @param pug A Pug object
-
-    @return ID The ID of the new pug
-    """
-    def flush_new_pug(self, api_key, jsoninterface, pug):
+    def flush_pug(self, api_key, jsoninterface, pug):
         raise NotImplementedError("This must be implemented")
 
     """
@@ -268,13 +254,13 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
             pug_ids = [ x[0] for x in results ] # list of entity ids
             pugs = []
             if len(pug_ids) > 0:
-                cursor.execute("""SELECT data
+                cursor.execute("""SELECT id, data
                                   FROM pugs
                                   WHERE id IN %s""", [tuple(pug_ids)])
 
                 results = cursor.fetchall()
                 if results:
-                    pugs = [ jsoninterface.loads(x[0]) for x in results ]
+                    pugs = [ jsoninterface.loads(x[0], x[1]) for x in results ]
                 
                 # results is a list of Pug objects, converted using the jsoninterface
 
@@ -287,47 +273,36 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
         finally:
             self._close_db_objects(cursor, conn)
 
-    def flush_pug(self, api_key, jsoninterface, pid, pug):
-        # this method is for existing pugs (pug that have already been flushed
-        # at least once), such that the id already exists
+    def flush_pug(self, api_key, jsoninterface, pug):
         conn, cursor = self._get_db_objects()
 
         try:
-            cursor.execute("UPDATE pugs SET data = %s WHERE id = %s", 
-                            [Json(pug, dumps=jsoninterface.dumps), pid])
+            if pug.id is None:
+                # this is a new pug, so we need to INSERT into the pug table
+                # AND update the index table. Then we set the pug's ID to the
+                # new ID
+                cursor.execute("INSERT INTO pugs (data) VALUES (%s) RETURNING id", 
+                                [Json(pug, dumps=jsoninterface.dumps)])
+
+                result = cursor.fetchone()
+                if result and result[0]:
+                    pug.id = result[0]
+                else:
+                    raise ValueError("No ID was returned on new pug insert")
+
+                cursor.execute("""INSERT INTO pugs_index (pug_entity_id, finished, api_key) 
+                                  VALUES (%s, %s, %s)""", [pug.id, pug.game_over, api_key])
+
+            else:
+                # Else, this pug has already been flushed once. So we just
+                # update the data column
+                cursor.execute("UPDATE pugs SET data = %s WHERE id = %s", 
+                                [Json(pug, dumps=jsoninterface.dumps), pid])
 
             conn.commit()
 
         except:
             logging.exception("An exception occurred flushing pug %d" % pid)
-
-        finally:
-            self._close_db_objects(cursor, conn)
-
-    def flush_new_pug(self, api_key, jsoninterface, pug):
-        conn, cursor = self._get_db_objects()
-
-        try:
-            pid = None
-            cursor.execute("INSERT INTO pugs (data) VALUES (%s) RETURNING id", 
-                            [Json(pug, dumps=jsoninterface.dumps)])
-
-            result = cursor.fetchone()
-            pid = None
-            if result:
-                pid = result[0]
-            else:
-                raise Exception("No ID returned when inserting new pug")
-
-            cursor.execute("""INSERT INTO pugs_index (pug_entity_id, finished, api_key) 
-                              VALUES (%s, %s, %s)""", [pid, pug.game_over, api_key])
-            
-            conn.commit()
-
-            return pid
-
-        except:
-            logging.exception("An exception occurred flushing new pug")
 
         finally:
             self._close_db_objects(cursor, conn)

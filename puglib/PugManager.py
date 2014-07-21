@@ -478,15 +478,8 @@ class PugManager(object):
     def _flush_pug(self, pug, new = False):
         logging.debug("Flushing pug to database. ID: %d", pug.id)
         jsoninterface = self._json_iface_cls()
-        if new:
-            result = self.db.flush_new_pug(self.api_key, jsoninterface, pug)
 
-            if result:
-                pug.id = result
-
-        # if the pug isn't new, we're flushing it directly. if it is new, we're
-        # flushing it again so that the ID is stored in the pug data as well
-        self.db.flush_pug(self.api_key, jsoninterface, pug.id, pug)
+        self.db.flush_pug(self.api_key, jsoninterface, pug)
 
     def flush_all(self):
         for pug in self._pugs:

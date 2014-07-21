@@ -1,6 +1,6 @@
 """
 A source RCON implementation utilising the tornado IOStream class for async
-operations
+operations. Utilises futures to return data where applicable
 """
 
 import socket
@@ -43,18 +43,13 @@ class RconConnectionInterruptedError(Exception):
     pass
 
 class RconConnection(object):
-    def __init__(self, ip, port, rcon_password, command, once=False):
+    def __init__(self, ip, port, rcon_password, command):
         self.ip = ip
         self.port = port
         self.rcon_password = rcon_password
 
-        # if this is True, send a single command and disconnect.
-        self.run_once = once 
-
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
         self._stream = IOStream(self._socket)
-        
-        self.closed = False
 
         self.authed = False
         self.request_id = 0
@@ -63,9 +58,9 @@ class RconConnection(object):
         self._stream.connect((ip, port), self._auth)
 
     def _connect(self):
-        if self.socket:
+        if self._socket:
             try:
-                self.socket.connect((self.ip, self.port))
+                self._socket.connect((self.ip, self.port))
             except:
                 self.close()
                 raise RconConnectionError("Unable to connect to server")
@@ -81,7 +76,7 @@ class RconConnection(object):
         #strings must be null terminated, even the empty one
 
         if body is None:
-            raise RconError("Cannot send 'None' message")
+            body = r''
 
         self.request_id += 1
 
@@ -96,7 +91,7 @@ class RconConnection(object):
         return packet
 
     def _receive_data(self):
-        if not self.socket:
+        if not self._socket:
             raise RconError("Cannot receive data on dead socket")
 
         first_packet_id = None #this will be the ID return in multi-line responses
@@ -107,16 +102,10 @@ class RconConnection(object):
         got_empty_packet = False
 
         while 1:
-            # we don't know the packet size. so we read the first 4 bytes, 
-            # (the packet size) this tells us the size of the current packet.
-            # however, we want to keep reading packets until we receive an 
-            # empty response if what we're reading is an EXEC
-
-            packet_len_packed = self.__read_socket(4)
-
+            packet_len_packed = self.__get_packet_len()
             # now we have the entire packet length. 
             # all data is not necessarily sent in a single packet, and may be 
-            # split into multiple packets (fuark)
+            # split into multiple packets
             packet_len = struct.unpack('<l', packet_len_packed)[0] 
 
             packet_packed = self.__read_socket(packet_len)
@@ -149,7 +138,27 @@ class RconConnection(object):
 
                 entire_message += message #concatenate the read message onto the full message
 
-            #else we're waiting for an EXEC response, so we should read another packet until we get an empty one
+
+
+    def _run_callback(self):
+        # we need to process the data received, then push it through the 
+        # callback (if set?)
+
+    def _read_stream(self, numbytes, callback):
+        self._stream.read_bytes(numbytes, callback)
+
+    def _read_stream_blocking(self, numbytes):
+        data = self._stream.read_bytes(numbytes)
+        yield data.result()
+
+    def __get_packet_len(self):
+        """
+        Reads the packet length from the stream and yields it. This is the only
+        read operation which will ALWAYS block.
+
+        The first 4 bytes in a packet are the packet length
+        """
+        return self._read_stream_blocking(4)
 
     def __read_socket(self, num_bytes):
         #loops over the socket, reading until num_bytes is read
@@ -159,9 +168,11 @@ class RconConnection(object):
         data = r''
         num_read = 0
 
+
+
         while num_read < num_bytes:
             try:
-                rcvd = self.socket.recv(num_bytes - num_read)
+                rcvd = self._socket.recv(num_bytes - num_read)
             except:
                 raise RconConnectionError("Connection timed out while waiting for data")
 
@@ -224,7 +235,11 @@ class RconConnection(object):
         else:
             raise RconError("RCon connected is not authed. Cannot send command")
 
-    def send_cmd(self, cmd):
+    def send_cmd(self, cmd, callback = None):
+        """
+        Support a callback, which the rcon response will be parsed through. If no
+        callback is given, we yield the data from _receive_data via a future
+        """
         if not self.authed:
             self._auth()
 
@@ -237,13 +252,16 @@ class RconConnection(object):
         return result
 
     def close(self):
-        if self.socket and not self.closed:
-            self.socket.close()
+        if self._socket and not self.closed:
+            self._socket.close()
 
             self.closed = True
 
     def fileno(self):
-        return self.socket.fileno()
+        return self._socket.fileno()
 
+    @property
+    def closed(self):
+        return self._stream.closed()
 
 

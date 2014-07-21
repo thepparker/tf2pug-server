@@ -56,6 +56,9 @@ class Server(object):
         # at this point, the pug has no ID or anything, it's just a placeholder
         self.pug = pug
 
+        pug.server = self
+        pug.server_id = self.id
+
     # prepare the server for usage
     def prepare(self):
         if not self.pug:
@@ -64,9 +67,6 @@ class Server(object):
         # now the pug has an ID set. we need to clear the server and set
         # a new password
         self.pug_id = self.pug.id
-
-        pug.server = self
-        pug.server_id = self.id
 
         self.password = random_string(10)
         self.pug.password = self.password

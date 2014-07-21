@@ -26,12 +26,15 @@ class ServerManager(object):
             if not server.in_use:
                 server.reserve(pug)
 
-                self._flush_server(server)
-
                 return server
 
         # if we've reached here, there are no servers available
         return None
+
+    def prepare(self, server):
+        server.prepare()
+
+        self._flush_server(server)
 
     def reset(self, server):
         server.reset()

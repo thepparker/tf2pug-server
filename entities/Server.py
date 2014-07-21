@@ -53,25 +53,31 @@ class Server(object):
 
     # reserves a server for a pug
     def reserve(self, pug):
+        # at this point, the pug has no ID or anything, it's just a placeholder
         self.pug = pug
-        self.pug_id = pug.id
+
+    # prepare the server for usage
+    def prepare(self):
+        if not self.pug:
+            return
+        
+        # now the pug has an ID set. we need to clear the server and set
+        # a new password
+        self.pug_id = self.pug.id
 
         pug.server = self
         pug.server_id = self.id
 
         self.password = random_string(10)
+        self.pug.password = self.password
 
         self.rcon("sv_password %s; say This server has been reserved for pug %d; kickall", 
                     self.password, pug.id)
 
         self._setup_listener()
 
-    def setup(self):
-        if not self.pug:
-            return
-        
-        self.rcon("kickall; changelevel %s; sv_password %s", self.pug.map, 
-                    self.password)
+    def change_map(self):
+        self.rcon("changelevel %s", self.pug.map)
 
     def start_game(self, start_time = 10):
         if not pug.live:

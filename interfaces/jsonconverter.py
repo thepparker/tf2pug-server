@@ -46,7 +46,7 @@ class TFPugJsonInterface(BaseJsonInterface):
 
         return json.dumps(obj_dict)
 
-    def loads(self, data):
+    def loads(self, pid, data):
         # load the data into a dictionary and then set a Pug object's fields
         data_dict = json.loads(data)
 
@@ -63,5 +63,7 @@ class TFPugJsonInterface(BaseJsonInterface):
                 data_dict[key] = tmp
 
             setattr(pug, str(key), data_dict[key])
+
+        pug.id = pid
 
         return pug

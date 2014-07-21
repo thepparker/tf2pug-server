@@ -151,11 +151,10 @@ class PugManager(object):
 
         self._pugs.append(pug)
 
-        self._flush_pug(pug, new = True)
+        self._flush_pug(pug)
 
-        # update server with id
-        pug.server.pug_id = pug.id
-        self.server_manager._flush_server(pug.server)
+        # prepare the server for pug (empty it, set pw, update pug id, etc)
+        self.server_manager.prepare(server)
 
         return pug
 
@@ -313,6 +312,8 @@ class PugManager(object):
 
                 # shuffle teams
                 pug.shuffle_teams(self._get_pug_stat_data(pug))
+
+                pug.server.change_map()
 
     def pug_ended_check(self):
         # shallow copy because we cannot modify a list as we are iterating
@@ -475,7 +476,7 @@ class PugManager(object):
 
             self._pugs.append(pug)
         
-    def _flush_pug(self, pug, new = False):
+    def _flush_pug(self, pug):
         logging.debug("Flushing pug to database. ID: %d", pug.id)
         jsoninterface = self._json_iface_cls()
 

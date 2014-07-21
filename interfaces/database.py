@@ -297,12 +297,12 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
                 # Else, this pug has already been flushed once. So we just
                 # update the data column
                 cursor.execute("UPDATE pugs SET data = %s WHERE id = %s", 
-                                [Json(pug, dumps=jsoninterface.dumps), pid])
+                                [Json(pug, dumps=jsoninterface.dumps), pug.id])
 
             conn.commit()
 
         except:
-            logging.exception("An exception occurred flushing pug %d" % pid)
+            logging.exception("An exception occurred flushing pug %d" % pug.id)
 
         finally:
             self._close_db_objects(cursor, conn)

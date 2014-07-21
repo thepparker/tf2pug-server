@@ -90,9 +90,30 @@ class RconConnection(object):
 
         return packet
 
-    def _receive_data(self):
-        if not self._socket:
-            raise RconError("Cannot receive data on dead socket")
+    def _read_response(self, callback):
+        """
+        Get the response from an rcon command
+        """
+
+        # First step is the first packet length.
+        packet_len_packed = self.__get_packet_len()
+        packet_len = struct.unpack('<l', packet_len_packed)[0]
+
+        # now we read `packet_len` size from the socket, feeding the data
+        # into our internal callback
+        self._read_stream(packet_len, self._internal_receive_data)
+
+        # The rest is up to the internal callback?
+        #if callback is None:
+        #    yield SOMETHING
+         
+
+    def _internal_receive_data(self, data):
+        """
+        This is an internal callback, and will take data as read by the stream,
+        compiling it until the response is complete. Once we have the complete
+        response, either a callback is run, or the data is yielded.
+        """
 
         first_packet_id = None #this will be the ID return in multi-line responses
         curr_packet_id = 0 #this will be the ID checked against for the end of multi-line responses

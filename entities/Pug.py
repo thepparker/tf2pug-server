@@ -87,7 +87,10 @@ class Pug(object):
     per __allocate_players.
     """
     def __add_to_team(self, team, player):
-        self.teams[team] += list(player)
+        if isinstance(player, list):
+            self.teams[team] += player
+        else:
+            self.teams[team].append(player)
 
     def remove_player(self, player_id):
         if player_id in self._players:

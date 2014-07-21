@@ -51,6 +51,8 @@ class Pug(object):
         self.server = None
         self.server_id = -1
 
+        self.password = None
+
         self.teams = {
             "red": [],
             "blue": []
@@ -113,6 +115,10 @@ class Pug(object):
             self.state = states["MAP_VOTING"]
 
     def end_map_vote(self):
+        if self.map_forced:
+            self.state = states["MAPVOTE_COMPLETED"]
+            return
+
         sorted_votes = sorted(self.map_votes.keys(), key = lambda m: self.map_votes[m], reverse = True)
 
         if len(sorted_votes) > 0:

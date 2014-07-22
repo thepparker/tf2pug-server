@@ -57,6 +57,8 @@ class RconConnection(object):
         self.authed = False
         self.request_id = 0
 
+        self.error = None
+
         # async connect & call _auth when connected
         self._stream.connect((ip, port), self._auth)
 
@@ -84,64 +86,74 @@ class RconConnection(object):
         return packet
 
     def _send_packet(self, packet, callback = None):
-        return self._steam.write(packet, callback)
+        logging.debug("Sending packet %s", repr(packet))
+        self._stream.write(packet, callback)
 
-    def _begin_read_packet(self):
-        packet_len_packed = yield self._stream.read_bytes(4)
-        packet_len = struct.unpack('<l', packet_len_packed)[0]
+    def _read_single_packet(self, callback = None):
+        # reads a single packet from the stream and pushes the processed
+        # response through the given callback if provided
+        logging.debug("Reading single packet from stream")
 
-        return self._read_packet(packet_len)
+        def process_packet(packed_packet):
+            logging.debug("Processing packet: %s", repr(packed_packet))
+            #packet is in the form <id (packed int)><response code (packed int)><body>\x00\x00
+            curr_packet_id = struct.unpack('<l', packed_packet[0:4])[0]
+            response_code = struct.unpack('<l', packed_packet[4:8])[0]
+            message = packed_packet[8:].strip('\x00') #strip the terminators
 
-    def _read_packet(self, numbytes):
-        # we have the packet length. now we want to read LENGTH bytes from the
-        # socket. If we read async, we'll need to have it pass the result
-        # through our callback function, which will then process the packet and
-        # pass it onto the given callback.
-        # If we blocking read, we need to pass that data to our processing
-        # method, which will return the data
+            logging.debug("ID: %d CODE: %d MESSAGE: %s", curr_packet_id,
+                            response_code, message)
 
-        # let's implement blocking first, then figure out how to implement it
-        # async
-        packet_packed = yield self._stream.read_bytes(numbytes)
+            # we now have the packet message, response code, and response id, 
+            # so push it through the given callback
+            if callback is not None:
+                callback((curr_packet_id, response_code, message))
 
-        #packet is in the form <id (packed int)><response code (packed int)><body>\x00\x00
-        curr_packet_id = struct.unpack('<l', packet_packed[0:4])[0]
-        response_code = struct.unpack('<l', packet_packed[4:8])[0]
-        message = packet_packed[8:].strip('\x00') #strip the terminators
+        def process_packet_len(packed_packet_len):
+            packet_len = struct.unpack('<l', packed_packet_len)[0]
+            logging.debug("Processing packet length: %s, length: %s", 
+                            repr(packed_packet_len), packet_len)
 
-        # we now have the packet message, response code, and response id. 
-        # if this packet is an auth packet, we can just return here. else, it
-        # _COULD_ be a multi-line response, in which case we need to keep
-        # reading until we've hit the end. The end is signified by an empty
-        # packet after a mirror packet.
+            # read the entire packet
+            logging.debug("Reading the rest of the packet")
+            self._stream.read_bytes(packet_len, process_packet)
 
-        if not self._authed:
-            # just return here
-            return (curr_packet_id, response_code, message)
+        self._stream.read_bytes(4, process_packet_len)
 
-        else:
-            # possible multi line response.
-            pass
-        
-
-    def _auth(self):
+    def _auth(self, data = None, auth_sent = False, junked = False):
         """
         Called when connect is successful. First thing we always do after
         connecting is attempt to authenticate. Authentication is asynchronous.
-        We'll utilise partials to do this properly
+        We'll utilise partials to do this
         """
-        auth_packet = self._construct_packet(SERVERDATA_AUTH, self.rcon_password)
+        if self.error:
+            raise self.error
+        logging.debug("Auth called. Auth sent: %s, Junked: %s", auth_sent, junked)
 
-        # _auth will be called again once the auth packet has been sent
-        self._send_packet(auth_packet, self._auth)
+        if not auth_sent:
+            auth_packet = self._construct_packet(SERVERDATA_AUTH, self.rcon_password)
 
-        junk = yield self._begin_read_packet()
-        # now just get real response
-        response = yield self._begin_read_packet()
+            # _auth will be called again once the auth packet has been sent
+            logging.debug("Sending auth packet %s", repr(auth_packet))
 
+            f = partial(self._auth, auth_sent = True)
+            self._send_packet(auth_packet, f)
+        elif not junked:
+            # read the junk packet out. don't supply a callback, so it is simply
+            # discarded
+            f = partial(self._auth, auth_sent = True, junked = True)
+            self._read_single_packet(f)
+        
+        else:
+            # now read the real response. call _auth_response once it has been
+            # processed
+            self._read_single_packet(self._auth_response)
+
+    def _auth_response(self, response):
+        logging.debug("Auth response: %s", repr(response))
         if response[1] == SERVERDATA_AUTH_RESPONSE:
             if response[0] == -1:
-                raise RconAuthError("Invalid RCON password specified")
+                self.error = RconAuthError("Invalid RCON password specified")
 
             elif response[0] == self.request_id:
                 self.authed = True
@@ -149,10 +161,16 @@ class RconConnection(object):
                 logging.debug("Successfully authed")
 
             else:
-                raise RconAuthError("Unknown packet id (%d) received when auth packet was expected with id %d" % (response[0], self.request_id))
+                self.error = RconAuthError("Unknown packet id (%d) received when auth packet was expected with id %d" % (response[0], self.request_id))
 
         else:
-            raise RconAuthError("Received unexpected response code when auth response was expected")
+            self.error = RconAuthError("Received unexpected response code when auth response was expected")
+
+    def send_cmd(self, callback = None):
+        if self.error:
+            raise self.error
+
+
 
     @property
     def closed(self):

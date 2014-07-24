@@ -166,11 +166,51 @@ class RconConnection(object):
         else:
             self.error = RconAuthError("Received unexpected response code when auth response was expected")
 
-    def send_cmd(self, callback = None):
+    def _exec(self, command, callback = None):
+        """
+        Send a command packet to the server if we are authenticated. When doing
+        this, we send a packet with SERVERDATA_EXEC_COMMAND and the command we
+        want to execute, along with an empty SERVERDATA_COMMAND_RESPONSE, which
+        the server will mirror back at us once it has sent the response to our
+        command (in order, because TCP is ordered). Doing this lets us know
+        exactly when we've received the full response to our command.
+        """
+        if self.authed:
+            # send command packet with no callback, it'll just execute and
+            # and do nothing
+            packet = self._construct_packet(SERVERDATA_EXEC_COMMAND, command)
+            self._send_packet(packet)
+
+            # add empty packet, with callback. this packet is just appended
+            # to the stream's internal write queue
+            packet = self._construct_packet(SERVERDATA_COMMAND_RESPONSE, r'')
+            f = partial(self._command_sent_callback, handle_callback = callback)
+            self._send_packet(packet, f)
+
+
+    def _command_sent_callback(self, data, handle_callback = None):
+        """
+        Called when a complete command has been sent (command + mirror packets)
+        This will let us know when we should start reading, and will also begin
+        the processing of the next item in our command queue, if any.
+
+        @param handle_callback The callback to be used once we've read all data
+                               from a response
+        """
+        pass
+
+    def send_cmd(self, command, callback = None):
         if self.error:
             raise self.error
 
+        if self._stream.reading() or self._stream.writing():
+            # we're already reading/writing from the socket. this command
+            # should be queued
+            pass
 
+        else:
+            # execute the command!
+            self._exec(command, callback)
 
     @property
     def closed(self):

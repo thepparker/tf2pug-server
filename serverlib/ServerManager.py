@@ -15,6 +15,8 @@ class ServerManager(object):
         self.group = group
         self.db = db
 
+        self._late_loaded = True
+
         self._servers = []
 
         self.__load_servers()
@@ -94,11 +96,8 @@ class ServerManager(object):
                 new_list.append(existing_server)
             
             else:
-                # this is a new server coming into this manager (it may be 
-                # a fresh load), so we late load it, and append it to the
-                # new list
-                new_server.late_loaded()
-
+                # this is a new server coming into this manager. late loading
+                # is ONLY DONE WHEN THIS DAEMON STARTS!
                 new_list.append(new_server)
 
 
@@ -107,3 +106,12 @@ class ServerManager(object):
         # it will be reflected here as well. likewise if a new server was
         # added
         self._servers = new_list
+
+    def late_load(self):
+        if not self._late_loaded:
+            return
+        
+        for server in self._servers:
+            server.late_loaded()
+
+        self._late_loaded = False

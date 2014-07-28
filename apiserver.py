@@ -86,6 +86,8 @@ class Application(tornado.web.Application):
         # loading the pug managers will also load all server managers
         self.__load_pug_managers()
 
+        self.__late_load_servers()
+
         tornado.web.Application.__init__(self, handlers, **settings)
 
     def valid_api_key(self, key):
@@ -190,6 +192,16 @@ class Application(tornado.web.Application):
                 self.__cache_client_data(key, key_tuple[0:3])
 
                 self.get_pug_manager(key_tuple[3])
+
+    def __late_load_servers(self):
+        """
+        Run a late load for all servers, so listeners are re-established. We
+        perform this after loading the pugs and servers themselves so that
+        all references (Server <-> Pug) have already been re-established.
+        """
+
+        for manager in self._server_managers.values():
+            manager.late_load()
 
     def close(self):
         self._pug_status_timer.stop()

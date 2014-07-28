@@ -82,7 +82,7 @@ class RconConnection(object):
         packet = struct.pack('<l', self.request_id) + struct.pack('<l', code) + body.encode('ascii') + '\x00\x00'
 
         #add the packed length of the message body to the beginning of the packet
-        logging.debug("Packet length: %s, packet: %s", len(packet), repr(packet))
+        #logging.debug("Packet length: %s, packet: %s", len(packet), repr(packet))
 
         packet = struct.pack('<l', len(packet)) + packet
 
@@ -95,10 +95,10 @@ class RconConnection(object):
     def _read_single_packet(self, callback = None):
         # reads a single packet from the stream and pushes the processed
         # response through the given callback if provided
-        logging.debug("Reading single packet from stream")
+        #logging.debug("Reading single packet from stream")
 
         def process_packet(packed_packet):
-            logging.debug("Processing packet: %s", repr(packed_packet))
+            #logging.debug("Processing packet: %s", repr(packed_packet))
             #packet is in the form <id (packed int)><response code (packed int)><body>\x00\x00
             curr_packet_id = struct.unpack('<l', packed_packet[0:4])[0]
             response_code = struct.unpack('<l', packed_packet[4:8])[0]
@@ -114,11 +114,11 @@ class RconConnection(object):
 
         def process_packet_len(packed_packet_len):
             packet_len = struct.unpack('<l', packed_packet_len)[0]
-            logging.debug("Processing packet length: %s, length: %s", 
-                            repr(packed_packet_len), packet_len)
+            """logging.debug("Processing packet length: %s, length: %s", 
+                            repr(packed_packet_len), packet_len)"""
 
             # read the entire packet
-            logging.debug("Reading the rest of the packet")
+            #logging.debug("Reading the rest of the packet")
             self._stream.read_bytes(packet_len, process_packet)
 
         self._stream.read_bytes(4, process_packet_len)
@@ -276,7 +276,8 @@ class RconConnection(object):
 
         if self._stream.reading() or self._stream.writing() or not self.authed:
             # we're already reading/writing from the socket. this command
-            # should be queued
+            # should be queued. the queue is processed at the end of a
+            # read cycle
             logging.debug("Stream is busy or we are not authed. Adding command to queue")
             self._add_to_queue((command, callback))
 

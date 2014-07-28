@@ -3,7 +3,7 @@ import logging
 import psycopg2.extras
 from psycopg2.extras import Json
 
-from . import BaseDatabaseInterface
+from BaseInterfaces import BaseDatabaseInterface
 
 class PSQLDatabaseInterface(BaseDatabaseInterface):
     """

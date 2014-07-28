@@ -2,7 +2,7 @@ from entities import Pug
 
 import json
 
-from . import BaseJsonInterface
+from BaseInterfaces import BaseJsonInterface
 
 """
 A JSON Interface class, which will encode/decode Pug objects into/from JSON.

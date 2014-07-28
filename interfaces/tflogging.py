@@ -8,7 +8,7 @@ TF2 Logging Interface
 import logging
 import re
 
-from serverlogging import BaseLogInterface
+from . import BaseLogInterface
 
 round_win = re.compile(r'^L [0-9\/]+ - [0-9\:]+: World triggered "Round_Win" \x28winner "(Blue|Red)"\x29$')
 round_overtime = re.compile(r'^L [0-9\/]+ - [0-9\:]+: World triggered "Round_Overtime"$')

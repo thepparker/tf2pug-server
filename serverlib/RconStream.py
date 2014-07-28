@@ -11,6 +11,7 @@ from tornado.iostream import IOStream
 from tornado import gen
 
 from functools import partial
+from collections import deque
 
 SERVERDATA_AUTH = 3
 SERVERDATA_EXEC_COMMAND = 2
@@ -59,6 +60,8 @@ class RconConnection(object):
 
         self.error = None
 
+        self._queue = deque()
+
         # async connect & call _auth when connected
         self._stream.connect((ip, port), self._auth)
 
@@ -101,8 +104,8 @@ class RconConnection(object):
             response_code = struct.unpack('<l', packed_packet[4:8])[0]
             message = packed_packet[8:].strip('\x00') #strip the terminators
 
-            logging.debug("ID: %d CODE: %d MESSAGE: %s", curr_packet_id,
-                            response_code, message)
+            """logging.debug("ID: %d CODE: %d MESSAGE: %s", curr_packet_id,
+                            response_code, message)"""
 
             # we now have the packet message, response code, and response id, 
             # so push it through the given callback
@@ -128,13 +131,11 @@ class RconConnection(object):
         """
         if self.error:
             raise self.error
-        logging.debug("Auth called. Auth sent: %s, Junked: %s", auth_sent, junked)
 
         if not auth_sent:
             auth_packet = self._construct_packet(SERVERDATA_AUTH, self.rcon_password)
 
             # _auth will be called again once the auth packet has been sent
-            logging.debug("Sending auth packet %s", repr(auth_packet))
 
             f = partial(self._auth, auth_sent = True)
             self._send_packet(auth_packet, f)
@@ -160,6 +161,8 @@ class RconConnection(object):
 
                 logging.debug("Successfully authed")
 
+                self._process_queue()
+
             else:
                 self.error = RconAuthError("Unknown packet id (%d) received when auth packet was expected with id %d" % (response[0], self.request_id))
 
@@ -184,33 +187,117 @@ class RconConnection(object):
             # add empty packet, with callback. this packet is just appended
             # to the stream's internal write queue
             packet = self._construct_packet(SERVERDATA_COMMAND_RESPONSE, r'')
+
             f = partial(self._command_sent_callback, handle_callback = callback)
             self._send_packet(packet, f)
 
-
-    def _command_sent_callback(self, data, handle_callback = None):
+    def _command_sent_callback(self, handle_callback = None):
         """
         Called when a complete command has been sent (command + mirror packets)
-        This will let us know when we should start reading, and will also begin
-        the processing of the next item in our command queue, if any.
+        This will let us know when we should start reading.
 
         @param handle_callback The callback to be used once we've read all data
                                from a response
         """
-        pass
+        
+        # begin reading
+        f = partial(self._handle_multi_packet_read, complete_callback = handle_callback)
+        self._read_single_packet(f)
+
+    def _handle_multi_packet_read(self, data, previous = None, complete_callback = None):
+        # data is a tuple in the form (id, code, message)
+
+        if previous is None:
+            previous = [ data ]
+        else:
+            previous.append(data)
+
+        length = len(previous)
+        if length > 0:
+            """
+            To signify the end of a multi-line response, we'll receive an
+            empty packet (which is the mirror of our empty packet), along
+            with an additional empty packet whose body consists of solely
+            \x01. So we need to check the last two packets. This means
+            we'll receive a MINIMUM of THREE packets for ANY command response
+            """
+
+            response_complete = False
+            got_mirror_packet = False
+            empty = previous[length-2:] # last 2 packets in previous list
+            for packet in empty:
+                packet_id = packet[0]
+                response_code = packet[1]
+                message = packet[2]
+                if (response_code == SERVERDATA_COMMAND_RESPONSE and
+                    packet_id == self.request_id):
+
+                    if got_mirror_packet and message == '\x01':
+                        # have already gotten mirror packet, so this packet is the
+                        # expected packet after the mirror, with body of \x01. 
+                        # therefore, our response is complete!
+
+                        response_complete = True
+                    else:
+                        got_mirror_packet = True
+
+            if response_complete and complete_callback is not None:
+                complete = self._compile_multi_packet(previous)
+                complete_callback(complete)
+
+                self._process_queue()
+            elif not response_complete:
+                # response not complete, get the next packet
+                f = partial(self._handle_multi_packet_read, previous = previous, complete_callback = complete_callback)
+                self._read_single_packet(f)
+
+    def _compile_multi_packet(self, packets):
+        """
+        Compiles a list of packets into a single packet, chopping off the empty
+        packets. Then calls the given callback method (if any) with the
+        complete packet.
+
+        @param packets A list of packet tuples
+
+        @return Complete packet
+        """
+
+        first = packets[0]
+        response_id = first[0]
+        response_code = first[1]
+
+        message = "".join([ x[2] for x in packets[:-2] ])
+
+        return (response_id, response_code, message)
 
     def send_cmd(self, command, callback = None):
         if self.error:
             raise self.error
 
-        if self._stream.reading() or self._stream.writing():
+        if self._stream.reading() or self._stream.writing() or not self.authed:
             # we're already reading/writing from the socket. this command
             # should be queued
-            pass
+            logging.debug("Stream is busy or we are not authed. Adding command to queue")
+            self._add_to_queue((command, callback))
 
         else:
             # execute the command!
             self._exec(command, callback)
+
+    def _add_to_queue(self, qtuple):
+        self._queue.append(qtuple)
+
+    def _process_queue(self):
+        logging.debug("Processing RCON command queue")
+        try:
+            command, callback = self._queue.popleft()
+            logging.debug("QUEUE - command: %s, callback: %s", command, callback)
+
+            self.send_cmd(command, callback)
+        except IndexError:
+            pass
+        except:
+            logging.exception("Unknown exception occurred whilst attempting to process queue")
 
     @property
     def closed(self):

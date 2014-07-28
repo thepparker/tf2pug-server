@@ -77,8 +77,8 @@ def steamid_to_64bit(steam_id):
     return community_id
 
 class TFLogInterface(BaseLogInterface):
-    def __init__(self, server, pug):
-        BaseLogInterface.__init__(self, server, pug)
+    def __init__(self, server):
+        BaseLogInterface.__init__(self, server)
 
         self._using_secret = False
         self._secret = None

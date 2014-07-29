@@ -303,9 +303,9 @@ class PugManager(object):
 
         return None
 
-    def map_vote_check(self, curr_ctime):
-        for pug in self._pugs:
-            if (pug.state == Pug.states["MAP_VOTING"]) and (curr_ctime > pug.map_vote_end):
+    def status_check(self, ctime = 0):
+        for pug in self._pugs[:]:
+            if (pug.state == Pug.states["MAP_VOTING"]) and (ctime > pug.map_vote_end):
                 logging.debug("Map vote period is over for pug %d", pug.id)
                 # END MAP VOTING FOR THIS PUG
                 pug.end_map_vote()
@@ -315,11 +315,7 @@ class PugManager(object):
 
                 pug.server.change_map()
 
-    def pug_ended_check(self):
-        # shallow copy because we cannot modify a list as we are iterating
-        # over it
-        for pug in self._pugs[:]:
-            if (pug.state == Pug.states["GAME_OVER"]):
+            elif (pug.state == Pug.states["GAME_OVER"]):
                 # game is over! we need to update player rating based on the
                 # results, flush the pug one final time, and then discard
                 # the pug object

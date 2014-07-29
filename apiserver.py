@@ -171,11 +171,7 @@ class Application(tornado.web.Application):
         curr_ctime = time.time()
 
         for manager in self._pug_managers.values():
-            # first check map votes
-            manager.map_vote_check(curr_ctime)
-
-            # now check for ended pugs
-            manager.pug_ended_check()
+            manager.status_check(curr_ctime)
 
     def __load_pug_managers(self):
         logging.info("Loading pug managers for all users")

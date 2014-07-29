@@ -197,9 +197,14 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
 
             else:
                 # Else, this pug has already been flushed once. So we just
-                # update the data column
+                # update the data column, and the index if necessary
                 cursor.execute("UPDATE pugs SET data = %s WHERE id = %s", 
                                 [Json(pug, dumps=jsoninterface.dumps), pug.id])
+
+                if pug.game_over:
+                    cursor.execute("""UPDATE pugs_index 
+                                      SET finished = true
+                                      WHERE pug_entity_id = %s""", pug.id)
 
             conn.commit()
 

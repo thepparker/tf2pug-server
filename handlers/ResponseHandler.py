@@ -158,6 +158,7 @@ class ResponseHandler(object):
             del packet["server"]
 
         del packet["_players"]
+        del packet["player_stats"]
 
         packet["named_state"] = pug.get_state_string()
         packet["players"] = self._pug_players_list(pug)
@@ -175,6 +176,10 @@ class ResponseHandler(object):
                     "name": pug._players[player_id]
                 })
 
+            # if we have the player's stats, merge them into the field for this
+            # player
+            if player_id in pug.player_stats:
+                player = dict(player.items() + pug.player_stats[player_id].items())
 
             player_list.append(player)
 

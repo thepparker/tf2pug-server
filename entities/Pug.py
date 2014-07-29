@@ -28,6 +28,7 @@ class Pug(object):
         self.id = pid
         self.size = size
         self.state = states["GATHERING_PLAYERS"]
+        self.start_time = rounded_ctime()
 
         self.map = pmap
 

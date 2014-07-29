@@ -46,10 +46,7 @@ class Server(object):
 
             command = command % args
 
-        res = self.rcon_connection.send_cmd(command)
-        logging.debug("RCON RESULT: %s", res)
-
-        return res
+        self.rcon_connection.send_cmd(command, lambda r: logging.debug("RCON RESULT: %s", r))
 
     # reserves a server for a pug
     def reserve(self, pug):

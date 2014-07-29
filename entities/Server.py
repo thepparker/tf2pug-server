@@ -3,9 +3,9 @@ import logging
 import string
 import random
 
-from serverlib import Rcon
+from serverlib import RconStream as Rcon, UDPServer
 from interfaces import get_log_interface
-import UDPServer
+
 import settings
 
 def random_string(len=24, chars=string.ascii_lowercase + string.ascii_uppercase + string.digits):

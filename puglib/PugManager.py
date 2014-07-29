@@ -11,7 +11,7 @@ import time
 import collections
 
 import settings
-import rating
+import .rating
 
 from entities import Pug
 from interfaces import get_json_interface

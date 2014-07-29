@@ -356,6 +356,11 @@ class Pug(object):
         if pid in self._players:
             return self._players[pid]
 
+    def get_state_string(self):
+        for name, enum in states.items():
+            if enum == self.state:
+                return name
+
     @property
     def teams_done(self):
         return self.state >= states["TEAMS_SHUFFLED"]

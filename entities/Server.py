@@ -31,6 +31,9 @@ class Server(object):
         self.group = 0
         self.game = game
 
+        self.name = "PLACEHOLDER"
+        self.anticheat = "VAC"
+
         self.rcon_connection = None
 
     def rcon(self, msg, *args):

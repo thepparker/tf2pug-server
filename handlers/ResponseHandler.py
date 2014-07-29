@@ -144,9 +144,22 @@ class ResponseHandler(object):
     def _pug_status_packet(self, pug):
         packet = pug.__dict__.copy()
 
-        del packet["server"]
+
+        
+        if packet.server is not None:
+            packet["server"] = {
+                "name": packet.server.name,
+                "anticheat": packet.server.anticheat
+                "ip": packet.server.ip,
+                "port": packet.server.port
+            }
+
+        else:
+            del packet["server"]
+
         del packet["_players"]
 
+        packet["named_state"] = pug.get_state_string()
         packet["players"] = self._pug_players_list(pug)
         packet["map_vote_counts"] = self._pug_vote_count_list(pug)
         packet["player_votes"] = self._pug_vote_list(pug)

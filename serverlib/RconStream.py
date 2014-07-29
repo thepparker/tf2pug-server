@@ -59,7 +59,8 @@ class RconConnection(object):
         self.request_id = 0
 
         self.error = None
-
+        # use a deque for the queue because it supports popleft(), which is
+        # what we want (FIFO)
         self._queue = deque()
 
         # async connect & call _auth when connected
@@ -289,6 +290,12 @@ class RconConnection(object):
         self._queue.append(qtuple)
 
     def _process_queue(self):
+        """
+        Process any RCON commands in the queue. Called as soon as we are authed
+        and after a command has been completed. Commands are added to the queue
+        if `send_cmd` is called when we are busy (i.e authing or 
+        reading/writing)
+        """
         logging.debug("Processing RCON command queue")
         try:
             command, callback = self._queue.popleft()

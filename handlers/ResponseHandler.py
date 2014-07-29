@@ -146,12 +146,12 @@ class ResponseHandler(object):
 
 
         
-        if packet.server is not None:
+        if pug.server is not None:
             packet["server"] = {
-                "name": packet.server.name,
-                "anticheat": packet.server.anticheat
-                "ip": packet.server.ip,
-                "port": packet.server.port
+                "name": pug.server.name,
+                "anticheat": pug.server.anticheat,
+                "ip": pug.server.ip,
+                "port": pug.server.port
             }
 
         else:

@@ -117,7 +117,7 @@ class Server(object):
         server_address = (settings.logging_listen_ip, log_port) # bind to set ip?
         log_iface_cls = get_log_interface(self.game)
 
-        self._log_interface = log_iface_cls(self, self.pug)
+        self._log_interface = log_iface_cls(self)
 
         self._listener = UDPServer.UDPServer(server_address, self._log_interface.parse)
         self._listener.start()

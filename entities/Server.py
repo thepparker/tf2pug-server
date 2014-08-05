@@ -35,6 +35,7 @@ class Server(object):
         self.anticheat = "VAC"
 
         self.rcon_connection = None
+        self._listener = None
 
     def rcon(self, msg, *args):
         if not self.rcon_connection or self.rcon_connection.closed:
@@ -127,8 +128,12 @@ class Server(object):
         self.rcon("logaddress_add %s:%s" % self._listener.server_address)
 
     def _end_listener(self):
-        self.rcon("logaddress_del %s:%s" % self._listener.server_address)
-        self._listener.close()
+        if self._listener is not None:
+            self._listener.close()
+        
+            self.rcon("logaddress_del %s:%s" % self._listener.server_address)
+        else:
+            self.rcon("logaddress_del %s:%s", settings.logging_listen_ip, self.log_port)
 
         self._log_interface = None
         self.log_port = 0

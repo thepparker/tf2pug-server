@@ -39,6 +39,9 @@ class ServerManager(object):
         self._flush_server(server)
 
     def reset(self, server):
+        if server is None:
+            return
+            
         server.reset()
 
         self._flush_server(server)

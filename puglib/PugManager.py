@@ -190,7 +190,8 @@ class PugManager(object):
         self._flush_pug(pug)
 
         # lastly, remove the pug from the list
-        self._pugs.remove(pug)
+        if pug in self._pugs:
+            self._pugs.remove(pug)
 
     """
     Adds a vote for the given map by the specified player.

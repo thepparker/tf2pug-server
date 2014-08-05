@@ -204,7 +204,7 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
                 if pug.game_over:
                     cursor.execute("""UPDATE pugs_index 
                                       SET finished = true
-                                      WHERE pug_entity_id = %s""", pug.id)
+                                      WHERE pug_entity_id = %s""", [pug.id])
 
             conn.commit()
 

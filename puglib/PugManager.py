@@ -130,13 +130,13 @@ class PugManager(object):
 
     @return Pug The newly created pug
     """
-    def create_pug(self, player_id, player_name, size = 12, pug_map = None):
+    def create_pug(self, player_id, player_name, size = 12, pug_map = None, custom_id = None):
         # check if player is in a pug first
         if self._player_in_pug(player_id):
             raise PlayerInPugException("Player %s (%s) is already in a pug" % (player_name, player_id))
 
         # player not in a pug. so let's make a new one
-        pug = Pug.Pug(size = size, pmap = pug_map)
+        pug = Pug.Pug(size = size, pmap = pug_map, custom_id = custom_id)
         
         # see if we can get a server before doing anything else
         server = self.server_manager.allocate(pug)
@@ -144,7 +144,7 @@ class PugManager(object):
         # If the server returned is None, there are no servers available.
         # Therefore, we raise an exception. Else, code continues and player
         # gets added/pug gets flushed
-        if not server:
+        if server is None:
             raise NoAvailableServersException("No more servers are available")
             
         pug.add_player(player_id, player_name)
@@ -465,12 +465,24 @@ class PugManager(object):
         logging.debug("Pugs loaded: %s", pugs)
 
         for pug in pugs:
-            pug.server = self.server_manager.get_server_by_id(pug.server_id)
-            pug.server.pug = pug # make sure to give the server the pug again!
-
+            # if the pug is > 2 hours old, it should be ended (i.e something
+            # went wrong)
             logging.debug("Loaded pug id %d. Server id: %d", pug.id, pug.server_id)
+            if (time.time() - pug.start_time) > 7200:
+                self._end_pug(pug)
 
-            self._pugs.append(pug)
+            else:
+                pug.server = self.server_manager.get_server_by_id(pug.server_id)
+                # pug.server will be None if pug.server_id not found in server 
+                # manager. if pug.server_id > 0 and pug.server is None, this
+                # pug needs to be killed
+                if pug.server_id is not None and pug.server is None:
+                    self._end_pug(pug)
+
+                elif pug.server is not None:
+                    pug.server.pug = pug # make sure to give the server the pug again!
+
+                    self._pugs.append(pug)
         
     def _flush_pug(self, pug):
         logging.debug("Flushing pug to database. ID: %d", pug.id)

@@ -24,8 +24,9 @@ class MapForcedException(Exception):
     pass
 
 class Pug(object):
-    def __init__(self, pid = None, size = 12, pmap = None):
+    def __init__(self, pid = None, custom_id = None, size = 12, pmap = None):
         self.id = pid
+        self.custom_id = custom_id
         self.size = size
         self.state = states["GATHERING_PLAYERS"]
         self.start_time = rounded_ctime()

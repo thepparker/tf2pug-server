@@ -465,24 +465,21 @@ class PugManager(object):
         logging.debug("Pugs loaded: %s", pugs)
 
         for pug in pugs:
+            logging.debug("Loaded pug id %d. Server id: %d", pug.id, pug.server_id)
             # if the pug is > 2 hours old, it should be ended (i.e something
             # went wrong)
-            logging.debug("Loaded pug id %d. Server id: %d", pug.id, pug.server_id)
-            if (time.time() - pug.start_time) > 7200:
+            pug.server = self.server_manager.get_server_by_id(pug.server_id)
+            # pug.server will be None if pug.server_id not found in server 
+            # manager. if pug.server_id > 0 and pug.server is None, this
+            # pug needs to be killed
+            if ((pug.server_id is not None and pug.server is None)
+              or (time.time() - pug.start_time) > 7200):
                 self._end_pug(pug)
 
-            else:
-                pug.server = self.server_manager.get_server_by_id(pug.server_id)
-                # pug.server will be None if pug.server_id not found in server 
-                # manager. if pug.server_id > 0 and pug.server is None, this
-                # pug needs to be killed
-                if pug.server_id is not None and pug.server is None:
-                    self._end_pug(pug)
+            elif pug.server is not None:
+                pug.server.pug = pug # make sure to give the server the pug again!
 
-                elif pug.server is not None:
-                    pug.server.pug = pug # make sure to give the server the pug again!
-
-                    self._pugs.append(pug)
+                self._pugs.append(pug)
         
     def _flush_pug(self, pug):
         logging.debug("Flushing pug to database. ID: %d", pug.id)

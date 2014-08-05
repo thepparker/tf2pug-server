@@ -180,6 +180,8 @@ class PugCreateHandler(BaseHandler):
     # @size (optional) The size of the pug (i.e the number of players that can
     #                  join). Defaults to 12, but can be any supported size*.
     #                  * See the PugManager class for supported sizes.
+    # @custom_id (optional) An optional ID which the client can use to identify
+    #                       pugs
     def post(self):
         self.validate_api_key()
 
@@ -188,10 +190,12 @@ class PugCreateHandler(BaseHandler):
 
         pug_map = self.get_argument("map", None, False)
         size = self.size
+        custom_id = self.get_argument("custom_id", None, False)
 
         try:
             pug = self.manager.create_pug(self.player_id, self.player_name,
-                                          size, pug_map)
+                                          size = size, pug_map = pug_map, 
+                                          custom_id = custom_id)
 
             # send the status of the new pug
             self.write(self.response_handler.pug_created(pug))

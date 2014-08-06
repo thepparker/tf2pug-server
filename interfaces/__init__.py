@@ -2,8 +2,6 @@ from .tflogging import TFLogInterface
 from .jsonconverter import TFPugJsonInterface
 from .database import PSQLDatabaseInterface
 
-import UDPServer
-
 GAME_CODES = {
     "TF2": 1,
 }

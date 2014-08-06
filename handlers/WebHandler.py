@@ -5,8 +5,7 @@ import tornado.web
 from tornado.web import HTTPError
 
 from puglib import Exceptions as PugManagerExceptions
-from serverlib import Exceptions as ServerManagerException
-from serverlib import Rcon
+from serverlib import Rcon, Exceptions as ServerManagerExceptions
 
 # The base handler class sets up properties and useful methods
 class BaseHandler(tornado.web.RequestHandler):

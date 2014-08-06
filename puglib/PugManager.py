@@ -130,10 +130,12 @@ class PugManager(object):
 
     @return Pug The newly created pug
     """
-    def create_pug(self, player_id, player_name, size = 12, pug_map = None, custom_id = None):
+    def create_pug(self, player_id, player_name, size = 12, pug_map = None,
+                   custom_id = None):
         # check if player is in a pug first
         if self._player_in_pug(player_id):
-            raise PlayerInPugException("Player %s (%s) is already in a pug" % (player_name, player_id))
+            raise PlayerInPugException("Player %s (%s) is already in a pug" % (
+                                        player_name, player_id))
 
         # player not in a pug. so let's make a new one
         pug = Pug.Pug(size = size, pmap = pug_map, custom_id = custom_id)
@@ -483,7 +485,7 @@ class PugManager(object):
                 self._pugs.append(pug)
         
     def _flush_pug(self, pug):
-        logging.debug("Flushing pug to database. ID: %d", pug.id)
+        logging.debug("Flushing pug to database. ID: %s", pug.id)
         jsoninterface = self._json_iface_cls()
 
         self.db.flush_pug(self.api_key, jsoninterface, pug)

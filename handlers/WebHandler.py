@@ -131,9 +131,6 @@ class PugAddHandler(BaseHandler):
         except PugManagerExceptions.PugFullException:
             self.write(self.response_handler.pug_full())
 
-        except PugManagerExceptions.NoAvailableServersException:
-            self.write(self.response_handler.no_available_servers())
-
         except:
             logging.exception("Unknown exception occurred when adding player to a pug")
             raise HTTPError(500)

@@ -71,8 +71,8 @@ class Pug(object):
         }
 
         self.medics = {
-            "red": -1,
-            "blue": -1
+            "red": 0,
+            "blue": 0
         }
 
     def add_player(self, player_id, player_name):

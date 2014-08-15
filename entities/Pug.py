@@ -1,5 +1,4 @@
 
-import collections
 import time
 import calendar
 import random
@@ -39,7 +38,7 @@ class PlayerStats(dict):
         # database
         self["games_since_med"] = 0
         self["games_played"] = 0
-        self["rating"] = rating.BASE
+        self["rating"] = 0
         self["kills"] = 0
         self["deaths"] = 0
         self["assists"] = 0
@@ -423,7 +422,7 @@ class Pug(object):
 
         if (not increment) or (statkey not in ps):
             ps[statkey] = value
-            
+
         else:
             ps[statkey] += value
 

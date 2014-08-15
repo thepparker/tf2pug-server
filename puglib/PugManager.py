@@ -377,7 +377,7 @@ class PugManager(object):
             # if the CID has no pug data, they need to be added
             if not (cid in stats):
                 # create new player stats object for this player
-                stats[cid] = PlayerStats()
+                stats[cid] = PlayerStats(rating = rating.BASE)
 
         return stats
 
@@ -399,7 +399,7 @@ class PugManager(object):
         else:
             # return new, empty, playerstats object
             return {
-                player_id: PlayerStats()
+                player_id: PlayerStats(rating = rating.BASE)
             }
 
     def __flush_pug_stats(self, pug):

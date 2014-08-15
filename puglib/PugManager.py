@@ -479,7 +479,7 @@ class PugManager(object):
         else:
             ranking = [0, 0]
 
-        new_ratings = rating.calculate_ratings([ratings[team1], ratings[team2]], ranking)
+        new_ratings = rating.calculate_rating([ratings[team1], ratings[team2]], ranking)
 
         # new_ratings is a list in the form [team1_new, team2_new], where each
         # teamX_new is a tuple of player ratings in the same order they were

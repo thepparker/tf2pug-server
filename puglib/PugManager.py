@@ -1,10 +1,7 @@
 # This is the PUG manager library for TF2Pug. It handles pug creation, user
-# user management and server management.
+# management and server management.
 #
-# The methods provided in this class are used by the API server. The data
-# returned for certain methods is in the form of a dict, which is converted to
-# a JSON packet by the tornado request write method. These methods document
-# the specific format of that packet.
+# The methods provided in this class are used by the API server
 
 import logging
 import time
@@ -20,6 +17,13 @@ from Exceptions import *
 
 from pprint import pprint
 
+def base_player_stats():
+    return {
+            "games_since_med": 0,
+            "games_played": 0,
+            "rating": rating.BASE
+        }
+
 class PugManager(object):
     def __init__(self, api_key, db, server_manager):
         self.game = "TF2"
@@ -31,8 +35,6 @@ class PugManager(object):
 
         # pugs are maintained as a list of Pug objects
         self._pugs = []
-
-        self._id_counter = 0
 
         self.server_manager = server_manager
 
@@ -59,25 +61,33 @@ class PugManager(object):
         if player_pug is not None:
             raise PlayerInPugException("Player %s is in pug %d", (player_id, player_pug.id))
 
+        # before checking pugs, let's see if the user is banned
+        if self._player_banned(player_id):
+            raise PlayerBannedException("Player %s is banned" % player_id)
+
         pug = None
 
-        # if we have a pug_id, check if that pug exists
-        if pug_id:
-            pug = self.get_pug_by_id(pug_id)
+        # we have a pug_id, check if that pug exists
+        pug = self.get_pug_by_id(pug_id)
 
-            if pug is None:
-                raise InvalidPugException("Pug with id %d does not exist" % pug_id)
+        if pug is None:
+            raise InvalidPugException("Pug with id %d does not exist" % pug_id)
 
-            elif pug.full:
-                raise PugFullException("Pug %d is full" % pug.id )
-
-            else:
-                pug.add_player(player_id, player_name)
+        elif pug.full:
+            raise PugFullException("Pug %d is full" % pug.id )
 
         else:
-            #no pug id specified
-            raise InvalidPugException("No pug id speficied")
+            # have potential pug. we need to check if the player is within the
+            # rating restriction. meaning, we need to get the player stats here
 
+            stats = self._get_player_stats(player_id)
+            player_rating = stats[player_id][rating]
+
+            if pug.player_restricted(player_rating):
+                raise PlayerRestrictedException("Player too good (or bad)")
+
+            else:
+                pug.add_player(player_id, player_name, stats[player_id])
 
         # we now have a valid pug and the player has been aded. check if it's
         # full
@@ -264,6 +274,16 @@ class PugManager(object):
         return self.get_player_pug(player_id) is not None
 
     """
+    Checks if the given player is banned from this service.
+
+    @param player_id The player to check
+
+    @return bool True if the player is banned, else False
+    """
+    def _player_banned(self, player_id):
+        pass
+
+    """
     Gets the pug the given player is in (if any).
 
     @param player_id The player to check for
@@ -314,7 +334,7 @@ class PugManager(object):
                 pug.end_map_vote()
 
                 # shuffle teams
-                pug.shuffle_teams(self._get_pug_stat_data(pug))
+                pug.shuffle_teams()
 
                 pug.server.change_map()
 
@@ -322,7 +342,7 @@ class PugManager(object):
                 # game is over! we need to update player rating based on the
                 # results, flush the pug one final time, and then discard
                 # the pug object
-                self.__flush_med_stats(pug)
+                self.__flush_pug_stats(pug)
                 self.__update_ratings(pug)
 
                 self._flush_pug(pug)
@@ -330,41 +350,43 @@ class PugManager(object):
                 self._pugs.discard(pug)
 
 
-    def _get_pug_stat_data(self, pug):
+    def _get_multi_player_stats(self, players):
+        """
+        Gets a list of player's stats
+
+        :param players A list of 64bit SteamIDs
+
+        :return dict A dict containing stats with CIDs as keys
+        """
         # need to get player stats from livelogs, and med stats from pug db
-        stats = self.__get_pug_stats(pug)
+        stats = self.db.get_player_stats(players)
 
         logging.debug("Player stats: %s", stats)
 
-        for cid in pug.player_list():
+        for cid in players:
             # if the CID has no pug data, they need to be added
             if not (cid in stats):
-                stats[cid] = {
-                    "games_since_med": 0,
-                    "games_played": 0,
-                    "rating": rating.BASE
-                }
+                stats[cid] = base_player_stats()
 
         return stats
 
-    """
-    Gets stat data for the given pug. The only stat data kept by the TF2Pug
-    server are games since med, number of games played, and the player's elo.
-    Everything else is done via Livelogs, or the client's chosen stat provider.
+    def _get_player_stats(self, player_id):
+        """
+        Get an individual player's stat data
 
-    @param Pug pug The pug to get stat data for
+        :param player_id The player's 64bit SteamID
 
-    @return dict The pug's stat data
-    """
-    def __get_pug_stats(self, pug):
-        return self.db.get_tf_player_stats(pug.player_list())
+        :return dict A dict of the player's stats with CID as key
+        """
+        stats = self.db.get_player_stats([ player_id ])
+        if stats and player_id in stats:
+            return stats
 
-    def __flush_med_stats(self, pug):
-        medics = pug.medics.values()
+        else:
+            return base_player_stats()
 
-        nonmedics = [ x for x in pug._players if x not in medics ]
-
-        self.db.flush_tf_pug_med_stats(medics, nonmedics)
+    def __flush_pug_stats(self, pug):
+        self.db.flush_pug_stats(pug.player_stats)
 
     """
     Calculates the new rating of players after the game and updates it in the 

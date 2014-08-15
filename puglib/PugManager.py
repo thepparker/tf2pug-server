@@ -17,12 +17,31 @@ from Exceptions import *
 
 from pprint import pprint
 
-def base_player_stats():
-    return {
-            "games_since_med": 0,
-            "games_played": 0,
-            "rating": rating.BASE
-        }
+class PlayerStats(dict):
+    """
+    A simple class to wrap base player stats, and allow for the easy addition
+    of new player stats. Since player stats are stored as a JSON string in the
+    database, we can just use json.loads() to load the dict, and then pass it 
+    to this constructor. Any stat set in the database will be restored, and any
+    new stats will be initialized. Likewise, stats can be added by other
+    objects (such as the parser), and they will be reflected in this object
+    without us needing to do anything special.
+    """
+    def __init__(self, *args, **kwargs):
+        # Set the base stats, and then super to restore any stats from the
+        # database
+        self["games_since_med"] = 0
+        self["games_played"] = 0
+        self["rating"] = rating.BASE
+        self["kills"] = 0
+        self["deaths"] = 0
+        self["assists"] = 0
+        self["wins"] = 0
+        self["losses"] = 0
+        self["draws"] = 0
+        self["winstreak"] = 0
+
+        super(PlayerStats, self).__init__(*args, **kwargs)
 
 class PugManager(object):
     def __init__(self, api_key, db, server_manager):
@@ -363,10 +382,15 @@ class PugManager(object):
 
         logging.debug("Player stats: %s", stats)
 
+        for cid in stats:
+            # initialize a new PlayerStats object with the player's set stats
+            stats[cid] = PlayerStats(stats[cid])
+
         for cid in players:
             # if the CID has no pug data, they need to be added
             if not (cid in stats):
-                stats[cid] = base_player_stats()
+                # create new player stats object for this player
+                stats[cid] = PlayerStats()
 
         return stats
 
@@ -380,10 +404,16 @@ class PugManager(object):
         """
         stats = self.db.get_player_stats([ player_id ])
         if stats and player_id in stats:
+            # player has existing stats. pass them through the player stats
+            # object, which will initialize any new stats
+            stats[player_id] = PlayerStats(stats[player_id])
             return stats
 
         else:
-            return base_player_stats()
+            # return new, empty, playerstats object
+            return {
+                player_id: PlayerStats()
+            }
 
     def __flush_pug_stats(self, pug):
         self.db.flush_pug_stats(pug.player_stats)

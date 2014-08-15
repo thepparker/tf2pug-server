@@ -89,7 +89,7 @@ class PugManager(object):
             # rating restriction. meaning, we need to get the player stats here
 
             stats = self._get_player_stats(player_id)
-            player_rating = stats[player_id][rating]
+            player_rating = stats[player_id]["rating"]
 
             if pug.player_restricted(player_rating):
                 raise PlayerRestrictedException("Player too good (or bad)")
@@ -200,6 +200,7 @@ class PugManager(object):
 
         # if pug is already in game_over state, update ratings & flush stats
         if pug.state == pug.states["GAME_OVER"]:
+            pug.update_end_stats()
             self.__update_ratings(pug)
             self.__flush_pug_stats(pug)
             
@@ -497,9 +498,7 @@ class PugManager(object):
 
         # update player stats dict with new ratings in preparation for flush
         for cid, rating in ratings_tupled:
-            # default update behaviour is to increment the stat rather than
-            # set it. make sure we don't do that with rating
-            pug.update_stat(cid, "rating", rating, increment = False)
+            pug.set_player_rating(cid, rating)
 
     def __load_pugs(self):
         # clear the pug list

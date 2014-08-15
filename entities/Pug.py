@@ -4,6 +4,8 @@ import calendar
 import random
 import logging
 
+from puglib import rating
+
 states = {
     "GATHERING_PLAYERS": 0,
     "MAP_VOTING": 1,
@@ -38,7 +40,7 @@ class PlayerStats(dict):
         # database
         self["games_since_med"] = 0
         self["games_played"] = 0
-        self["rating"] = 0
+        self["rating"] = rating.BASE
         self["kills"] = 0
         self["deaths"] = 0
         self["assists"] = 0
@@ -67,7 +69,9 @@ class Pug(object):
         self.admin = None
         #players is a dict in the form { cid: "name", ... }
         self._players = {}
-        self.player_stats = {}
+        self.player_stats = {} # stats before game
+        self.game_stats = {} # stats obtained during this pug
+        self.end_stats = {} # stats after game
         self.player_restriction = None # rating restriction
 
         self.player_votes = {}
@@ -102,7 +106,7 @@ class Pug(object):
             "blue": 0
         }
 
-    def add_player(self, player_id, player_name, player_stats):
+    def add_player(self, player_id, player_name, pstats):
         if self.full:
             return
 
@@ -111,7 +115,7 @@ class Pug(object):
 
         self._players[player_id] = player_name
 
-        self.player_stats[player_id] = stats
+        self.player_stats[player_id] = pstats
 
     """
     Add a player to the specified team list. Player can also be a list, as
@@ -342,8 +346,10 @@ class Pug(object):
 
     def begin_game(self):
         if not self.game_started:
-            self.state = states["GAME_STARTED"]
+            # create empty stats for per-game stat storage
 
+
+            self.state = states["GAME_STARTED"]
         else:
             pass
 
@@ -352,7 +358,55 @@ class Pug(object):
 
     def end_game(self):
         self.state = states["GAME_OVER"]
-        # do we need to do anything else here..? rest is handled by the manager
+
+    def update_end_stats(self):
+        # merge the game stats with the pre-game stats to get player's new
+        # total stats
+
+        # wins, losses, draws, games played. we just set these to 1, and 
+        # they'll be incremented when we update with previous stats.
+        team1, team2 = self.teams.keys()
+        opposition = { team1: team2, team2: team1 } 
+        for cid in self.game_stats:
+            player_team = None
+            for team in self.teams:
+                if cid in self.teams[team]
+                    player_team = team
+                    break
+
+            team_score = self.game_scores[player_team]
+            oppo_score = self.game_scores[opposition[player_team]]
+
+            if team_score > oppo_score: # this player won!
+                self.game_stats[cid]["wins"] = 1
+            elif team_score < oppo_score: # player lost
+                self.game_stats[cid]["losses"] = 1
+            else: # draw
+                self.game_stats[cid]["draws"] = 1
+
+            self.game_stats[cid]["games_played"] = 1
+
+        # update all other stats
+        for cid in self.game_stats:
+            if cid not in self.player_stats: # don't have player pre-game stats
+                self.end_stats[cid] = self.game_stats[cid]
+                continue
+            else:
+                self.end_stats[cid] = {}
+
+            endgame = self.end_stats[cid]
+            pregame = self.player_stats[cid]
+            for stat, value in self.game_stats[cid].iteritems():
+                # if the stat existed before the game, just add to it. else,
+                # we set it as new
+                if stat in pregame:
+                    endgame[stat] = pregame[stat] + value
+                else:
+                    endgame[stat] = value
+
+        # update games_since_med for medics (i.e set to 0)
+        for medic in self.medics.values():
+            self.end_stats[medic]["games_since_med"] = 0
 
     def has_player(self, player_id):
         return player_id in self._players
@@ -417,8 +471,8 @@ class Pug(object):
             if enum == self.state:
                 return name
 
-    def update_stat(self, player_id, statkey, value, increment = True):
-        ps = self._get_player_stats(player_id)
+    def update_game_stat(self, player_id, statkey, value, increment = True):
+        ps = self._get_game_stats(player_id)
 
         if (not increment) or (statkey not in ps):
             ps[statkey] = value
@@ -427,16 +481,26 @@ class Pug(object):
             ps[statkey] += value
 
     def _get_player_stats(self, player_id):
-        if player_id in self.player_stats:
-            return self.player_stats[player_id]
+        if player_id in self.game_stats:
+            return self.game_stats[player_id]
 
         else:
-            # player has no stat object for some reason... why?
-            new = PlayerStats()
-            self.player_stats[player_id] = new
+            rating_default = rating.BASE
+            if player_id in self.player_stats:
+                rating_default = self.player_stats[player_id]["rating"]
+
+            new = PlayerStats(rating = rating_default)
+            self.game_stats[player_id] = new
 
             return new
 
+    def set_player_rating(self, player_id, rating):
+        """
+        Used by pug manager when updating ratings to set the player's new
+        rating after the game.
+        """
+        if player_id in self.end_stats:
+            self.end_stats[player_id]["rating"] = rating
 
     @property
     def teams_done(self):

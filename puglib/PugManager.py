@@ -378,7 +378,7 @@ class PugManager(object):
             # if the CID has no pug data, they need to be added
             if not (cid in stats):
                 # create new player stats object for this player
-                stats[cid] = PlayerStats(rating = rating.BASE)
+                stats[cid] = PlayerStats()
 
         return stats
 
@@ -400,11 +400,11 @@ class PugManager(object):
         else:
             # return new, empty, playerstats object
             return {
-                player_id: PlayerStats(rating = rating.BASE)
+                player_id: PlayerStats()
             }
 
     def __flush_pug_stats(self, pug):
-        self.db.flush_pug_stats(pug.player_stats)
+        self.db.flush_pug_stats(pug.end_stats)
 
     """
     Calculates the new rating of players after the game and updates it in the 
@@ -451,10 +451,6 @@ class PugManager(object):
         or Glicko will not be too hard.
         """
         team1, team2 = pug.teams.keys()
-        opposition = {
-            team1: team2,
-            team2: team1
-        }
 
         # we need to construct 2 lists of Rating, one for each team. These will
         # be passed to the rating calculator

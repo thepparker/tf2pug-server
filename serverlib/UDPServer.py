@@ -21,7 +21,7 @@ class UDPServer(object):
         self._state = None
         self._stop = False
 
-        self.io_loop = io_loop or ioloop.IOLoop.instance()
+        self.io_loop = io_loop or ioloop.IOLoop.current()
 
     def _server_bind(self):
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)

@@ -212,12 +212,19 @@ class PugManager(object):
     @param pug The pug to end
     """
     def _end_pug(self, pug):
-        pug.state = Pug.states["GAME_OVER"]
-
         # resetting the server automatically causes a server_manager flush
-        # also closes the logging socket? maybe?
+        # also closes the logging socket
         self.server_manager.reset(pug.server)
 
+        # if pug is already in game_over state, update ratings & flush stats
+        if pug.state == pug.states["GAME_OVER"]:
+            self.__update_ratings(pug)
+            self.__flush_pug_stats(pug)
+            
+        # set to game over so we never load this pug again if forced end
+        pug.state = Pug.states["GAME_OVER"]
+
+        # flush updated pug
         self._flush_pug(pug)
 
         # lastly, remove the pug from the list
@@ -357,16 +364,14 @@ class PugManager(object):
 
                 pug.server.change_map()
 
+                # flush pug for safety!
+                self._flush_pug(pug)
+
             elif (pug.state == Pug.states["GAME_OVER"]):
                 # game is over! we need to update player rating based on the
                 # results, flush the pug one final time, and then discard
                 # the pug object
-                self.__flush_pug_stats(pug)
-                self.__update_ratings(pug)
-
-                self._flush_pug(pug)
-
-                self._pugs.discard(pug)
+                self._end_pug(pug)
 
 
     def _get_multi_player_stats(self, players):

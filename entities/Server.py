@@ -147,9 +147,10 @@ class Server(object):
 
     def _end_listener(self):
         if self._listener is not None:
-            self._listener.close()
-        
             self.rcon("logaddress_del %s:%s" % self._listener.server_address)
+            
+            self._listener.close()
+            self._listener = None
         else:
             self.rcon("logaddress_del %s:%s", settings.logging_listen_ip, self.log_port)
 

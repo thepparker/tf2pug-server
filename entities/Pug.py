@@ -406,7 +406,8 @@ class Pug(object):
 
         # update games_since_med for medics (i.e set to 0)
         for medic in self.medics.values():
-            self.end_stats[medic]["games_since_med"] = 0
+            if medic in self.end_stats:
+                self.end_stats[medic]["games_since_med"] = 0
 
     def has_player(self, player_id):
         return player_id in self._players

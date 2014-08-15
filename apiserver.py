@@ -91,6 +91,9 @@ class Application(tornado.web.Application):
         tornado.web.Application.__init__(self, handlers, **settings)
 
     def valid_api_key(self, key):
+        if key is None:
+            return False
+            
         if key in self._auth_cache:
             logging.debug("Key %s is in auth cache", key)
 

@@ -404,7 +404,7 @@ class PugManager(object):
             }
 
     def __flush_pug_stats(self, pug):
-        self.db.flush_pug_stats(pug.end_stats)
+        self.db.flush_player_stats(pug.end_stats)
 
     """
     Calculates the new rating of players after the game and updates it in the 

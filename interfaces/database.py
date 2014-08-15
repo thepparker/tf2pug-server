@@ -159,7 +159,7 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
             logging.exception("An exception occurred updating the stat index")
 
         finally:
-            self._close_db_objects()
+            self._close_db_objects(cursor, conn)
 
     def get_pugs(self, api_key, jsoninterface, include_finished = False):
         conn, cursor = self._get_db_objects()

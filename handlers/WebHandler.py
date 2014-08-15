@@ -18,11 +18,11 @@ class BaseHandler(tornado.web.RequestHandler):
 
     @property
     def request_key(self):
-        return self.get_argument("key", None, False)
+        return self.get_argument("key", None)
 
     @property
     def player_id(self):
-        sid = self.get_argument("steamid", None, False)
+        sid = self.get_argument("steamid", None)
 
         logging.debug("STEAMID: %s" % sid)
         try:
@@ -36,11 +36,11 @@ class BaseHandler(tornado.web.RequestHandler):
 
     @property
     def player_name(self):
-        return self.get_argument("name", None, False)
+        return self.get_argument("name", None)
 
     @property
     def pugid(self):
-        pugid = self.get_argument("pugid", None, False)
+        pugid = self.get_argument("pugid", None)
         
         logging.debug("PUG ID: %s" % pugid)
 
@@ -59,7 +59,7 @@ class BaseHandler(tornado.web.RequestHandler):
 
     @property
     def size(self):
-        size = self.get_argument("size", 12, False)
+        size = self.get_argument("size", 12)
         logging.debug("SIZE: %s" % size)
         try:
             size = int(size)

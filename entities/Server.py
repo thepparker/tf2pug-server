@@ -38,10 +38,11 @@ class Server(object):
         self.rcon_connection = None
         self._listener = None
 
-        self.rcon("tv_port", callback = self._tv_port_callback)
+    def get_tv_port(self):
+        def cb(data):
+            logging.debug("TV_PORT callback: %s", data)
 
-    def _tv_port_callback(self, data):
-        logging.debug("TV_PORT callback: %s", data)
+        self.rcon("tv_port", callback = self._tv_port_callback)        
 
     def rcon(self, msg, *args, **kwargs):
         if not self.rcon_connection or self.rcon_connection.closed:
@@ -66,6 +67,8 @@ class Server(object):
 
         pug.server = self
         pug.server_id = self.id
+
+        self.get_tv_port()
 
     # prepare the server for usage
     def prepare(self):
@@ -151,6 +154,9 @@ class Server(object):
         # be any port
         if self.pug_id > 0:
             self._setup_listener(self.log_port)
+
+            # get the tv_port again
+            self.get_tv_port()
 
     @property
     def in_use(self):

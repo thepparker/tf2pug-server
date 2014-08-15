@@ -244,11 +244,14 @@ class RconConnection(object):
                     else:
                         got_mirror_packet = True
 
-            if response_complete and complete_callback is not None:
-                complete = self._compile_multi_packet(previous)
-                complete_callback(complete)
+            if response_complete:
                 self._busy = False
+                if complete_callback is not None:
+                    complete = self._compile_multi_packet(previous)
+                    complete_callback(complete)
+                
                 self._process_queue()
+
             elif not response_complete:
                 # response not complete, get the next packet
                 f = partial(self._handle_multi_packet_read, previous = previous, complete_callback = complete_callback)

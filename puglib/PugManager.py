@@ -10,38 +10,15 @@ import collections
 import settings
 
 import rating
+
 from entities import Pug
+from entities.Pug import PlayerStats
+
 from interfaces import get_json_interface
 
 from Exceptions import *
 
 from pprint import pprint
-
-class PlayerStats(dict):
-    """
-    A simple class to wrap base player stats, and allow for the easy addition
-    of new player stats. Since player stats are stored as a JSON string in the
-    database, we can just use json.loads() to load the dict, and then pass it 
-    to this constructor. Any stat set in the database will be restored, and any
-    new stats will be initialized. Likewise, stats can be added by other
-    objects (such as the parser), and they will be reflected in this object
-    without us needing to do anything special.
-    """
-    def __init__(self, *args, **kwargs):
-        # Set the base stats, and then super to restore any stats from the
-        # database
-        self["games_since_med"] = 0
-        self["games_played"] = 0
-        self["rating"] = rating.BASE
-        self["kills"] = 0
-        self["deaths"] = 0
-        self["assists"] = 0
-        self["wins"] = 0
-        self["losses"] = 0
-        self["draws"] = 0
-        self["winstreak"] = 0
-
-        super(PlayerStats, self).__init__(*args, **kwargs)
 
 class PugManager(object):
     def __init__(self, api_key, db, server_manager):
@@ -513,7 +490,11 @@ class PugManager(object):
         ratings_tupled = map(mapper, team1_rating, pug.teams[team1]) + map(mapper, team2_rating, pug.teams[team2])
         logging.debug("Players with new ratings: %s", ratings_tupled)
 
-        self.db.flush_updated_ratings(ratings_tupled)
+        # update player stats dict with new ratings in preparation for flush
+        for cid, rating in ratings_tupled:
+            # default update behaviour is to increment the stat rather than
+            # set it. make sure we don't do that with rating
+            pug.update_stat(cid, "rating", rating, increment = False)
 
     def __load_pugs(self):
         # clear the pug list

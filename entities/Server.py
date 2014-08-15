@@ -42,7 +42,7 @@ class Server(object):
         def cb(data):
             logging.debug("TV_PORT callback: %s", data)
 
-        self.rcon("tv_port", callback = self._tv_port_callback)        
+        self.rcon("tv_port", callback = cb)        
 
     def rcon(self, msg, *args, **kwargs):
         if not self.rcon_connection or self.rcon_connection.closed:

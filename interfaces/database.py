@@ -13,7 +13,7 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
     """
     def __init__(self, db):
         BaseDatabaseInterface.__init__(self, db)
-        
+
         self._indexable_stats = []
 
     def add_stat_index(self, stat):
@@ -160,9 +160,6 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
 
         finally:
             self._close_db_objects()
-
-    def flush_updated_ratings(self, ratings_tuple):
-        pass
 
     def get_pugs(self, api_key, jsoninterface, include_finished = False):
         conn, cursor = self._get_db_objects()

@@ -1,4 +1,5 @@
 import logging
+import json
 
 import psycopg2.extras
 from psycopg2.extras import Json
@@ -10,6 +11,12 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
     Implements the DatabaseInterface for PostgreSQL databases. This is currently
     the only provided interface. See the base class for documentation.
     """
+    def __init__(self):
+        self._indexable_stats = []
+
+    def add_stat_index(self, stat):
+        self._indexable_stats.append(stat)
+
     def get_user_info(self, api_key = None):
         conn, cursor = self._get_db_objects()
 
@@ -33,12 +40,12 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
         finally:
             self._close_db_objects(cursor, conn)
 
-    def get_tf_player_stats(self, ids):
+    def get_player_stats(self, ids):
         conn, cursor = self._get_db_objects()
 
         # ids is a list of 64 bit steamids (i.e pug.players_list)
         try:
-            cursor.execute("""SELECT steamid, games_since_med, games_played, rating
+            cursor.execute("""SELECT steamid, data
                               FROM players
                               WHERE steamid IN %s""", (tuple(ids),))
 
@@ -48,13 +55,10 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
             if results:
                 for result in results:
                     logging.debug("player stat row: %s", result)
-                    # result is tuple in the form 
-                    # (steamid, games_since_med, games_played, rating)
-                    stats[result[0]] = { 
-                            "games_since_med": result[1],
-                            "games_played": result[2],
-                            "rating": float(result[3]) # Decimal -> Float
-                        }
+                    # result is tuple in the form (steamid, JSON string)
+                    # the pug manager expects a dict with steamid as the root
+                    # keys, and values of stat dicts. so we decode the json.
+                    stats[result[0]] = json.loads(result[1])
 
             return stats
 
@@ -65,72 +69,95 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
         finally:
             self._close_db_objects(cursor, conn)
 
-    def flush_tf_pug_med_stats(self, medics, nonmedics):
+    def flush_player_stats(self, player_stats):
         conn, cursor = self._get_db_objects()
 
         try:
-            # mogrifying inserts. we need to check who is NOT in the database.
-            # to do this, we use the given list of IDs, get the results, and
-            # for any IDs NOT in the result, we perform an insert.
-            # psycopg2 will setup and use a stored procedure for executemany,
-            # and doing it like this removes the need for a user-defined upsert
-            # function
+            # player stats is a dict of PlayerStats objects, with keys being
+            # 64bit steamids. We store the players as a JSON string, just like
+            # we do for pugs. This allows us to easily add and remove stat
+            # keys without the need for modifying the table. We maintain
+            # an index table, players_index, which allows us to lookup players
+            # based on stat data.
 
-            # non medics first
-            cursor.execute("SELECT steamid FROM players WHERE steamid IN %s", (tuple(nonmedics),))
-            results = cursor.fetchall()
-            if results:
-                results = [ x[0] for x in results ] # make results a simple list of IDs
-            else:
-                results = []
+            # see which stats we should insert or update
+            cids = player_stats.keys()
+            cursor.execute("""SELECT steamid 
+                              FROM players 
+                              WHERE steamid IN %s""", tuple(cids))
 
-            # now get all ids in nonmedics that are NOT in results
-            insert_ids = [ x for x in nonmedics if x not in results ]
-            if len(insert_ids) > 0: # obviously only perform if we have ids to insert...
-                # create the list of tuples for insertion
-                data = [ (x, 1, 1) for x in insert_ids ]
+            resuls = cursor.fetchall()
+            # populate existing with the steamids that are already in the
+            # table. these ids we will simply update
+            existing = [ x[0] for x in results ] if results else []
 
-                cursor.executemany("""INSERT INTO players (steamid, games_since_med, games_played)
-                                      VALUES ('%s', '%s', '%s')""", data)
+            insert_ids = [ x for x in cids if x not in existing ]
 
-            #the rest, we just update
-            update_ids = [ x for x in nonmedics if x not in insert_ids ]
-            for cid in update_ids:
-                cursor.execute("""UPDATE players
-                                  SET games_since_med = COALESCE(games_since_med, 0) + 1,
-                                      games_played = COALESCE(games_played, 0) + 1
-                                  WHERE steamid = '%s'""", (cid,))
-            conn.commit()
+            # Make data a list of tuples in the format (cid, JSON)
+            insert = [ (x, Json(player_stats[x])) for x in insert_ids ]
 
-            # now medics, do the same as we did for non-medics
-            cursor.execute("SELECT steamid FROM players WHERE steamid IN %s", (tuple(medics),))
-            results = cursor.fetchall()
-            if results:
-                results = [ x[0] for x in results ]
-            else:
-                results = []
+            # opposite order for update because of query ordering
+            update = [ (Json(player_stats[x]), x) for x in existing ]
 
-            insert_ids = [ x for x in medics if x not in results ]
-            if len(insert_ids) > 0:
-                data = [ (x, 0, 1) for x in insert_ids ]
+            cursor.executemany("""INSERT INTO players (steamid, data) 
+                                  VALUES (%s, %s)""", insert)
 
-                cursor.executemany("""INSERT INTO players (steamid, games_since_med, games_played)
-                                  VALUES ('%s', '%s', '%s')""", data)
-
-            update_ids = [ x for x in medics if x not in insert_ids ]
-            for cid in update_ids:
-                cursor.execute("""UPDATE players
-                                  SET games_since_med = 0,
-                                      games_played = COALESCE(games_played, 0) + 1
-                                  WHERE steamid = '%s'""", (cid,))
+            cursor.executemany("""UPDATE players
+                                  SET data = %s
+                                  WHERE steamid = %s""", update)
 
             conn.commit()
 
         except:
-            logging.exception("An exception occurred flushing med stats")
+            logging.exception("An exception occurred flushing player stats")
 
         finally:
             self._close_db_objects(cursor, conn)
+
+        self._maintain_stat_index(player_stats)
+
+    def _maintain_stat_index(self, player_stats):
+        """
+        Maintains the stat table index for each column listed in 
+        self._indexable_stats
+        """
+        conn, cursor = self._get_db_objects()
+
+        try:
+            for col in self._indexable_stats:
+                # col is the name of a key in the player stat dictionary
+                for cid in player_stats:
+                    pstat = player_stats[cid]
+                    
+                    if col not in pstat: # player does not contain this stat. skip?
+                        continue
+
+                    # see if this item already exists in the index
+                    cursor.execute("""SELECT 1 
+                                      FROM players_index
+                                      WHERE steamid = %s AND item = %s""")
+                    result = cursor.fetchone()
+                    if result:
+                        # exists, so we should update the value
+                        cursor.execute("""UPDATE players_index
+                                          SET value = %s
+                                          WHERE steamid = %s AND item = %s""",
+                                        [ pstat[col], cid, col ])
+                    else:
+                        # insert into index
+                        cursor.execute("""INSERT INTO players_index 
+                                            (steamid, item, value)
+                                          VALUES (%s, %s, %s)""",
+                                        [ cid, col, pstat[col] ])
+
+                # commit after each indexable column
+                conn.commit()
+
+        except:
+            logging.exception("An exception occurred updating the stat index")
+
+        finally:
+            self._close_db_objects()
 
     def flush_updated_ratings(self, ratings_tuple):
         pass

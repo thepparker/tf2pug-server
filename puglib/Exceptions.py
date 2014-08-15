@@ -37,3 +37,11 @@ class InvalidMapException(Exception):
 # Raised when no more servers are available
 class NoAvailableServersException(Exception):
     pass
+
+# Raised when a player is banned
+class PlayerBannedException(Exception):
+    pass
+
+# Raised when a player is too high or too low rating for the pug
+class PlayerRestrictedException(Exception):
+    pass

@@ -16,6 +16,7 @@ Response_PlayerNotInPug = 1102
 Response_PlayerAdded = 1103
 Response_PlayerRemoved = 1104
 Response_PlayerBanned = 1105
+Response_PlayerRestricted = 1106
 
 Response_MapVoteAdded = 1200
 Response_MapForced = 1201
@@ -72,6 +73,10 @@ class ResponseHandler(object):
                     "reason": reason
                 }
             }
+
+    def player_restricted(self):
+        return { "response": Response_PlayerRestricted }
+
     def player_in_pug(self):
         return { "response": Response_PlayerInPug }
 

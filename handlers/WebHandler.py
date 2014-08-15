@@ -114,6 +114,8 @@ class PugAddHandler(BaseHandler):
             raise HTTPError(400)
 
         pug_id = self.pugid
+        if pug_id is None:
+            raise HTTPError(400)
 
         # the add_player method returns the pug the player was added to
         try:
@@ -121,6 +123,12 @@ class PugAddHandler(BaseHandler):
             # send the updated status of this pug (i.e which players are in it now)
 
             self.write(self.response_handler.player_added(pug))
+
+        except PugManagerExceptions.PlayerBannedException:
+            self.write(self.response_handler.player_banned(None))
+
+        except PugManagerExceptions.PlayerRestrictedException:
+            self.write(self.response_handler.player_restricted())
 
         except PugManagerExceptions.PlayerInPugException:
             self.write(self.response_handler.player_in_pug())

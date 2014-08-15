@@ -24,6 +24,32 @@ def rounded_ctime():
 class MapForcedException(Exception):
     pass
 
+class PlayerStats(dict):
+    """
+    A simple class to wrap base player stats, and allow for the easy addition
+    of new player stats. Since player stats are stored as a JSON string in the
+    database, we can just use json.loads() to load the dict, and then pass it 
+    to this constructor. Any stat set in the database will be restored, and any
+    new stats will be initialized. Likewise, stats can be added by other
+    objects (such as the parser), and they will be reflected in this object
+    without us needing to do anything special.
+    """
+    def __init__(self, *args, **kwargs):
+        # Set the base stats, and then super to restore any stats from the
+        # database
+        self["games_since_med"] = 0
+        self["games_played"] = 0
+        self["rating"] = rating.BASE
+        self["kills"] = 0
+        self["deaths"] = 0
+        self["assists"] = 0
+        self["wins"] = 0
+        self["losses"] = 0
+        self["draws"] = 0
+        self["winstreak"] = 0
+
+        super(PlayerStats, self).__init__(*args, **kwargs)
+
 class Pug(object):
     def __init__(self, pid = None, custom_id = None, size = 12, pmap = None):
         self.id = pid
@@ -391,6 +417,27 @@ class Pug(object):
         for name, enum in states.items():
             if enum == self.state:
                 return name
+
+    def update_stat(self, player_id, statkey, value, increment = True):
+        ps = self._get_player_stats(player_id)
+
+        if (not increment) or (statkey not in ps):
+            ps[statkey] = value
+            
+        else:
+            ps[statkey] += value
+
+    def _get_player_stats(self, player_id):
+        if player_id in self.player_stats:
+            return self.player_stats[player_id]
+
+        else:
+            # player has no stat object for some reason... why?
+            new = PlayerStats()
+            self.player_stats[player_id] = new
+
+            return new
+
 
     @property
     def teams_done(self):

@@ -493,8 +493,8 @@ class PugManager(object):
         logging.debug("Players with new ratings: %s", ratings_tupled)
 
         # update player stats dict with new ratings in preparation for flush
-        for cid, rating in ratings_tupled:
-            pug.set_player_rating(cid, rating)
+        for cid, new_rating in ratings_tupled:
+            pug.set_player_rating(cid, new_rating)
 
     def __load_pugs(self):
         # clear the pug list

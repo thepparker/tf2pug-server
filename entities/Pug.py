@@ -370,7 +370,7 @@ class Pug(object):
         for cid in self.game_stats:
             player_team = None
             for team in self.teams:
-                if cid in self.teams[team]
+                if cid in self.teams[team]:
                     player_team = team
                     break
 

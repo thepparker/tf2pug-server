@@ -199,7 +199,7 @@ class PugManager(object):
         self.server_manager.reset(pug.server)
 
         # if pug is already in game_over state, update ratings & flush stats
-        if pug.state == pug.states["GAME_OVER"]:
+        if pug.state == Pug.states["GAME_OVER"]:
             pug.update_end_stats()
             self.__update_ratings(pug)
             self.__flush_pug_stats(pug)

@@ -79,6 +79,9 @@ class UDPServer(object):
     Remove our socket from the io loop and close it
     """
     def close(self):
+        if self.socket is None:
+            return
+            
         self._stop = True
         self.io_loop.remove_handler(self.socket.fileno())
         self.socket.close()

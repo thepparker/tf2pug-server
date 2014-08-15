@@ -11,7 +11,8 @@ states = {
     "MAPVOTE_COMPLETED": 2,
     "TEAMS_SHUFFLED": 3,
     "GAME_STARTED": 4,
-    "GAME_OVER": 5
+    "REPLACEMENT_REQUIRED": 5,
+    "GAME_OVER": 6
 }
 
 MAPVOTE_DURATION = 2

@@ -43,26 +43,23 @@ class BaseDatabaseInterface(object):
         raise NotImplementedError("This must be implemented")
 
     """
-    Gets TF2 stat info pertaining to the given list of 64bit SteamIDs. 
-    Such info includes games since playing medic, total number of games played,
-    and the player rating.
+    Gets stat info pertaining to the given list of 64bit SteamIDs. 
 
     @param ids The list of 64bit IDs to get data for
 
     @return A dictionary of stats with respect to each individual ID
     """
-    def get_tf_player_stats(self, ids):
+    def get_player_stats(self, ids):
         raise NotImplementedError("This must be implemented")
 
     """
-    Updates medic stats from a pug. The list of medics given is the medics
-    playing medic for the pug, non medics is the list of players in the pug who
-    are not medics.
+    Updates stats from a pug. The dict given is used to update all values
+    for the user. 
 
-    @param medics List of 64bit SteamIDs who are playing medic
-    @param nonmedics List of 64bit SteamIDS who are not playing medic
+    @param player_stats A dict of all player stats, with the keys 64bit
+                        SteamIDs
     """
-    def flush_tf_pug_med_stats(self, medics, nonmedics):
+    def flush_player_stats(self, player_stats):
         raise NotImplementedError("This must be implemented")
 
     """

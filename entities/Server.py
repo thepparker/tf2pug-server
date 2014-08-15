@@ -2,6 +2,7 @@
 import logging
 import string
 import random
+import re
 
 from serverlib import RconStream as Rcon, UDPServer
 from interfaces import get_log_interface
@@ -11,6 +12,8 @@ import settings
 def random_string(len=24, chars=string.ascii_lowercase + string.ascii_uppercase + string.digits):
     #generates a random string of length len
     return ''.join(random.choice(chars) for x in range(len))
+
+tv_port_re = re.compile(r'^"tv_port" = "(\d+)"')
 
 class Server(object):
     def __init__(self, game):
@@ -40,7 +43,12 @@ class Server(object):
 
     def get_tv_port(self):
         def cb(data):
+            # data = (4, 0, '"tv_port" = "27056" ( def. "27020" )\n - Host SourceTV port\n')
             logging.debug("TV_PORT callback: %s", data)
+
+            match = tv_port_re.search(data[2])
+            if match:
+                self.tv_port = match.group(1)
 
         self.rcon("tv_port", callback = cb)        
 

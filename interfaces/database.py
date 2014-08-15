@@ -11,7 +11,9 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
     Implements the DatabaseInterface for PostgreSQL databases. This is currently
     the only provided interface. See the base class for documentation.
     """
-    def __init__(self):
+    def __init__(self, db):
+        BaseDatabaseInterface.__init__(self, db)
+        
         self._indexable_stats = []
 
     def add_stat_index(self, stat):

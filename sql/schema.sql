@@ -36,13 +36,13 @@ CREATE TABLE pugs_index(id serial, pug_entity_id integer UNIQUE NOT NULL,
                     );
 
 -- Player stats (games played, games since med) for medic choosing
--- DROP TABLE IF EXISTS players;
-CREATE TABLE players (id serial, steamid bigint UNIQUE NOT NULL, data text NOT NULL
+-- DROP TABLE IF EXISTS players CASCADE;
+CREATE TABLE players (id serial, steamid bigint UNIQUE NOT NULL, data text NOT NULL,
                       modified TIMESTAMP DEFAULT current_timestamp);
 
 -- DROP TABLE IF EXISTS players_index;
 CREATE TABLE players_index(steamid bigint references players(steamid) ON UPDATE CASCADE, 
-                           item text, value decimal, UNIQUE(steamid, statitem));
+                           item text, value decimal, UNIQUE(steamid, item));
 
 -- Trigger for players modified (last playtime)
 CREATE TRIGGER update_players_modtime BEFORE UPDATE ON players

@@ -43,7 +43,7 @@ class Pug(object):
         #players is a dict in the form { cid: "name", ... }
         self._players = {}
         self.player_stats = {}
-        self.player_restriction = 0 # rating restriction
+        self.player_restriction = None # rating restriction
 
         self.player_votes = {}
         self.map_votes = {}
@@ -77,7 +77,7 @@ class Pug(object):
             "blue": 0
         }
 
-    def add_player(self, player_id, player_name):
+    def add_player(self, player_id, player_name, player_stats):
         if self.full:
             return
 
@@ -85,6 +85,8 @@ class Pug(object):
             self.admin = player_id
 
         self._players[player_id] = player_name
+
+        self.player_stats[player_id] = stats
 
     """
     Add a player to the specified team list. Player can also be a list, as
@@ -178,12 +180,11 @@ class Pug(object):
         self.map_forced = True
         self.map = map_name
 
-    def shuffle_teams(self, stat_data):
+    def shuffle_teams(self):
         if not self.full or self.teams_done:
             return
 
-        # keep all player stats for rating updating post-game
-        self.player_stats = stat_data
+        stat_data = self.player_stats
 
         # To select teams, we have to first select a medic for each team. 
         # After that we need to establish a score for each player and sort 
@@ -330,6 +331,33 @@ class Pug(object):
 
     def has_player(self, player_id):
         return player_id in self._players
+
+    def player_restricted(self, rating):
+        """
+        Checks whether the given rating is within the allowed range for this
+        pug. Restrictions are limits, and set such that a number < 0 means the
+        player must have rating below the absolute value of the restriction,
+        and a number > 0 means the player must have a rating equal to or above
+        the rating.
+
+        If the player is outside of the set range, they are considered to be
+        restricted, and we return True.
+        """
+        if self.player_restriction is None:
+            return False
+
+        elif (self.player_restriction < 0
+              and rating > abs(self.player_restriction)):
+
+            return True
+
+        elif (self.player_restriction > 0 
+              and rating <= self.player_restriction):
+
+            return True
+
+        else:
+            return False
 
     def player_list(self):
         return self._players.keys()

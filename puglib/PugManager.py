@@ -52,24 +52,36 @@ class PugManager(object):
     @return Pug The pug the player was added to or None
     """
     def add_player(self, player_id, player_name, pug_id):
-        # first check if the player is already in a pug
-        player_pug = self.get_player_pug(player_id)
-        if player_pug is not None:
-            raise PlayerInPugException("Player %s is in pug %d", (player_id, player_pug.id))
-
-        # before checking pugs, let's see if the user is banned
-        if self._player_banned(player_id):
-            raise PlayerBannedException("Player %s is banned" % player_id)
-
-        pug = None
-
-        # we have a pug_id, check if that pug exists
         pug = self.get_pug_by_id(pug_id)
 
         if pug is None:
             raise InvalidPugException("Pug with id %d does not exist" % pug_id)
 
-        elif pug.full:
+        # Use internal method to avoid duplication. Exception will be raised by
+        # `_add_player` if adding the player is not possible.
+        self._add_player(pug, player_id, player_name)
+
+        # update the database with current pug details
+        self._flush_pug(pug)
+
+        return pug
+
+    def _add_player(self, pug, player_id, player_name):
+        """
+        Internal method for adding a player to the given pug object. Raises an
+        exception when adding them is not possible. Use of this method avoids
+        code duplication in `create_pug` and `add_player`. Note that this
+        method does NOT flush the pug, so it must be done by the calling
+        method after this succeeds.
+        """
+        # let's see if the user is banned/already in a pug
+        if self._player_banned(player_id):
+            raise PlayerBannedException("Player %s is banned" % player_id)
+
+        if self.get_player_pug(player_id) is not None:
+            raise PlayerInPugException("Player %s is already in pug" % player_id)
+
+        if pug.full:
             raise PugFullException("Pug %d is full" % pug.id )
 
         else:
@@ -90,12 +102,6 @@ class PugManager(object):
         if pug.full:
             # pug is full, so we should make it transition to map voting
             pug.begin_map_vote()
-
-        # update the database with current pug details
-        self._flush_pug(pug)
-
-        return pug
-
 
     """
     This method removes the given player ID from any pug they may be in.
@@ -138,15 +144,16 @@ class PugManager(object):
     """
     def create_pug(self, player_id, player_name, size = 12, pug_map = None,
                    custom_id = None):
-        # check if player is in a pug first
-        if self._player_in_pug(player_id):
-            raise PlayerInPugException("Player %s (%s) is already in a pug" % (
-                                        player_name, player_id))
 
-        # player not in a pug. so let's make a new one
         pug = Pug.Pug(size = size, pmap = pug_map, custom_id = custom_id)
-        
-        # see if we can get a server before doing anything else
+        # try to add the player to the newly created pug. if the player is
+        # banned, restricted, or in another pug, _add_player will raise an
+        # exception. The pug is not flushed to the database by _add_player.
+        self._add_player(pug, player_id, player_name)
+
+        # if we've reached here, player was successfully added to the pug.
+        # check if we can get a server or not. if not, raise an exception and
+        # escape before we add the pug to the internal list and flush it.
         server = self.server_manager.allocate(pug)
 
         # If the server returned is None, there are no servers available.
@@ -155,8 +162,6 @@ class PugManager(object):
         if server is None:
             raise NoAvailableServersException("No more servers are available")
             
-        pug.add_player(player_id, player_name)
-
         self._pugs.append(pug)
 
         self._flush_pug(pug)

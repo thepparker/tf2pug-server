@@ -15,6 +15,7 @@ Response_PlayerInPug = 1101
 Response_PlayerNotInPug = 1102
 Response_PlayerAdded = 1103
 Response_PlayerRemoved = 1104
+Response_PlayerBanned = 1105
 
 Response_MapVoteAdded = 1200
 Response_MapForced = 1201
@@ -64,6 +65,13 @@ class ResponseHandler(object):
 
         return response
 
+    def player_banned(self, reason):
+        return { 
+                "response": Response_PlayerBanned,
+                "ban": {
+                    "reason": reason
+                }
+            }
     def player_in_pug(self):
         return { "response": Response_PlayerInPug }
 
@@ -148,10 +156,11 @@ class ResponseHandler(object):
         
         if pug.server is not None:
             packet["server"] = {
-                "name": pug.server.name,
+                "id": pug.server.id,
                 "anticheat": pug.server.anticheat,
                 "ip": pug.server.ip,
-                "port": pug.server.port
+                "port": pug.server.port,
+                "tv": pug.server.tv_port
             }
 
         else:

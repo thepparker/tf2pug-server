@@ -63,6 +63,8 @@ class RconConnection(object):
         # what we want (FIFO)
         self._queue = deque()
 
+        self._busy = False
+
         # async connect & call _auth when connected
         self._stream.connect((ip, port), self._auth)
 
@@ -141,8 +143,7 @@ class RconConnection(object):
             f = partial(self._auth, auth_sent = True)
             self._send_packet(auth_packet, f)
         elif not junked:
-            # read the junk packet out. don't supply a callback, so it is simply
-            # discarded
+            # read the junk packet out, and call again with junked = True
             f = partial(self._auth, auth_sent = True, junked = True)
             self._read_single_packet(f)
         
@@ -180,6 +181,7 @@ class RconConnection(object):
         exactly when we've received the full response to our command.
         """
         if self.authed:
+            self._busy = True
             # send command packet with no callback, it'll just execute and
             # and do nothing
             packet = self._construct_packet(SERVERDATA_EXEC_COMMAND, command)
@@ -245,7 +247,7 @@ class RconConnection(object):
             if response_complete and complete_callback is not None:
                 complete = self._compile_multi_packet(previous)
                 complete_callback(complete)
-
+                self._busy = False
                 self._process_queue()
             elif not response_complete:
                 # response not complete, get the next packet
@@ -255,8 +257,7 @@ class RconConnection(object):
     def _compile_multi_packet(self, packets):
         """
         Compiles a list of packets into a single packet, chopping off the empty
-        packets. Then calls the given callback method (if any) with the
-        complete packet.
+        packets.
 
         @param packets A list of packet tuples
 
@@ -275,7 +276,7 @@ class RconConnection(object):
         if self.error:
             raise self.error
 
-        if self._stream.reading() or self._stream.writing() or not self.authed:
+        if self.busy() or not self.authed:
             # we're already reading/writing from the socket. this command
             # should be queued. the queue is processed at the end of a
             # read cycle
@@ -306,6 +307,12 @@ class RconConnection(object):
             pass
         except:
             logging.exception("Unknown exception occurred whilst attempting to process queue")
+
+    def busy(self):
+        return (self._stream.reading() 
+                or self._stream.writing()
+                or self._busy)
+
 
     @property
     def closed(self):

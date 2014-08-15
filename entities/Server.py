@@ -21,6 +21,8 @@ class Server(object):
         self.rcon_password = ""
         self.password = ""
 
+        self.tv_port = None
+
         # the pug on this server
         self.pug_id = -1
         self.pug = None
@@ -31,17 +33,22 @@ class Server(object):
         self.group = 0
         self.game = game
 
-        self.name = "PLACEHOLDER"
         self.anticheat = "VAC"
 
         self.rcon_connection = None
         self._listener = None
 
-    def rcon(self, msg, *args):
+        self.rcon("tv_port", callback = self._tv_port_callback)
+
+    def _tv_port_callback(self, data):
+        logging.debug("TV_PORT callback: %s", data)
+
+    def rcon(self, msg, *args, **kwargs):
         if not self.rcon_connection or self.rcon_connection.closed:
             self.rcon_connection = Rcon.RconConnection(self.ip, self.port, self.rcon_password)
 
         command = msg
+        callback = kwargs["callback"] if "callback" in kwargs else None
 
         if args:
             # support parsing of a dict as args for string substitution
@@ -50,7 +57,7 @@ class Server(object):
 
             command = command % args
 
-        self.rcon_connection.send_cmd(command, lambda r: logging.debug("RCON RESULT: %s", r))
+        self.rcon_connection.send_cmd(command, callback)
 
     # reserves a server for a pug
     def reserve(self, pug):

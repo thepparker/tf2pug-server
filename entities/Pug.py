@@ -43,6 +43,7 @@ class Pug(object):
         #players is a dict in the form { cid: "name", ... }
         self._players = {}
         self.player_stats = {}
+        self.player_restriction = 0 # rating restriction
 
         self.player_votes = {}
         self.map_votes = {}

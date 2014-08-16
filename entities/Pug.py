@@ -85,8 +85,8 @@ class Pug(object):
         self.server_id = -1
 
         self.teams = {
-            "red": [],
-            "blue": []
+            "red": set(),
+            "blue": set()
         }
 
         self.team_ratings = {
@@ -114,6 +114,8 @@ class Pug(object):
         self._players[player_id] = player_name
 
         self.player_stats[player_id] = pstats
+        # empty stats for the current game
+        self.game_stats[player_id] = PlayerStats()
 
     """
     Add a player to the specified team list. Player can also be a list, as
@@ -121,9 +123,15 @@ class Pug(object):
     """
     def __add_to_team(self, team, player):
         if isinstance(player, list):
-            self.teams[team] += player
+            self.teams[team] += set(player)
         else:
-            self.teams[team].append(player)
+            self.teams[team].add(player)
+
+    def __remove_from_team(self, team, player):
+        if isinstance(player, list):
+            self.teams[team] -= set(player)
+        else:
+            self.teams[team].add(player)
 
     def remove_player(self, player_id):
         if player_id in self._players:
@@ -133,9 +141,11 @@ class Pug(object):
             if player_id == self.admin and self.player_count > 0:
                 self.admin = self._players.keys()[0]
 
-        if player_id in self.player_votes:
-            self._decrement_map_vote(self.player_votes[player_id])
+            # remove this player's stats
+            del self.player_stats[player_id]
+            del self.game_stats[player_id]
 
+        if player_id in self.player_votes:
             del self.player_votes[player_id]
 
     def begin_map_vote(self):
@@ -318,9 +328,6 @@ class Pug(object):
 
     def begin_game(self):
         if not self.game_started:
-            # create empty stats for per-game stat storage
-
-
             self.state = states["GAME_STARTED"]
         else:
             pass
@@ -458,9 +465,7 @@ class Pug(object):
             return self.game_stats[player_id]
 
         else:
-            rating_default = rating.BASE
-            if player_id in self.player_stats:
-                rating_default = self.player_stats[player_id]["rating"]
+            rating_default = self.player_stats[player_id]["rating"] or rating.BASE
 
             new = PlayerStats(rating = rating_default)
             self.game_stats[player_id] = new

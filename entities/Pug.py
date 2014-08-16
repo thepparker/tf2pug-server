@@ -365,8 +365,10 @@ class Pug(object):
 
             self.game_stats[cid]["games_played"] = 1
 
-        # update all other stats
-        for cid in self.game_stats:
+            if cid not in self.medics.values():
+                self.game_stats[cid]["games_since_med"] = 1
+
+            # update all other stats
             if cid not in self.player_stats: # don't have player pre-game stats
                 self.end_stats[cid] = self.game_stats[cid]
                 continue

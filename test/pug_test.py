@@ -9,11 +9,11 @@ sys.path.append('..')
 logging.basicConfig(level=logging.DEBUG)
 
 from entities import Pug
-from entities.Pug import Pug, PlayerStats
+from entities.Pug import PlayerStats
 
 def test_add_player():
     print "Testing add_player"
-    pug = Pug()
+    pug = Pug.Pug()
     pug.add_player(1L, "1", PlayerStats())
     assert 1L in pug._players
     assert 1L in pug.player_stats
@@ -21,7 +21,7 @@ def test_add_player():
 
 def test_remove_player():
     print "Testing remove_player"
-    pug = Pug()
+    pug = Pug.Pug()
     pug.add_player(1L, "1", PlayerStats())
 
     # we need to make sure the map vote is removed too
@@ -36,7 +36,7 @@ def test_remove_player():
 
 def test_add_to_team():
     print "Testing add_to_team"
-    pug = Pug()
+    pug = Pug.Pug()
     pug._add_to_team("blue", 1L)
     assert pug.teams["blue"] == set([ 1L ])
     pug._add_to_team("blue", [2L, 3L])
@@ -44,7 +44,7 @@ def test_add_to_team():
 
 def test_remove_from_team():
     print "Testing remove_from_team"
-    pug = Pug()
+    pug = Pug.Pug()
     pug._add_to_team("blue", [ 1L, 2L, 3L ])
     
     pug._remove_from_team("blue", [ 1L ])
@@ -53,8 +53,8 @@ def test_remove_from_team():
     pug._remove_from_team("blue", [ 2L, 3L ])
     assert pug.teams["blue"] == set([])
 
-def fill_pug():
-    pug = Pug()
+def fill_Pug.Pug():
+    pug = Pug.Pug()
     pid = 1L
     while not pug.full:
         pug.add_player(pid, str(pid), PlayerStats())
@@ -65,13 +65,13 @@ def fill_pug():
 
 def test_shuffle_teams():
     print "Testing team creation (shuffle)"
-    pug = fill_pug()
+    pug = fill_Pug.Pug()
 
     pug.shuffle_teams()
 
 def test_map_vote():
     print "Testing map vote with player vote"
-    pug = Pug()
+    pug = Pug.Pug()
     pug.add_player(1, str(1), PlayerStats())
 
     pug.begin_map_vote()
@@ -90,7 +90,7 @@ def test_map_vote():
 
     #------------------------------------------------------
     print "Testing map vote with no vote"
-    pug = Pug()
+    pug = Pug.Pug()
     pug.begin_map_vote()
     assert pug.state == Pug.states["MAP_VOTING"]
     pug.end_map_vote()
@@ -99,13 +99,13 @@ def test_map_vote():
 
     #------------------------------------------------------
     print "Testing map vote with forced map"
-    pug = Pug()
+    pug = Pug.Pug()
     pug.force_map("cp_granary")
     pug.begin_map_vote()
     assert pug.state == Pug.states["MAPVOTE_COMPLETED"]
     assert pug.map == "cp_granary"
 
-    pug = Pug()
+    pug = Pug.Pug()
     pug.begin_map_vote()
     assert pug.state == Pug.states["MAP_VOTING"]
     
@@ -115,7 +115,7 @@ def test_map_vote():
 
 def test_update_score():
     print "Testing team score update"
-    pug = Pug()
+    pug = Pug.Pug()
     assert pug.game_scores["blue"] == pug.game_scores["red"] == 0
 
     pug.update_score("blue", 2)
@@ -127,7 +127,7 @@ def test_update_score():
     assert pug.game_scores["red"] == 3    
 
 def test_player_restriction():
-    pug = Pug()
+    pug = Pug.Pug()
     print "Testing player restriction. Min rating: 100"
     pug.player_restriction = 100
 
@@ -142,7 +142,7 @@ def test_player_restriction():
 
 def test_helpers():
     print "Testing helper methods"
-    pug = Pug()
+    pug = Pug.Pug()
     pug.add_player(1L, "1", PlayerStats())
 
     assert pug.has_player(1L) == True
@@ -166,7 +166,7 @@ def test_helpers():
 
 def test_update_game_stats():
     print "Testing game stat update"
-    pug = Pug()
+    pug = Pug.Pug()
     pug.add_player(1L, "1", PlayerStats())
     
     assert pug.game_stats[1L] == PlayerStats()
@@ -186,7 +186,7 @@ def test_update_game_stats():
 
 def test_update_end_stats():
     print "Testing end of game stat update"
-    pug = fill_pug()
+    pug = fill_Pug.Pug()
 
     # add stats to game stats and our own stat dict, merge, then assert
     # they are equal afterwards. fuark

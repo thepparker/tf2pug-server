@@ -121,13 +121,13 @@ class Pug(object):
     Add a player to the specified team list. Player can also be a list, as
     per __allocate_players.
     """
-    def __add_to_team(self, team, player):
+    def _add_to_team(self, team, player):
         if isinstance(player, list):
             self.teams[team] += set(player)
         else:
             self.teams[team].add(player)
 
-    def __remove_from_team(self, team, player):
+    def _remove_from_team(self, team, player):
         if isinstance(player, list):
             self.teams[team] -= set(player)
         else:
@@ -230,7 +230,7 @@ class Pug(object):
 
             self.team_ratings[team] += stat_data[medic]["rating"]
             self.medics[team] = medic
-            self.__add_to_team(team, medic)
+            self._add_to_team(team, medic)
             medics.append(medic)
 
         logging.debug("Medics - Red: %s Blue: %s. Now calculating the rest of team", 
@@ -317,8 +317,8 @@ class Pug(object):
 
         # our teams are now as balanced as we're going to get them, so merge
         # the temp teams with the real teams
-        self.__add_to_team("red", red)
-        self.__add_to_team("blue", blue)
+        self._add_to_team("red", red)
+        self._add_to_team("blue", blue)
 
         self.team_ratings["red"] += red_score
         self.team_ratings["blue"] += blue_score

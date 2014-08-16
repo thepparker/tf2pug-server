@@ -12,6 +12,7 @@ from entities import Pug
 from entities.Pug import Pug, PlayerStats
 
 def test_add_player():
+    print "Testing add_player"
     pug = Pug()
     pug.add_player(1L, "1", PlayerStats())
     assert 1L in pug._players
@@ -19,6 +20,7 @@ def test_add_player():
     assert 1L in pug.game_stats
 
 def test_remove_player():
+    print "Testing remove_player"
     pug = Pug()
     pug.add_player(1L, "1", PlayerStats())
 
@@ -33,20 +35,22 @@ def test_remove_player():
     assert 1L not in pug.player_votes
 
 def test_add_to_team():
+    print "Testing add_to_team"
     pug = Pug()
-    pug.__add_to_team("blue", 1L)
+    pug._add_to_team("blue", 1L)
     assert pug.teams["blue"] == set([ 1L ])
-    pug.__add_to_team("blue", [2L, 3L])
+    pug._add_to_team("blue", [2L, 3L])
     assert pug.teams["blue"] == set([ 1L, 2L, 3L ])
 
 def test_remove_from_team():
+    print "Testing remove_from_team"
     pug = Pug()
-    pug.__add_to_team("blue", [ 1L, 2L, 3L ])
+    pug._add_to_team("blue", [ 1L, 2L, 3L ])
     
-    pug.__remove_from_team("blue", [ 1L ])
+    pug._remove_from_team("blue", [ 1L ])
     assert pug.teams["blue"] == set([ 2L, 3L ])
 
-    pug.__remove_from_team("blue", [ 2L, 3L ])
+    pug._remove_from_team("blue", [ 2L, 3L ])
     assert pug.teams["blue"] == set([])
 
 def fill_pug():
@@ -60,6 +64,7 @@ def fill_pug():
     return pug
 
 def test_shuffle_teams():
+    print "Testing team creation (shuffle)"
     pug = fill_pug()
 
     pug.shuffle_teams()
@@ -109,6 +114,7 @@ def test_map_vote():
     assert pug.map == "cp_granary"
 
 def test_update_score():
+    print "Testing team score update"
     pug = Pug()
     assert pug.game_scores["blue"] == pug.game_scores["red"] == 0
 
@@ -135,6 +141,7 @@ def test_player_restriction():
     assert pug.player_restricted(90) == False
 
 def test_helpers():
+    print "Testing helper methods"
     pug = Pug()
     pug.add_player(1L, "1", PlayerStats())
 
@@ -158,6 +165,7 @@ def test_helpers():
     assert len(pug.map_votes) == 0
 
 def test_update_game_stats():
+    print "Testing game stat update"
     pug = Pug()
     pug.add_player(1L, "1", PlayerStats())
     
@@ -177,13 +185,21 @@ def test_update_game_stats():
     
 
 def test_update_end_stats():
+    print "Testing end of game stat update"
     pug = fill_pug()
 
     # add stats to game stats and our own stat dict, merge, then assert
     # they are equal afterwards. fuark
 
 def test():
+    test_add_player()
+    test_remove_player()
+    test_add_to_team()
+    test_remove_from_team()
+    test_map_vote()
+    test_update_score()
+    test_player_restriction()
+    test_helpers()
+    test_update_game_stats()
     
-    
-
 test()

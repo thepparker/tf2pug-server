@@ -123,7 +123,7 @@ class Pug(object):
     """
     def _add_to_team(self, team, player):
         if isinstance(player, list):
-            self.teams[team] += set(player)
+            self.teams[team] |= set(player)
         else:
             self.teams[team].add(player)
 

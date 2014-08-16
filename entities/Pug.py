@@ -380,6 +380,9 @@ class Pug(object):
             for stat, value in self.game_stats[cid].iteritems():
                 # if the stat existed before the game, just add to it. else,
                 # we set it as new
+                if stat == "rating":
+                    continue
+                    
                 if stat in pregame:
                     endgame[stat] = pregame[stat] + value
                 else:

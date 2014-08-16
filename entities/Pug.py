@@ -3,6 +3,7 @@ import time
 import calendar
 import random
 import logging
+import collections
 
 from puglib import rating
 
@@ -75,7 +76,6 @@ class Pug(object):
         self.player_restriction = None # rating restriction
 
         self.player_votes = {}
-        self.map_votes = {}
         self.map_vote_start = -1
         self.map_vote_end = -1
         self.map_vote_duration = MAPVOTE_DURATION
@@ -155,10 +155,8 @@ class Pug(object):
             self.state = states["MAPVOTE_COMPLETED"]
             return
 
-        sorted_votes = sorted(self.map_votes.keys(), key = lambda m: self.map_votes[m], reverse = True)
-
-        if len(sorted_votes) > 0:
-            self.map = sorted_votes[0]
+        if len(self.map_votes) > 0:
+            self.map = self.map_votes.most_common(1)[0][0]
         
         else:
             # no one voted for a map, pick 1 at random
@@ -174,34 +172,10 @@ class Pug(object):
             # ignore votes if they're the same map
             if map_name == self.player_votes[player_id]:
                 return
-
-            # decrement the vote count of the previously voted map, increment
-            # the newly voted map and set the player's voted map to the new map
-            self._decrement_map_vote(self.player_votes[player_id])
-            self._increment_map_vote(map_name)
             self.player_votes[player_id] = map_name
 
         else:
-            # player hasn't voted yet, just increment their vote and set the
-            # voted map
-            self._increment_map_vote(map_name)
             self.player_votes[player_id] = map_name
-
-    def _increment_map_vote(self, map_name):
-        if map_name in self.map_votes:
-            self.map_votes[map_name] += 1
-        else:
-            self.map_votes[map_name] = 1
-
-    def _decrement_map_vote(self, map_name):
-        if map_name in self.map_votes:
-            self.map_votes[map_name] -= 1
-
-            if self.map_votes[map_name] < 0:
-                self.map_votes[map_name] = 0
-
-        else:
-            self.map_votes[map_name] = 0
 
     def force_map(self, map_name):
         self.map_forced = True
@@ -527,3 +501,7 @@ class Pug(object):
             return None
         else:
             return self.server.password
+
+    @property
+    def map_votes(self):
+        return collections.Counter(self.player_votes.values())

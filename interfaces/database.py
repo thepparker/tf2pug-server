@@ -86,9 +86,9 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
             cids = player_stats.keys()
             cursor.execute("""SELECT steamid 
                               FROM players 
-                              WHERE steamid IN %s""", tuple(cids))
+                              WHERE steamid IN %s""", (tuple(cids),))
 
-            resuls = cursor.fetchall()
+            results = cursor.fetchall()
             # populate existing with the steamids that are already in the
             # table. these ids we will simply update
             existing = [ x[0] for x in results ] if results else []
@@ -137,7 +137,9 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
                     # see if this item already exists in the index
                     cursor.execute("""SELECT 1 
                                       FROM players_index
-                                      WHERE steamid = %s AND item = %s""")
+                                      WHERE steamid = %s AND item = %s""",
+                                    [ cid, col ])
+
                     result = cursor.fetchone()
                     if result:
                         # exists, so we should update the value

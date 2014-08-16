@@ -84,8 +84,6 @@ class Pug(object):
         self.server = None
         self.server_id = -1
 
-        self.password = None
-
         self.teams = {
             "red": [],
             "blue": []
@@ -523,3 +521,9 @@ class Pug(object):
     def game_over(self):
         return self.state == states["GAME_OVER"]
 
+    @property
+    def password(self):
+        if self.server is None:
+            return None
+        else:
+            return self.server.password

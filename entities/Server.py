@@ -88,7 +88,6 @@ class Server(object):
         self.pug_id = self.pug.id
 
         self.password = random_string(10)
-        self.pug.password = self.password
 
         self.rcon("sv_password %s; say This server has been reserved for pug %d; kickall", 
                     self.password, self.pug_id)

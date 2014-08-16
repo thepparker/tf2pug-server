@@ -406,12 +406,12 @@ class Pug(object):
             return False
 
         elif (self.player_restriction < 0
-              and rating > abs(self.player_restriction)):
+              and rating >= abs(self.player_restriction)):
 
             return True
 
         elif (self.player_restriction > 0 
-              and rating <= self.player_restriction):
+              and rating < self.player_restriction):
 
             return True
 

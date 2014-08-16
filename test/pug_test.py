@@ -53,7 +53,7 @@ def test_remove_from_team():
     pug._remove_from_team("blue", [ 2L, 3L ])
     assert pug.teams["blue"] == set([])
 
-def fill_Pug.Pug():
+def fill_pug():
     pug = Pug.Pug()
     pid = 1L
     while not pug.full:
@@ -110,6 +110,7 @@ def test_map_vote():
     assert pug.state == Pug.states["MAP_VOTING"]
     
     pug.force_map("cp_granary")
+    pug.end_map_vote()
     assert pug.state == Pug.states["MAPVOTE_COMPLETED"]
     assert pug.map == "cp_granary"
 

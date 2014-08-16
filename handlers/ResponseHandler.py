@@ -215,12 +215,13 @@ class ResponseHandler(object):
     def _pug_vote_count_list(self, pug):
         count_list = []
 
-        for mname in pug.map_votes:
-            count = dict({
+        votes = pug.map_votes
+        for mname in votes:
+            count = {
                     "map": mname,
-                    "count": pug.map_votes[mname]
-                })
-
+                    "count": votes[mname]
+                }
+                
             count_list.append(count)
 
         return count_list

@@ -63,12 +63,6 @@ def fill_pug():
 
     return pug
 
-def test_shuffle_teams():
-    print "Testing team creation (shuffle)"
-    pug = fill_Pug.Pug()
-
-    pug.shuffle_teams()
-
 def test_map_vote():
     print "Testing map vote with player vote"
     pug = Pug.Pug()
@@ -187,10 +181,58 @@ def test_update_game_stats():
 
 def test_update_end_stats():
     print "Testing end of game stat update"
-    pug = fill_Pug.Pug()
+    pug = Pug.Pug()
+    start = PlayerStats(kills = 1, deaths = 1, losses = 1)
+    pug.add_player(1L, "1", start)
 
-    # add stats to game stats and our own stat dict, merge, then assert
-    # they are equal afterwards. fuark
+    pug.update_game_stat(1L, "kills", 1)
+    pug.update_game_stat(1L, "deaths", 1)
+
+    pug.update_score("blue", 1)
+    pug._add_to_team("blue", 1L)
+
+    game = PlayerStats(kills = 1, deaths = 1, wins = 1, games_played = 1,
+                       games_since_medic = 1)
+
+    end = PlayerStats(kills = 2, deaths = 2, wins = 1, losses = 1,
+                      games_played = 1, games_since_medic = 1)
+
+    pug.update_end_stats()
+
+    # now we do our asserts
+    assert pug.player_stats[1L] == start
+    assert pug.game_stats[1L] == game
+    assert pug.end_stats[1L] == end
+
+def test_shuffle_teams():
+    print "Testing team creation (shuffle)"
+    pug = Pug.Pug()
+    # build a team with predictable stats & outcome. 1L and 2L are medics
+    pug.add_player(1L, "1", PlayerStats(rating = 1600, games_since_medic = 5))
+    pug.add_player(2L, "2", PlayerStats(rating = 1600, games_since_medic = 5))
+    pug.add_player(3L, "3", PlayerStats(rating = 1800))
+    pug.add_player(4L, "4", PlayerStats(rating = 1800))
+    pug.add_player(5L, "5", PlayerStats(rating = 1770))
+    pug.add_player(6L, "6", PlayerStats(rating = 1750))
+    pug.add_player(7L, "7", PlayerStats(rating = 1700))
+    pug.add_player(8L, "8", PlayerStats(rating = 1900))
+    pug.add_player(9L, "9", PlayerStats(rating = 1500))
+    pug.add_player(10L, "10", PlayerStats(rating = 1650))
+    pug.add_player(11L, "11", PlayerStats(rating = 1620))
+    pug.add_player(12L, "12", PlayerStats(rating = 1680))
+
+    pug.shuffle_teams()
+
+    # 2 potential team lineups for each team due to medics being randomly
+    # shuffled
+    red_team1 = set([1L, 3L, 5L, 7L, 11L, 12L])
+    red_team2 = set([2L, 3L, 5L, 7L, 11L, 12L])
+    blue_team1 = set([1L, 4L, 6L, 8L, 9L, 10L])
+    blue_team2 = set([2L, 4L, 6L, 8L, 9L, 10L])
+
+    assert 1L in pug.medics.values() and 2L in pug.medics.values()
+    assert pug.teams["blue"] == blue_team1 or pug.teams["blue"] == blue_team2
+    assert pug.teams["red"] == blue_team1 or pug.teams["red"] == blue_team2
 
 def test():
     test_add_player()
@@ -202,5 +244,7 @@ def test():
     test_player_restriction()
     test_helpers()
     test_update_game_stats()
+    test_update_end_stats()
+    test_shuffle_teams()
     
 test()

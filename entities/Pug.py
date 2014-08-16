@@ -39,7 +39,7 @@ class PlayerStats(dict):
     def __init__(self, *args, **kwargs):
         # Set the base stats, and then super to restore any stats from the
         # database
-        self["games_since_med"] = 0
+        self["games_since_medic"] = 0
         self["games_played"] = 0
         self["rating"] = rating.BASE
         self["kills"] = 0
@@ -215,7 +215,7 @@ class Pug(object):
             # incorporate more players until eventually the threshold may be 0
             # and every player is a candidate
             for cid in self._players:
-                if stat_data[cid]["games_since_med"] > threshold and cid not in potential_medics:
+                if stat_data[cid]["games_since_medic"] > threshold and cid not in potential_medics:
                     potential_medics.append(cid)
 
             threshold -= 1
@@ -366,14 +366,14 @@ class Pug(object):
             self.game_stats[cid]["games_played"] = 1
 
             if cid not in self.medics.values():
-                self.game_stats[cid]["games_since_med"] = 1
+                self.game_stats[cid]["games_since_medic"] = 1
 
             # update all other stats
             if cid not in self.player_stats: # don't have player pre-game stats
                 self.end_stats[cid] = self.game_stats[cid]
                 continue
             else:
-                self.end_stats[cid] = {}
+                self.end_stats[cid] = PlayerStats()
 
             endgame = self.end_stats[cid]
             pregame = self.player_stats[cid]
@@ -382,16 +382,16 @@ class Pug(object):
                 # we set it as new
                 if stat == "rating":
                     continue
-                    
+
                 if stat in pregame:
                     endgame[stat] = pregame[stat] + value
                 else:
                     endgame[stat] = value
 
-        # update games_since_med for medics (i.e set to 0)
+        # update games_since_medic for medics (i.e set to 0)
         for medic in self.medics.values():
             if medic in self.end_stats:
-                self.end_stats[medic]["games_since_med"] = 0
+                self.end_stats[medic]["games_since_medic"] = 0
 
     def has_player(self, player_id):
         return player_id in self._players

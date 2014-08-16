@@ -232,7 +232,7 @@ def test_shuffle_teams():
 
     assert 1L in pug.medics.values() and 2L in pug.medics.values()
     assert pug.teams["blue"] == blue_team1 or pug.teams["blue"] == blue_team2
-    assert pug.teams["red"] == blue_team1 or pug.teams["red"] == blue_team2
+    assert pug.teams["red"] == red_team1 or pug.teams["red"] == red_team2
 
 def test():
     test_add_player()

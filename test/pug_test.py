@@ -171,7 +171,7 @@ def test_update_game_stats():
     pug.add_player(1L, "1", PlayerStats())
     
     assert pug.game_stats[1L] == PlayerStats()
-    assert pug.game_stats[1L] is pug._get_player_stats(1L)
+    assert pug.game_stats[1L] is pug._get_game_stats(1L)
 
     assert pug.game_stats[1L]["kills"] == 0
 

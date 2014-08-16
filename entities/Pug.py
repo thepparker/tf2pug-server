@@ -460,7 +460,7 @@ class Pug(object):
         else:
             ps[statkey] += value
 
-    def _get_player_stats(self, player_id):
+    def _get_game_stats(self, player_id):
         if player_id in self.game_stats:
             return self.game_stats[player_id]
 

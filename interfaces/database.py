@@ -353,7 +353,7 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
                 # expired.
                 cursor.execute("""UPDATE bans
                                   SET ban_duration = %s, expired = %s
-                                  WHERE id = %s""", [ ban.duration, ban.expired ]
+                                  WHERE id = %s""", [ ban.duration, ban.expired ])
 
             conn.commit()
         except:

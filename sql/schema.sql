@@ -30,20 +30,32 @@ CREATE TRIGGER update_pugs_modtime BEFORE UPDATE ON pugs
   FOR EACH ROW EXECUTE PROCEDURE update_modified_time();
 
 --DROP TABLE IF EXISTS pugs_index;
-CREATE TABLE pugs_index(id serial, pug_entity_id integer UNIQUE NOT NULL,
+CREATE TABLE pugs_index (id serial, pug_entity_id integer UNIQUE NOT NULL,
                         finished boolean NOT NULL, 
                         api_key text references api_keys(key) ON UPDATE CASCADE
                     );
 
--- Player stats (games played, games since med) for medic choosing
+-- Player stats
 -- DROP TABLE IF EXISTS players CASCADE;
 CREATE TABLE players (id serial, steamid bigint UNIQUE NOT NULL, data text NOT NULL,
                       modified TIMESTAMP DEFAULT current_timestamp);
 
 -- DROP TABLE IF EXISTS players_index;
-CREATE TABLE players_index(steamid bigint references players(steamid) ON UPDATE CASCADE, 
+CREATE TABLE players_index (steamid bigint references players(steamid) ON UPDATE CASCADE, 
                            item text, value decimal, UNIQUE(steamid, item));
 
 -- Trigger for players modified (last playtime)
 CREATE TRIGGER update_players_modtime BEFORE UPDATE ON players
   FOR EACH ROW EXECUTE PROCEDURE update_modified_time();
+
+-- Bans. We store ban time as an int (epoch in UTC+0 time), and
+-- duration as an int (ban duration in seconds), so we know the ban is expired
+-- when current_epoch (UTC+0) > (ban_start_time + ban_duration). Ban expiration
+-- is stored as a bool in the table, and we'll leave expired bans for the
+-- purpose of having ban history.
+-- DROP TABLE IF EXISTS bans;
+CREATE TABLE bans (id serial, 
+                   banned_cid bigint NOT NULL, banned_name text NOT NULL,
+                   banner_cid bigint NOT NULL, banner_name text NOT NULL,
+                   ban_start_time integer, ban_duration integer, reason text,
+                   expired boolean);

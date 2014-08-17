@@ -2,9 +2,9 @@ import json
 class BaseJsonInterface(object):
     """ 
     Takes a Pug object and converts it into a JSON object
-    @param obj The pug object
+    :param obj The pug object
 
-    @return JSON A JSON (string) object
+    :return JSON A JSON (string) object
     """
     def dumps(self, obj):
         return json.dumps(obj)
@@ -12,9 +12,9 @@ class BaseJsonInterface(object):
     """
     Takes a JSON object and converts it to a Pug object
 
-    @param data The JSON object string
+    :param data The JSON object string
 
-    @return Pug A Pug object
+    :return Pug A Pug object
     """
     def loads(self, data):
         return json.loads(data)
@@ -25,89 +25,108 @@ class BaseDatabaseInterface(object):
     database of choice, and must implement all methods, which are used by the
     application.
 
-    An implementation for PostgreSQL is provided
+    An implementation for PostgreSQL is provided.
     """
     def __init__(self, db):
         self.db = db
 
-    """
-    Gets all user info from the auth table. If an api key is specified, will
-    only get data pertaining to that key. If no api key is specified, will get
-    all user info. Independent of game.
-
-    @param api_key (optional) The API key to get user info for
-
-    @return A list of tuples, with each tuple being a row in the api_keys table
-    """
     def get_user_info(self, api_key = None):
+        """
+        Gets all user info from the auth table. If an api key is specified, 
+        will only get data pertaining to that key. If no api key is specified, 
+        will get all user info. Independent of game.
+
+        :param api_key (optional) The API key to get user info for
+
+        :return A list of tuples, with each tuple being a row in the table
+        """
         raise NotImplementedError("This must be implemented")
 
-    """
-    Gets stat info pertaining to the given list of 64bit SteamIDs. 
-
-    @param ids The list of 64bit IDs to get data for
-
-    @return A dictionary of stats with respect to each individual ID
-    """
     def get_player_stats(self, ids):
+        """
+        Gets stat info pertaining to the given list of 64bit SteamIDs. 
+
+        :param ids The list of 64bit IDs to get data for
+
+        :return A dictionary of stats with respect to each individual ID
+        """
         raise NotImplementedError("This must be implemented")
 
-    """
-    Updates stats from a pug. The dict given is used to update all values
-    for the user. 
-
-    @param player_stats A dict of all player stats, with the keys 64bit
-                        SteamIDs
-    """
     def flush_player_stats(self, player_stats):
+        """
+        Updates stats from a pug. The dict given is used to update all values
+        for the user. 
+
+        :param player_stats A dict of all player stats, with the keys 64bit
+                            SteamIDs
+        """
         raise NotImplementedError("This must be implemented")
 
-    """
-    Gets pug data pertaining to a specified API key, and returns it as a list
-    of JSON objects, which can be parsed through the JSON interface by the
-    caller to get pug objects. Pug management methods are independent of game,
-    and simply take or return json objects.
-
-    @param api_key The api key to get pugs for
-    @param jsoninterface The JSON interface to be used to convert from JSON
-    @param include_finished Whether or not to include games that are finished
-                            i.e in the "GAME_OVER" state
-
-    @return List of Pug objects
-    """
     def get_pugs(self, api_key, jsoninterface, include_finished = False):
+        """
+        Gets pug data pertaining to a specified API key, and returns it as a 
+        list of JSON objects, which can be parsed through the JSON interface 
+        provided by the caller to get pug objects. Pug management methods are
+        independent of game, and simply take or return json objects.
+
+        :param api_key The api key to get pugs for
+        :param jsoninterface The JSON interface to be used to convert from JSON
+        :param include_finished Whether or not to include games that are over
+                                i.e in the "GAME_OVER" state
+
+        :return List of Pug objects
+        """
         raise NotImplementedError("This must be implemented")
 
-    """
-    Flushes a JSONised pug to the database. This method is only used for 
-    non-new pugs, which already have an ID.
-
-    @param api_key The API key the pug is under (not necessary?)
-    @param jsoninterface The JSON interface to convert to JSON
-    @param pug A Pug object
-    """
     def flush_pug(self, api_key, jsoninterface, pug):
+        """
+        Flushes a JSONised pug to the database. This method is only used for
+        non-new pugs, which already have an ID.
+
+        :param api_key The API key the pug is under (not necessary?)
+        :param jsoninterface The JSON interface to convert to JSON
+        :param pug A Pug object
+        """
         raise NotImplementedError("This must be implemented")
 
-    """
-    Gets all servers pertaining to the specified group. Multiple pug managers, 
-    or clients, can be part of the same group. Returns a list of dictionaries, 
-    which each list item being a server table row.
-
-    @param group The group to get servers for.
-
-    @return List of dictionaries for each server
-    """
     def get_servers(self, group):
+        """
+        Gets all servers pertaining to the specified group. Multiple pug 
+        managers, or clients, can be part of the same group. Returns a list of
+        dictionaries, with each list item being a server table row.
+
+        :param group The group to get servers for.
+
+        :return List of dictionaries for each server
+        """
         raise NotImplementedError("This must be implemented")
-
-    """
-    Flushes a server to the database
-
-    @param server The server to flush
-    """
+    
     def flush_server(self, server):
+        """
+        Flushes a server to the database
+
+        :param server The server to flush
+        """
         raise NotImplementedError("This must be implemented")
+
+    def get_bans(self, cid = None, expired = False):
+        """
+        Gets player bans. If cid is specified, gets bans only for that player.
+
+        :param cid (optional) Player 64bit SteamID
+        :param expired (optional) Whether to get expired bans as well
+
+        :return List of dicts
+        """
+        raise NotImplementedError("Getting bans is not implemented")
+
+    def flush_ban(self, ban):
+        """
+        Flushes a ban object to the database
+
+        :param ban A ban object
+        """
+        raise NotImplementedError("Flushing bans is not implemented")
 
 class BaseLogInterface(object):
     """

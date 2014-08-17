@@ -303,7 +303,7 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
             cursor.close()
             cursor = conn.cursor(cursor_factory = psycopg2.extras.DictCursor)
 
-            if cid:
+            if cid is not None:
                 cursor.execute("""SELECT banned_cid, banned_name,
                                     banner_cid, banner_name,
                                     ban_start_time, ban_duration, reason,
@@ -338,8 +338,15 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
                                     banner_cid, banner_name,
                                     ban_start_time, ban_duration, reason,
                                     expired)
-                                  VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
+                                  VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                                  RETURNING id""",
                                 ban.tuplify())
+
+                result = cursor.fetchone()
+                if result and result[0]:
+                    ban["id"] = result[0]
+                else:
+                    raise ValueError("No ID was returned on new ban insert")
             else:
                 # I think it's safe to assume the only thing that is going to
                 # to be updated is ban duration and whether or not the ban has
@@ -348,6 +355,7 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
                                   SET ban_duration = %s, expired = %s
                                   WHERE id = %s""", [ ban.duration, ban.expired ]
 
+            conn.commit()
         except:
             logging.exception("Exception flushing ban")
         finally:

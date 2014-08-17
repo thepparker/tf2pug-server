@@ -295,7 +295,13 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
         finally:
             self._close_db_objects(cursor, conn)
 
-    def get_bans(self, cid = None, expired = False):
+    def get_bans(self, cid = None, include_expired = False):
+        """
+        If cid is specified, we only get ban(s) matching that cid.
+        If no cid is specified, we get bans depending on expired.
+        If expired is set (True), we include expired bans as well, else
+        we only get bans that have not expired.
+        """
         conn, cursor = self._get_db_objects()
         try:
             # like get_servers(), we want to use a dict cursor
@@ -303,21 +309,34 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
             cursor.close()
             cursor = conn.cursor(cursor_factory = psycopg2.extras.DictCursor)
 
-            if cid is not None:
-                cursor.execute("""SELECT banned_cid, banned_name,
-                                    banner_cid, banner_name,
-                                    ban_start_time, ban_duration, reason,
-                                    expired
-                                  FROM bans 
-                                  WHERE banned_cid = %s AND expired = %s""",
-                                [ cid, expired ])
-            else:
-                cursor.execute("""SELECT banned_cid, banned_name,
-                                    banner_cid, banner_name,
-                                    ban_start_time, ban_duration, reason,
-                                    expired
-                                  FROM bans
-                                  WHERE expired = %s""", [ expired ])
+            # The base query will select ALL bans, regardless of CID/expired.
+            # Filtering checks below will parse the given parameters for
+            # appropriate filtering.
+            query = """SELECT banned_cid, banned_name,
+                        banner_cid, banner_name,
+                        ban_start_time, ban_duration, reason,
+                        expired
+                       FROM bans"""
+            query_params = []
+
+            if cid is not None and include_expired:
+                # if we WANT TO INCLUDE expired bans (i.e have expired AND 
+                # active), we ONLY filter by cid
+                query += " WHERE banned_cid = %s"
+                query_params.append(cid)
+
+            elif cid is not None and not include_expired:
+                # if we _DON'T_ WANT TO INCLUDE expired bans, we filter by cid
+                # AND expired
+                query += " WHERE banned_cid = %s AND expired = false"
+                query_params.append(cid)
+
+            elif cid is None and not include_expired:
+                # if NO CID is specified, and we DON'T WANT expired bans, we
+                # just filter by expired
+                query += " WHERE expired = false"
+
+            cursor.execute(query, query_params)
 
             results = cursor.fetchall()
             
@@ -330,6 +349,7 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
             self._close_db_objects(cursor, conn)
 
     def flush_ban(self, ban):
+        # ban is as dictated in puglib/bans.py
         conn, cursor = self._get_db_objects()
         try:
             if ban.id is None:
@@ -358,6 +378,8 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
             conn.commit()
         except:
             logging.exception("Exception flushing ban")
+            raise
+
         finally:
             self._close_db_objects(cursor, conn)
     

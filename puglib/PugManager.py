@@ -5,22 +5,21 @@
 
 import logging
 import time
-import collections
 
 import settings
-
 import rating
 
 from entities import Pug
 from entities.Pug import PlayerStats
-
 from interfaces import get_json_interface
-
 from Exceptions import *
 
-from pprint import pprint
-
 class PugManager(object):
+    """
+    PugManager controls everything to do with pugs. From map vote start/end,
+    adding players to appropriate pugs, maintaining a list of active pugs,
+    etc.
+    """
     def __init__(self, api_key, db, server_manager):
         self.game = "TF2"
 
@@ -342,18 +341,17 @@ class PugManager(object):
                 # END MAP VOTING FOR THIS PUG
                 pug.end_map_vote()
 
-                # shuffle teams
+                # Make the teams and then change the map to the voted map
                 pug.shuffle_teams()
 
                 pug.server.change_map()
 
-                # flush pug for safety!
                 self._flush_pug(pug)
 
             elif (pug.state == Pug.states["GAME_OVER"]):
                 # game is over! we need to update player rating based on the
-                # results, flush the pug one final time, and then discard
-                # the pug object
+                # results, flush the pug one final time, and then remove pug
+                # from the internal list
                 self._end_pug(pug)
 
 

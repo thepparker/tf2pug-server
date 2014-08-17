@@ -12,7 +12,7 @@ import tornado.ioloop
 import psycopg2
 import psycopg2.pool
 
-from puglib import PugManager
+from puglib import PugManager, bans
 from handlers import ResponseHandler, WebHandler
 from serverlib import ServerManager
 
@@ -55,13 +55,13 @@ class Application(tornado.web.Application):
         self.db = db
         
         self.response_handler = ResponseHandler.ResponseHandler()
-
         # pug managers are currently per API key
         self._pug_managers = {}
-
         # server managers are per server group. each server group can have
         # multiple pug managers attached to it
         self._server_managers = {}
+
+        self._ban_manager = bans.BanManger(db)
 
         """ Auth cache is in the following form:
         { "key":

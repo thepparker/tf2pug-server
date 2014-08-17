@@ -10,6 +10,15 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
     """
     Implements the DatabaseInterface for PostgreSQL databases. This is currently
     the only provided interface. See the base class for documentation.
+
+    base method structure:
+    conn, cursor = self._get_db_objects()
+    try:
+
+    except:
+        logging.exception()
+    finally:
+        self._close_db_objects(cursor, conn)
     """
     def __init__(self, db):
         BaseDatabaseInterface.__init__(self, db)
@@ -164,15 +173,16 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
             self._close_db_objects(cursor, conn)
 
     def get_pugs(self, api_key, jsoninterface, include_finished = False):
+        """
+        If using pg version 9.2+, you can simply use
+        psycopg2.extras.register_default_json(cursor, loads=jsoninterface.loads)
+        which will register the given loads method with the cursor, and any
+        json data field will be passed to the loads method. Since pg 9.1 only
+        supports json through an extension, this code is based on using a
+        text field to store json data, and then converting the results 
+        manually
+        """
         conn, cursor = self._get_db_objects()
-
-        # if using pg version 9.2+, you can simply use
-        # psycopg2.extras.register_default_json(cursor, loads=jsoninterface.loads)
-        # which will register the given loads method with the cursor, and any
-        # json data field will be passed to the loads method. Since pg 9.1 only
-        # supports json through an extension, this code is based on using a
-        # text field to store json data, and then converting the results 
-        # manually
         try:
             # first we get the pug ids we're after from the index table
             cursor.execute("""SELECT pug_entity_id
@@ -271,8 +281,8 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
         conn, cursor = self._get_db_objects()
 
         try:
-            cursor.execute("""UPDATE servers SET password = %s, pug_id = %s,
-                                log_port = %s
+            cursor.execute("""UPDATE servers 
+                              SET password = %s, pug_id = %s, log_port = %s
                               WHERE id = %s""",
                               [server.password, server.pug_id, server.log_port,
                                 server.id])
@@ -285,10 +295,68 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
         finally:
             self._close_db_objects(cursor, conn)
 
-    """
-    Gets a (connection, cursor) tuple from the database connection pool
-    """
+    def get_bans(self, cid = None, expired = False):
+        conn, cursor = self._get_db_objects()
+        try:
+            # like get_servers(), we want to use a dict cursor
+            # for easy ban object construction
+            cursor.close()
+            cursor = conn.cursor(cursor_factory = psycopg2.extras.DictCursor)
+
+            if cid:
+                cursor.execute("""SELECT banned_cid, banned_name,
+                                    banner_cid, banner_name,
+                                    ban_start_time, ban_duration, reason,
+                                    expired
+                                  FROM bans 
+                                  WHERE banned_cid = %s AND expired = %s""",
+                                [ cid, expired ])
+            else:
+                cursor.execute("""SELECT banned_cid, banned_name,
+                                    banner_cid, banner_name,
+                                    ban_start_time, ban_duration, reason,
+                                    expired
+                                  FROM bans
+                                  WHERE expired = %s""", [ expired ])
+
+            results = cursor.fetchall()
+            
+            return results if results else []
+
+        except:
+            logging.exception("Exception getting bans")
+
+        finally:
+            self._close_db_objects(cursor, conn)
+
+    def flush_ban(self, ban):
+        conn, cursor = self._get_db_objects()
+        try:
+            if ban.id is None:
+                # new ban being inserted
+                cursor.execute("""INSERT INTO bans (banned_cid, banned_name,
+                                    banner_cid, banner_name,
+                                    ban_start_time, ban_duration, reason,
+                                    expired)
+                                  VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
+                                ban.tuplify())
+            else:
+                # I think it's safe to assume the only thing that is going to
+                # to be updated is ban duration and whether or not the ban has
+                # expired.
+                cursor.execute("""UPDATE bans
+                                  SET ban_duration = %s, expired = %s
+                                  WHERE id = %s""", [ ban.duration, ban.expired ]
+
+        except:
+            logging.exception("Exception flushing ban")
+        finally:
+            self._close_db_objects(cursor, conn)
+    
     def _get_db_objects(self):
+        """
+        Gets a (connection, cursor) tuple from the database connection pool
+        """
         conn = None
         curs = None
 
@@ -308,10 +376,10 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
             if conn:
                 self.db.putconn(conn)
 
-    """
-    Closes the given cursor, and puts the connection back into the pool
-    """
     def _close_db_objects(self, cursor, conn):
+        """
+        Closes the given cursor, and puts the connection back into the pool
+        """
         if self.db.closed:
             return
 

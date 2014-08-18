@@ -20,7 +20,7 @@ class PugManager(object):
     adding players to appropriate pugs, maintaining a list of active pugs,
     etc.
     """
-    def __init__(self, api_key, db, server_manager):
+    def __init__(self, api_key, db, server_manager, ban_manager):
         self.game = "TF2"
 
         self._json_iface_cls = get_json_interface(self.game)
@@ -32,6 +32,7 @@ class PugManager(object):
         self._pugs = []
 
         self.server_manager = server_manager
+        self.ban_manager = ban_manager
 
         self.__load_pugs()
 
@@ -242,11 +243,11 @@ class PugManager(object):
 
         return pug
 
-    """
-    Forces the pug's map to this the given map. Can only be used before voting
-    has begun.
-    """
     def force_map(self, pug_id, pmap):
+        """
+        Forces the pug's map to this the given map. Can only be used before 
+        voting has begun.
+        """
         pug = self.get_pug_by_id(pug_id)
 
         if pug is None:
@@ -265,31 +266,36 @@ class PugManager(object):
 
         return pug
 
-    """
-    Returns the list of pugs being managed by this manager
-    """
     def get_pugs(self):
+        """
+        Returns the list of pugs being managed by this manager
+        """
         return self._pugs
 
-    """
-    Determines if a player is in a pug.
-
-    @param player_id The player to check for
-
-    @return bool True if the player is in a pug, else False
-    """
     def _player_in_pug(self, player_id):
+        """
+        Determines if a player is in a pug.
+
+        @param player_id The player to check for
+
+        @return bool True if the player is in a pug, else False
+        """
         return self.get_player_pug(player_id) is not None
 
-    """
-    Checks if the given player is banned from this service.
-
-    @param player_id The player to check
-
-    @return bool True if the player is banned, else False
-    """
     def _player_banned(self, player_id):
-        pass
+        """
+        Checks if the given player is banned from this service.
+
+        @param player_id The player to check
+
+        @return bool True if the player is banned, else False
+        """
+        ban = self.ban_manager.get_player_ban(player_id)
+        
+        if ban is not None:
+            return True
+
+        return False
 
     """
     Gets the pug the given player is in (if any).

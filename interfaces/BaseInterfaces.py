@@ -42,11 +42,12 @@ class BaseDatabaseInterface(object):
         """
         raise NotImplementedError("This must be implemented")
 
-    def get_player_stats(self, ids):
+    def get_player_stats(self, ids = None):
         """
-        Gets stat info pertaining to the given list of 64bit SteamIDs. 
+        Gets stat info pertaining to the given list of 64bit SteamIDs. If no
+        list is given, gets all stat data in the database.
 
-        :param ids The list of 64bit IDs to get data for
+        :param ids (optional) The list of 64bit IDs to get data for
 
         :return A dictionary of stats with respect to each individual ID
         """

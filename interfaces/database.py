@@ -51,7 +51,7 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
         finally:
             self._close_db_objects(cursor, conn)
 
-    def get_player_stats(self, ids):
+    def get_player_stats(self, ids = None):
         conn, cursor = self._get_db_objects()
 
         # ids is a list of 64 bit steamids (i.e pug.players_list)

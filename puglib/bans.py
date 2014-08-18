@@ -57,6 +57,10 @@ class Ban(dict):
     def expired(self, value):
         self["expired"] = value
 
+    @property
+    def reason(self):
+        return self["reason"]
+
     def __hash__(self):
         return hash(self["id"])
 
@@ -126,7 +130,7 @@ class BanManager(object):
         """
         Internal method for adding ban to database/list
         """
-        existing_ban = self._get_player_ban(ban["banned_cid"])
+        existing_ban = self.get_player_ban(ban["banned_cid"])
         if existing_ban is not None:
             # If the player already has an existing ban, we just update it with
             # the new values (might be a duration change/reason change)
@@ -142,19 +146,19 @@ class BanManager(object):
 
         return ban
 
-    def delete_ban(self, cid):
+    def remove_ban(self, cid):
         """
         Public ban removal. Finds ban matching CID and then calls internal
         method
         """
-        ban = self._get_player_ban(cid)
+        ban = self.get_player_ban(cid)
 
         if ban is None:
             raise NoBanFoundException("No ban found for %s" % cid)
 
-        self._delete_ban(ban)
+        self._remove_ban(ban)
 
-    def _delete_ban(self, ban):
+    def _remove_ban(self, ban):
         """
         Internal ban object removal. All we do is set expired to True, flush
         the ban and then remove it from the set.
@@ -164,7 +168,7 @@ class BanManager(object):
 
         self.bans.remove(ban)
 
-    def _get_player_ban(self, cid):
+    def get_player_ban(self, cid):
         # Try find a ban matching the given cid. We check banned_cid
         for b in self.bans:
             if b["banned_cid"] == cid:
@@ -185,7 +189,7 @@ class BanManager(object):
 
             if b.expired:
                 # ban is expired, need to delete it
-                self._delete_ban(b)
+                self._remove_ban(b)
 
     def __load_bans(self):
         """
@@ -238,20 +242,20 @@ if __name__ == "__main__":
 
     m.add_ban(new)
     print "Getting added ban:"
-    b = m._get_player_ban(1)
+    b = m.get_player_ban(1)
 
     pprint(b)
 
     print "Deleting ban and checking it:"
-    m.delete_ban(1)
+    m.remove_ban(1)
 
-    b = m._get_player_ban(1)
+    b = m.get_player_ban(1)
     pprint(b)
 
     print "Testing ban expiration"
     # test automatic expiration
     m.add_ban(new)
-    b = m._get_player_ban(1)
+    b = m.get_player_ban(1)
     pprint(b)
 
     while not b.expired:
@@ -259,4 +263,4 @@ if __name__ == "__main__":
 
     print "Ban has expired?"
     pprint(b)
-    print "Ban still exists? " + str(m._get_player_ban(1))
+    print "Ban still exists? " + str(m.get_player_ban(1))

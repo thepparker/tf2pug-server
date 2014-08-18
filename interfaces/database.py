@@ -56,9 +56,17 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
 
         # ids is a list of 64 bit steamids (i.e pug.players_list)
         try:
-            cursor.execute("""SELECT steamid, data
-                              FROM players
-                              WHERE steamid IN %s""", (tuple(ids),))
+            query = """SELECT steamid, data
+                       FROM players"""
+
+            query_args = []
+
+            # if we have a list of ids, we want to filter to only select them
+            if ids is not None:
+                query += " WHERE steamid IN %s"
+                query_args.append(tuple(ids))
+            
+            cursor.execute(query, query_args)
 
             results = cursor.fetchall()
             stats = {}

@@ -110,11 +110,11 @@ class BaseDatabaseInterface(object):
         """
         raise NotImplementedError("This must be implemented")
 
-    def get_bans(self, cid = None, include_expired = False):
+    def get_bans(self, cids = None, include_expired = False):
         """
         Gets player bans. If cid is specified, gets bans only for that player.
 
-        :param cid (optional) Player 64bit SteamID
+        :param cids (optional) A list of player 64bit SteamIDs
         :param include_expired (optional) Whether to get expired bans as well
 
         :return List of dicts

@@ -303,9 +303,9 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
         finally:
             self._close_db_objects(cursor, conn)
 
-    def get_bans(self, cid = None, include_expired = False):
+    def get_bans(self, cids = None, include_expired = False):
         """
-        If cid is specified, we only get ban(s) matching that cid.
+        If cids is specified, we only get ban(s) matching those cids.
         If no cid is specified, we get bans depending on expired.
         If expired is set (True), we include expired bans as well, else
         we only get bans that have not expired.
@@ -327,19 +327,19 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
                        FROM bans"""
             query_params = []
 
-            if cid is not None and include_expired:
+            if cids is not None and include_expired:
                 # if we WANT TO INCLUDE expired bans (i.e have expired AND 
                 # active), we ONLY filter by cid
-                query += " WHERE banned_cid = %s"
-                query_params.append(cid)
+                query += " WHERE banned_cid IN %s"
+                query_params.append(tuple(cids))
 
-            elif cid is not None and not include_expired:
+            elif cids is not None and not include_expired:
                 # if we _DON'T_ WANT TO INCLUDE expired bans, we filter by cid
                 # AND expired
-                query += " WHERE banned_cid = %s AND expired = false"
-                query_params.append(cid)
+                query += " WHERE banned_cid IN %s AND expired = false"
+                query_params.append(cids)
 
-            elif cid is None and not include_expired:
+            elif cids is None and not include_expired:
                 # if NO CID is specified, and we DON'T WANT expired bans, we
                 # just filter by expired
                 query += " WHERE expired = false"

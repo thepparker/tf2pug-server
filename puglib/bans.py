@@ -19,11 +19,11 @@ class Ban(dict):
         self["banner_cid"] = None
         self["banner_name"] = None
         self["ban_start_time"] = epoch()
-        self["ban_duration"] = 0
+        self["ban_duration"] = None
         self["reason"] = None
         self["expired"] = False
 
-        super(Bans, self).__init__(*args, **kwargs)
+        super(Ban, self).__init__(*args, **kwargs)
 
     def tuplify(self):
         """
@@ -37,7 +37,7 @@ class Ban(dict):
 
     def check_expiration(self):
         # ban_duration of None means the ban is permanent
-        if self["ban_duration"] is None:
+        if self["ban_duration"] is None or self["ban_duration"] == 0:
             return
 
         if epoch() > self["ban_start_time"] + self["ban_duration"]:
@@ -48,20 +48,32 @@ class Ban(dict):
         """ Gets ban duration """
         return self["ban_duration"]
 
-    @property(self):
+    @property
     def expired(self):
         """ Gets the ban's expired status. """
         return self["expired"]
+    
+    @expired.setter
+    def expired(self, value):
+        self["expired"] = value
+
+    def __hash__(self):
+        return hash(self["id"])
+
 
 class BanAddException(Exception):
     """ Raised when adding a ban fails """
+    pass
+
+class NoBanFoundException(Exception):
+    """ Raised when no ban can be found for the given CID """
     pass
 
 class BanManager(object):
     def __init__(self, db):
         self.db = db
 
-        self.bans = []
+        self.bans = set()
 
         self.__load_bans()
 
@@ -98,11 +110,11 @@ class BanManager(object):
         ban["banned_cid"] = bannee["id"]
         ban["banned_name"] = bannee["name"]
 
-        ban["banner_id"] = banner["id"]
+        ban["banner_cid"] = banner["id"]
         ban["banner_name"] = banner["name"]
 
         ban["reason"] = ban_data["reason"]
-        ban["duration"] = ban_data["duration"]
+        ban["ban_duration"] = ban_data["duration"]
 
         try:
             return self._add_ban(ban)
@@ -114,26 +126,43 @@ class BanManager(object):
         """
         Internal method for adding ban to database/list
         """
-        existing_ban = self._get_player_ban()
+        existing_ban = self._get_player_ban(ban["banned_cid"])
         if existing_ban is not None:
             # If the player already has an existing ban, we just update it with
             # the new values (might be a duration change/reason change)
+            ban.id = existing_ban.id # make sure we set the ID or it'll dupe
             existing_ban.update(ban)
+
             ban = existing_ban
             
         self._flush_ban(ban)
 
         if existing_ban is None:
-            self.bans.append(ban)
+            self.bans.add(ban)
 
         return ban
 
     def delete_ban(self, cid):
         """
-        Remove a player's ban. We just need the player's cid to do this. Don't
-        care who removed it. Note that all we are doing is setting expired to True
+        Public ban removal. Finds ban matching CID and then calls internal
+        method
         """
-        pass
+        ban = self._get_player_ban(cid)
+
+        if ban is None:
+            raise NoBanFoundException("No ban found for %s" % cid)
+
+        self._delete_ban(ban)
+
+    def _delete_ban(self, ban):
+        """
+        Internal ban object removal. All we do is set expired to True, flush
+        the ban and then remove it from the set.
+        """
+        ban.expired = True
+        self._flush_ban(ban)
+
+        self.bans.remove(ban)
 
     def _get_player_ban(self, cid):
         # Try find a ban matching the given cid. We check banned_cid
@@ -147,16 +176,87 @@ class BanManager(object):
         self.db.flush_ban(ban)
 
 
+    def check_bans(self):
+        """
+        Check bans to see if any have expired
+        """
+        for b in self.bans.copy():
+            b.check_expiration()
+
+            if b.expired:
+                # ban is expired, need to delete it
+                self._delete_ban(b)
+
     def __load_bans(self):
         """
         Bans are only loaded on server start. From that point, it is assumed
         bans are managed entirely by this class. Hence, the database state will
         consistent with the stored state in this manager.
         """
-        del self.bans[:]
+        self.bans.clear()
 
         bans = self.db.get_bans()
 
-        self.bans = [ Ban(x) for x in bans ]
+        for x in bans:
+            b = Ban(x)
+            self.bans.add(b)
 
+if __name__ == "__main__":
+    from pprint import pprint
+    """ Some simple tests of ban methods """
+    b = Ban()
 
+    print "Ban expired?: " + str(b.expired)
+    b.expired = True
+    print "Ban expired?: " + str(b.expired)
+
+    class emptydb(object):
+        def __init__(self):
+            pass
+
+        def flush_ban(self, *args, **kwargs):
+            pass
+        def get_bans(self, *args, **kwargs):
+            return []
+
+    db = emptydb()
+    m = BanManager(db)
+
+    new = {
+        "bannee": {
+            "id": 1,
+            "name": "1"
+        },
+        "banner": {
+            "id": 2,
+            "name": "2"
+        },
+
+        "reason": "banned",
+        "duration": 2
+    }
+
+    m.add_ban(new)
+    print "Getting added ban:"
+    b = m._get_player_ban(1)
+
+    pprint(b)
+
+    print "Deleting ban and checking it:"
+    m.delete_ban(1)
+
+    b = m._get_player_ban(1)
+    pprint(b)
+
+    print "Testing ban expiration"
+    # test automatic expiration
+    m.add_ban(new)
+    b = m._get_player_ban(1)
+    pprint(b)
+
+    while not b.expired:
+        m.check_bans()
+
+    print "Ban has expired?"
+    pprint(b)
+    print "Ban still exists? " + str(m._get_player_ban(1))

@@ -31,6 +31,7 @@ Response_BanAdded = 1400
 Response_InvalidBanData = 1401
 Response_BanRemoved = 1402
 Response_NoBanFound = 1403
+Response_BanList = 1404
 
 Response_PlayerStats = 1500
 
@@ -43,11 +44,37 @@ class ResponseHandler(object):
 
         return packet
 
+    def ban_list(self, bans):
+        """
+        Parse a list of ban results (dicts) from db.get_bans() into the
+        documented format.
+        """
+        response = { "response": Response_BanList }
+        response["bans"] = [ self._ban_packet(x) for x in bans ]
+
+        return response
+
     def ban_added(self, ban):
         return {
             "response": Response_BanAdded,
-            "ban": ban
+            "ban": self._ban_packet(ban)
         }
+
+    def _ban_packet(self, ban):
+        """
+        ban is a dict in the format:
+        {
+            "banned_cid": cid,
+            "banned_name": name,
+            "banner_cid": cid,
+            "banner_name": name,
+            "ban_start_time": epoch ban start time,
+            "ban_duration": ban duration in seconds,
+            "reason": ban reason,
+            "expired": true/false
+        }
+        """
+        return ban
 
     def invalid_ban_data(self):
         return { "response": Response_InvalidBanData }

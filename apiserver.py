@@ -50,6 +50,7 @@ class Application(tornado.web.Application):
             # player banning
             (r"/ITF2Pug/Ban/Add/", WebHandler.BanAddHandler),
             (r"/ITF2Pug/Ban/Remove/", WebHandler.BanRemoveHandler),
+            (r"/ITF2Pug/Ban/List/", WebHandler.BanListHandler),
 
             # stats
             (r"/ITF2Pug/Stat/", WebHandler.StatHandler),

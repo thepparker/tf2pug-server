@@ -364,6 +364,48 @@ class BanRemoveHandler(BaseHandler):
             logging.exception("Exception occurred deleting ban")
             raise HTTPError(500)
 
+class BanListHandler(BaseHandler):
+    """
+    A GET request to get a list of bans in the ban manager
+
+    :param ids (optional) A JSON encoded list of 64bit steamids. Note that
+                          this is a list of banned players, not a list of
+                          banners.
+
+    :param expired (optional) Whether or not to include expired bans. 
+                              A bool (1/0 or 'true'/'false').
+    """
+    def get(self):
+        self.validate_api_key()
+
+        cids = self.get_argument("ids", None)
+        expired = self.get_argument("expired", False)
+        try:
+            if cids is not None:
+                cids = json.loads(cids)
+
+            expired = bool(expired)
+        except:
+            raise HTTPError(400)
+
+
+        try:
+            if cids is None:
+                self.write(self.response_handler.ban_list(
+                        self.application.db.get_bans(include_expired = expired)
+                    ))
+            else:
+                self.write(self.response_handler.ban_list(
+                        self.application.db.get_bans(cids = cids, 
+                                                     include_expired = expired)
+                    ))
+
+        except:
+            logging.exception("Exception getting ban list")
+            raise HTTPError(500)
+
+
+
 class StatHandler(BaseHandler):
     """
     A GET request to retrieve stats for an individual player, specific
@@ -374,25 +416,25 @@ class StatHandler(BaseHandler):
     def get(self):
         self.validate_api_key()
 
+        cids = self.get_argument("ids", None)
+        if cids is not None:
+            try:
+                cids = json.loads(cids)
+            except:
+                raise HTTPError(400)
+
         try:
-            cids = self.get_argument("ids", None)
             if cids is None:
                 # select all stats
                 self.write(self.response_handler.player_stats(
                         self.application.db.get_player_stats()
                     ))
 
-                return
-
-            # we have cids to get stats for
-            try:
-                cids = json.loads(cids)
-            except:
-                raise HTTPError(400)
-
-            self.write(self.response_handler.player_stats(
-                        self.application.db.get_player_stats()
-                    ))
+            else:
+                # we have cids to get stats for
+                self.write(self.response_handler.player_stats(
+                            self.application.db.get_player_stats()
+                        ))
         except:
             logging.exception("Exception getting player stats")
             raise HTTPError(500)

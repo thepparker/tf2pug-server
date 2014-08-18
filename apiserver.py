@@ -19,6 +19,7 @@ from serverlib import ServerManager
 from interfaces import get_db_interface
 
 from tornado.options import define, options, parse_command_line
+from tornado.ioloop import PeriodicCallback
 
 # allow command line overriding of these options
 define("ip", default = settings.listen_ip, help = "The IP to listen on", type = str)
@@ -46,6 +47,12 @@ class Application(tornado.web.Application):
             (r"/ITF2Pug/Map/Vote/", WebHandler.PugMapVoteHandler),
             (r"/ITF2Pug/Map/Force/", WebHandler.PugForceMapHandler),
 
+            # player banning
+            (r"/ITF2Pug/Ban/Add/", WebHandler.BanAddHandler),
+            (r"/ITF2Pug/Ban/Remove/", WebHandler.BanRemoveHandler),
+
+            # stats
+            (r"/ITF2Pug/Stat/", WebHandler.StatHandler),
         ]
 
         settings = {
@@ -61,7 +68,7 @@ class Application(tornado.web.Application):
         # multiple pug managers attached to it
         self._server_managers = {}
 
-        self._ban_manager = bans.BanManger(db)
+        self.ban_manager = bans.BanManger(db)
 
         """ Auth cache is in the following form:
         { "key":
@@ -80,8 +87,14 @@ class Application(tornado.web.Application):
 
         # check pug status every 2 seconds. this status includes map vote,
         # ending, etc.
-        self._pug_status_timer = tornado.ioloop.PeriodicCallback(self._pug_status_check, 2000)
+        self._pug_status_timer = PeriodicCallback(self._pug_status_check, 2000)
         self._pug_status_timer.start()
+
+        # check ban expirations. timer is in MS, and we want to check every
+        # 10 minutes. so, 10 (min) * 60 (seconds in 1 minute) * 1000 (ms in 1s)
+        self._ban_expiration_timer = PeriodicCallback(
+                                        self.ban_manager.check_bans,
+                                        600000)
 
         # loading the pug managers will also load all server managers
         self.__load_pug_managers()
@@ -164,7 +177,9 @@ class Application(tornado.web.Application):
 
             client_group = self._auth_cache[key]["server_group"]
 
-            new_manager = PugManager.PugManager(key, self.db, self.get_server_manager(client_group))
+            new_manager = PugManager.PugManager(key, self.db, 
+                            self.get_server_manager(client_group),
+                            self.ban_manager)
 
             self._pug_managers[key] = new_manager
 

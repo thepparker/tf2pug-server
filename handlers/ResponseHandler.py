@@ -27,6 +27,13 @@ Response_InvalidMap = 1204
 Response_NoAvailableServers = 1300
 Response_ServerConnectionError = 1301
 
+Response_BanAdded = 1400
+Response_InvalidBanData = 1401
+Response_BanRemoved = 1402
+Response_NoBanFound = 1403
+
+Response_PlayerStats = 1500
+
 class ResponseHandler(object):
     def __init__(self):
         pass
@@ -35,6 +42,21 @@ class ResponseHandler(object):
         packet["response"] = new_code
 
         return packet
+
+    def ban_added(self, ban):
+        return {
+            "response": Response_BanAdded,
+            "ban": ban
+        }
+
+    def invalid_ban_data(self):
+        return { "response": Response_InvalidBanData }
+
+    def ban_removed(self):
+        return { "response": Response_BanRemoved }
+
+    def no_ban_found(self):
+        return { "response": Response_NoBanFound }
 
     def no_available_servers(self):
         return { "response": Response_NoAvailableServers }
@@ -140,6 +162,15 @@ class ResponseHandler(object):
 
     def pug_no_map_vote(self):
         return { "response": Response_MapVoteNotInProgress }
+
+    def player_stats(self, stats):
+        """
+        Stats is a list of stat dicts with requested CIDs as the keys
+        """
+        return {
+            "response": Response_PlayerStats,
+            "stats": stats
+        }
 
     def pug_status(self, pug):
         response = {}

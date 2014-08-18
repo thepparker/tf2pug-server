@@ -1,10 +1,11 @@
 import logging
+import json
 
 import tornado.web
 
 from tornado.web import HTTPError
 
-from puglib import Exceptions as PugManagerExceptions
+from puglib import Exceptions as PugManagerExceptions, bans
 from serverlib import Rcon, Exceptions as ServerManagerExceptions
 
 # The base handler class sets up properties and useful methods
@@ -18,11 +19,11 @@ class BaseHandler(tornado.web.RequestHandler):
 
     @property
     def request_key(self):
-        return self.get_argument("key", None)
+        return self.get_argument("key")
 
     @property
     def player_id(self):
-        sid = self.get_argument("steamid", None)
+        sid = self.get_argument("steamid")
 
         logging.debug("STEAMID: %s" % sid)
         try:
@@ -36,23 +37,22 @@ class BaseHandler(tornado.web.RequestHandler):
 
     @property
     def player_name(self):
-        return self.get_argument("name", None)
+        return self.get_argument("name")
 
     @property
     def pugid(self):
-        pugid = self.get_argument("pugid", None)
+        pugid = self.get_argument("pugid")
         
         logging.debug("PUG ID: %s" % pugid)
 
-        if pugid is not None:
-            try:
-                pugid = long(pugid)
+        try:
+            pugid = long(pugid)
 
-                return pugid
+            return pugid
 
-            except:
-                logging.exception("error casting pug id")
-                raise HTTPError(400)
+        except:
+            logging.exception("error casting pug id")
+            raise HTTPError(400)
 
         return pugid
 
@@ -110,12 +110,7 @@ class PugAddHandler(BaseHandler):
     def post(self):
         self.validate_api_key()
 
-        if self.player_name is None:
-            raise HTTPError(400)
-
         pug_id = self.pugid
-        if pug_id is None:
-            raise HTTPError(400)
 
         # the add_player method returns the pug the player was added to
         try:
@@ -125,7 +120,8 @@ class PugAddHandler(BaseHandler):
             self.write(self.response_handler.player_added(pug))
 
         except PugManagerExceptions.PlayerBannedException:
-            self.write(self.response_handler.player_banned(None))
+            ban = self.application.ban_manager.get_player_ban(self.player_id)
+            self.write(self.response_handler.player_banned(ban.reason))
 
         except PugManagerExceptions.PlayerRestrictedException:
             self.write(self.response_handler.player_restricted())
@@ -189,9 +185,6 @@ class PugCreateHandler(BaseHandler):
     def post(self):
         self.validate_api_key()
 
-        if self.player_name is None:
-            raise HTTPError(400)
-
         pug_map = self.get_argument("map", None, False)
         size = self.size
         custom_id = self.get_argument("custom_id", None, False)
@@ -231,9 +224,6 @@ class PugEndHandler(BaseHandler):
 
         pug_id = self.pugid
 
-        if pug_id is None:
-            raise HTTPError(400)
-
         try:
             self.manager.end_pug(pug_id)
 
@@ -256,8 +246,6 @@ class PugPlayerListHandler(BaseHandler):
         self.validate_api_key()
 
         pug_id = self.pugid
-        if pug_id is None:
-            raise HTTPError(400)
 
         self.write(self.response_handler.player_list(self.manager.get_pug_by_id(pug_id)))
 
@@ -271,9 +259,7 @@ class PugMapVoteHandler(BaseHandler):
     def post(self):
         self.validate_api_key()
 
-        pmap = self.get_argument("map", None, False)
-        if pmap is None:
-            raise HTTPError(400)
+        pmap = self.get_argument("map")
 
         try:
             pug = self.manager.vote_map(self.player_id, pmap)
@@ -305,8 +291,6 @@ class PugForceMapHandler(BaseHandler):
 
         fmap = self.get_argument("map", None, False)
         pug_id = self.pugid
-        if self.fmap is None or pug_id is None:
-            raise HTTPError(400)
 
         try:
             pug = self.manager.force_map(pug_id, fmap)
@@ -324,4 +308,91 @@ class PugForceMapHandler(BaseHandler):
 
         except:
             logging.exception("Exception occured when forcing map")
+            raise HTTPError(500)
+
+class BanAddHandler(BaseHandler):
+    """
+    A POST request
+
+    Attempts to add a ban to the database with the given JSON packet.
+
+    :param data This should be the only argument (aside from key). It should be
+                a JSON encoded string with the format dicated in bans.md
+    """
+    def post(self):
+        self.validate_api_key()
+
+        # Note: tornado will raise its own exception if using get_argument
+        # without a default, so if we get data, we know it's something
+        data = self.get_argument("data")
+        try:
+            data = json.loads(data)
+        except:
+            raise HTTPError(400)
+
+        try:
+            ban = self.application.ban_manager.add_ban(data)
+            self.write(self.response_handler.ban_added(ban))
+
+        except (bans.BanAddException, AssertionError):
+            self.write(self.response_handler.invalid_ban_data())
+
+        except:
+            logging.exception("Exception occurred adding ban")
+            raise HTTPError(500)
+
+class BanRemoveHandler(BaseHandler):
+    """
+    A POST request
+
+    Attempt to remove a ban for the specified player id
+
+    :param steamid The 64bit SteamID to remove the ban for
+    """
+    def post(self):
+        self.validate_api_key()
+
+        try:
+            self.application.ban_manager.remove_ban(self.player_id)
+
+            self.write(self.response_handler.ban_removed())
+
+        except bans.NoBanFoundException:
+            self.write(self.response_handler.no_ban_found())
+
+        except:
+            logging.exception("Exception occurred deleting ban")
+            raise HTTPError(500)
+
+class StatHandler(BaseHandler):
+    """
+    A GET request to retrieve stats for an individual player, specific
+    players, or all players.
+
+    :param ids (optional) A JSON encoded LIST of ids to get stats for
+    """
+    def get(self):
+        self.validate_api_key()
+
+        try:
+            cids = self.get_argument("ids", None)
+            if cids is None:
+                # select all stats
+                self.write(self.response_handler.player_stats(
+                        self.application.db.get_player_stats()
+                    ))
+
+                return
+
+            # we have cids to get stats for
+            try:
+                cids = json.loads(cids)
+            except:
+                raise HTTPError(400)
+
+            self.write(self.response_handler.player_stats(
+                        self.application.db.get_player_stats()
+                    ))
+        except:
+            logging.exception("Exception getting player stats")
             raise HTTPError(500)

@@ -6,9 +6,10 @@ from pprint import pprint
 
 api_key = "123abc"
 
-api_address = "http://192.168.106.129:51515/"
+api_address = "http://192.168.101.128:51515/"
 
 def main():
+    """
     res = create_pug(5, 'joebob')
     pugid = int(res["pug"]["id"])
 
@@ -32,7 +33,8 @@ def main():
 
     vote_map(2, "cp_granary")
     vote_map(3, "cp_badlands")
-
+    """
+    add_ban()
 
 
 def vote_map(player_id, map_name):
@@ -179,6 +181,34 @@ def remove_player(pid):
     pprint(jdata)
 
     return jdata
+
+def add_ban():
+    print "Attempting to add ban"
+    params = {
+        "key": api_key
+    }
+
+    data = {
+        "bannee": {
+            "id": 1,
+            "name": "1"
+        },
+        "banner": {
+            "id": 2,
+            "name": "2"
+        },
+
+        "reason": "banned",
+        "duration": 2
+    }
+    params["data"] = json.dumps(data)
+
+    ban_interface = "ITF2Pug/Ban/Add/"
+    ban_data = post_data(ban_interface, params)
+
+    jdata = json.loads(ban_data)
+    pprint(jdata)
+
 
 def get_data(interface, params):
     return urllib2.urlopen(api_address + interface + "?" + urllib.urlencode(params)).read()

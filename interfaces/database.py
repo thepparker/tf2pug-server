@@ -337,7 +337,7 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
                 # if we _DON'T_ WANT TO INCLUDE expired bans, we filter by cid
                 # AND expired
                 query += " WHERE banned_cid IN %s AND expired = false"
-                query_params.append(cids)
+                query_params.append(tuple(cids))
 
             elif cids is None and not include_expired:
                 # if NO CID is specified, and we DON'T WANT expired bans, we

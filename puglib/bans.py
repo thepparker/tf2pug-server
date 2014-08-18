@@ -58,6 +58,14 @@ class Ban(dict):
         self["expired"] = value
 
     @property
+    def id(self):
+        return self["id"]
+        
+    @id.setter
+    def id(self, value):
+        self["id"] = value
+
+    @property
     def reason(self):
         return self["reason"]
 

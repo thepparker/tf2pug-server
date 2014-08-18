@@ -188,8 +188,6 @@ class ResponseHandler(object):
     def _pug_status_packet(self, pug):
         packet = pug.__dict__.copy()
 
-
-        
         if pug.server is not None:
             packet["server"] = {
                 "id": pug.server.id,

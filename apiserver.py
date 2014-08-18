@@ -68,7 +68,7 @@ class Application(tornado.web.Application):
         # multiple pug managers attached to it
         self._server_managers = {}
 
-        self.ban_manager = bans.BanManger(db)
+        self.ban_manager = bans.BanManager(db)
 
         """ Auth cache is in the following form:
         { "key":

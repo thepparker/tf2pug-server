@@ -372,7 +372,7 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
 
                 result = cursor.fetchone()
                 if result and result[0]:
-                    ban["id"] = result[0]
+                    ban.id = result[0]
                 else:
                     raise ValueError("No ID was returned on new ban insert")
             else:

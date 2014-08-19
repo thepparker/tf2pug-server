@@ -145,7 +145,8 @@ class PugManager(object):
     def create_pug(self, player_id, player_name, size = 12, pug_map = None,
                    custom_id = None, restriction = None):
 
-        if not Pug.Pug.map_available(pmap):
+
+        if pug_map is not None and (not Pug.Pug.map_available(pug_map)):
             raise InvalidMapException("Invalid map specified")
 
         pug = Pug.Pug(size = size, pmap = pug_map, custom_id = custom_id,

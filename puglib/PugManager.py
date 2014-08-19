@@ -145,9 +145,12 @@ class PugManager(object):
     def create_pug(self, player_id, player_name, size = 12, pug_map = None,
                    custom_id = None, restriction = None):
 
+        if not Pug.Pug.map_available(pmap):
+            raise InvalidMapException("Invalid map specified")
+
         pug = Pug.Pug(size = size, pmap = pug_map, custom_id = custom_id,
                       restriction = restriction)
-        
+
         # try to add the player to the newly created pug. if the player is
         # banned, restricted, or in another pug, _add_player will raise an
         # exception. The pug is not flushed to the database by _add_player.
@@ -185,7 +188,7 @@ class PugManager(object):
         pug = self.get_pug_by_id(pug_id)
 
         if pug is None:
-            raise NonExistantPugException("Pug with id %d does not exist", pug_id)
+            raise InvalidPugException("Pug with id %d does not exist", pug_id)
 
         self._end_pug(pug)
 
@@ -253,7 +256,7 @@ class PugManager(object):
         pug = self.get_pug_by_id(pug_id)
 
         if pug is None:
-            raise NonExistantPugException("Pug with id %d does not exist" % pug_id)
+            raise InvalidPugException("Pug with id %d does not exist" % pug_id)
 
         if pug.state > Pug.states["GATHERING_PLAYERS"]:
             raise ForceMapException("Too late to force the map")

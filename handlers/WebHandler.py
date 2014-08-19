@@ -240,7 +240,7 @@ class PugEndHandler(BaseHandler):
 
             self.write(self.response_handler.pug_ended(pug_id))
 
-        except PugManagerExceptions.NonExistantPugException:
+        except PugManagerExceptions.InvalidPugException:
             self.write(self.response_handler.invalid_pug())
 
         except:
@@ -308,7 +308,7 @@ class PugForceMapHandler(BaseHandler):
 
             self.write(self.response_handler.pug_map_forced(pug))
         
-        except PugManagerExceptions.NonExistantPugException:
+        except PugManagerExceptions.InvalidPugException:
             self.write(self.response_handler.invalid_pug())
 
         except PugManagerExceptions.ForceMapException:
@@ -395,7 +395,16 @@ class BanListHandler(BaseHandler):
             if cids is not None:
                 cids = json.loads(cids)
 
-            expired = bool(expired)
+            def string2bool(v):
+                if v.lower() == "false" or v == "0":
+                    return False
+                elif v.lower() == "true" or v == "1":
+                    return True
+                else:
+                    return bool(v)
+
+            expired = string2bool(expired)
+
         except:
             raise HTTPError(400)
 

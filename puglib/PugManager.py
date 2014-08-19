@@ -261,7 +261,7 @@ class PugManager(object):
         if pug.state > Pug.states["GATHERING_PLAYERS"]:
             raise ForceMapException("Too late to force the map")
 
-        if pmap not in pug.maps:
+        if not Pug.Pug.map_available(pmap):
             raise InvalidMapException("Map is not available in this pug")
 
         pug.force_map(pmap)
@@ -358,6 +358,15 @@ class PugManager(object):
                 pug.server.change_map()
 
                 self._flush_pug(pug)
+
+            elif (pug.state == Pug.states["MAPVOTE_COMPLETED"]):
+                # means the map was forced and begin_map_vote just set
+                # the stat to mapvote_completed (i.e teams were not shuffled)
+                # so we need to shuffle teams and change map
+
+                pug.shuffle_teams()
+
+                pug.server.change_map()
 
             elif (pug.state == Pug.states["GAME_OVER"]):
                 # game is over! we need to update player rating based on the

@@ -1,8 +1,4 @@
-import calendar
 import time
-
-def epoch():
-    return calendar.timegm(time.gmtime())
 
 class Ban(dict):
     """
@@ -40,7 +36,7 @@ class Ban(dict):
         if self["ban_duration"] is None or self["ban_duration"] == 0:
             return
 
-        if epoch() > self["ban_start_time"] + self["ban_duration"]:
+        if time.time() > self["ban_start_time"] + self["ban_duration"]:
             self["expired"] = True
 
     @property
@@ -210,7 +206,9 @@ class BanManager(object):
         bans = self.db.get_bans()
 
         for x in bans:
+            from pprint import pprint
             b = Ban(x)
+            pprint(b)
             self.bans.add(b)
 
 if __name__ == "__main__":

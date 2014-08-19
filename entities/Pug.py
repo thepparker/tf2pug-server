@@ -1,6 +1,5 @@
 
 import time
-import calendar
 import random
 import logging
 import collections
@@ -19,9 +18,6 @@ states = {
 
 MAPVOTE_DURATION = 2
 AVAILABLE_MAPS = [ u"cp_granary", u"cp_badlands" ]
-
-def rounded_ctime():
-    return calendar.timegm(time.gmtime())
 
 # Raised when trying to start a map vote when the map has been forced
 class MapForcedException(Exception):
@@ -60,7 +56,7 @@ class Pug(object):
         self.custom_id = custom_id
         self.size = size
         self.state = states["GATHERING_PLAYERS"]
-        self.start_time = rounded_ctime()
+        self.start_time = time.time()
 
         self.map = pmap
 
@@ -157,7 +153,7 @@ class Pug(object):
         else:
             # we store the map vote start and end times. this way, clients can know
             # when they need to update the pug's status again after a map vote
-            self.map_vote_start = rounded_ctime()
+            self.map_vote_start = time.time()
             self.map_vote_end = self.map_vote_start + MAPVOTE_DURATION
 
             self.state = states["MAP_VOTING"]

@@ -55,6 +55,10 @@ class ResponseHandler(object):
         return response
 
     def ban_added(self, ban):
+        """
+        Note that tbe "ban" passed to this method is a bans.Ban object, which
+        is different to the ban objects passed to ban_list (psycopg2.DictRow)
+        """
         return {
             "response": Response_BanAdded,
             "ban": self._ban_packet(ban)
@@ -74,7 +78,7 @@ class ResponseHandler(object):
             "expired": true/false
         }
         """
-        return ban
+        return dict(ban)
 
     def invalid_ban_data(self):
         return { "response": Response_InvalidBanData }

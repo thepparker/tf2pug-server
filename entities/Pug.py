@@ -53,7 +53,8 @@ class PlayerStats(dict):
         super(PlayerStats, self).__init__(*args, **kwargs)
 
 class Pug(object):
-    def __init__(self, pid = None, custom_id = None, size = 12, pmap = None):
+    def __init__(self, pid = None, custom_id = None, size = 12, pmap = None,
+                 restriction = None):
         self.id = pid
         self.custom_id = custom_id
         self.size = size
@@ -73,7 +74,7 @@ class Pug(object):
         self.player_stats = {} # stats before game
         self.game_stats = {} # stats obtained during this pug
         self.end_stats = {} # stats after game
-        self.player_restriction = None # rating restriction
+        self.player_restriction = restriction # rating restriction
 
         self.player_votes = {}
         self.map_vote_start = -1

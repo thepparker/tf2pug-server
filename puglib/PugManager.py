@@ -143,9 +143,11 @@ class PugManager(object):
     @return Pug The newly created pug
     """
     def create_pug(self, player_id, player_name, size = 12, pug_map = None,
-                   custom_id = None):
+                   custom_id = None, restriction = None):
 
-        pug = Pug.Pug(size = size, pmap = pug_map, custom_id = custom_id)
+        pug = Pug.Pug(size = size, pmap = pug_map, custom_id = custom_id,
+                      restriction = restriction)
+        
         # try to add the player to the newly created pug. if the player is
         # banned, restricted, or in another pug, _add_player will raise an
         # exception. The pug is not flushed to the database by _add_player.

@@ -168,31 +168,42 @@ class PugRemoveHandler(BaseHandler):
 # are automatically created behind the scenes by the pug manager when a pug
 # fills and more players want to join.
 class PugCreateHandler(BaseHandler):
-    # To create a new pug, a POST is required
-    #
-    # There are a number of parameters that can be specified for creating a
-    # pug. The parameters are as follows, and are required unless marked
-    # optional:
-    #
-    # @steamid The SteamID of the player creating the pug
-    # @name The name of the player creating the pug
-    # @map (optional) The map the pug is locked to
-    # @size (optional) The size of the pug (i.e the number of players that can
-    #                  join). Defaults to 12, but can be any supported size*.
-    #                  * See the PugManager class for supported sizes.
-    # @custom_id (optional) An optional ID which the client can use to identify
-    #                       pugs
+    """
+    To create a new pug, a POST is required.
+
+    There are a number of parameters that can be specified for creating a
+    pug. The parameters are as follows, and are required unless marked
+    optional:
+    
+    @steamid The SteamID of the player creating the pug
+    @name The name of the player creating the pug
+
+    @map (optional) The map the pug is locked to
+
+    @size (optional) The size of the pug (i.e the number of players that can
+                     join). Defaults to 12, but can be any supported size*.
+                     * See the PugManager class for supported sizes.
+
+    @custom_id (optional) An optional ID which the client can use to identify
+                          pugs
+
+    @restriction (optional) An optional int to restrict the rating of players
+                            who can join the pug. +100 means >= 100 rating,
+                            -100 means < 100 rating.
+    """
     def post(self):
         self.validate_api_key()
 
-        pug_map = self.get_argument("map", None, False)
+        pug_map = self.get_argument("map", None)
         size = self.size
-        custom_id = self.get_argument("custom_id", None, False)
+        custom_id = self.get_argument("custom_id", None)
+        restriction = self.get_argument("restriction", None)
 
         try:
             pug = self.manager.create_pug(self.player_id, self.player_name,
                                           size = size, pug_map = pug_map, 
-                                          custom_id = custom_id)
+                                          custom_id = custom_id, 
+                                          restriction = restriction)
 
             # send the status of the new pug
             self.write(self.response_handler.pug_created(pug))
@@ -423,6 +434,8 @@ class StatHandler(BaseHandler):
             except:
                 raise HTTPError(400)
 
+        logging.debug("cids: %s", cids)
+
         try:
             if cids is None:
                 # select all stats
@@ -433,7 +446,7 @@ class StatHandler(BaseHandler):
             else:
                 # we have cids to get stats for
                 self.write(self.response_handler.player_stats(
-                            self.application.db.get_player_stats()
+                            self.application.db.get_player_stats(cids)
                         ))
         except:
             logging.exception("Exception getting player stats")

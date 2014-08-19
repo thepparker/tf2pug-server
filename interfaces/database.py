@@ -63,6 +63,7 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
 
             # if we have a list of ids, we want to filter to only select them
             if ids is not None:
+                logging.debug("ids is not none, getting individual stats")
                 query += " WHERE steamid IN %s"
                 query_args.append(tuple(ids))
             
@@ -320,7 +321,7 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
             # The base query will select ALL bans, regardless of CID/expired.
             # Filtering checks below will parse the given parameters for
             # appropriate filtering.
-            query = """SELECT banned_cid, banned_name,
+            query = """SELECT id, banned_cid, banned_name,
                         banner_cid, banner_name,
                         ban_start_time, ban_duration, reason,
                         expired
@@ -380,8 +381,9 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
                 # to be updated is ban duration and whether or not the ban has
                 # expired.
                 cursor.execute("""UPDATE bans
-                                  SET ban_duration = %s, expired = %s
-                                  WHERE id = %s""", [ ban.duration, ban.expired ])
+                                  SET reason = %s, ban_duration = %s, expired = %s
+                                  WHERE id = %s""", 
+                                [ ban.reason, ban.duration, ban.expired, ban.id ])
 
             conn.commit()
         except:

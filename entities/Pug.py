@@ -18,6 +18,7 @@ states = {
 }
 
 MAPVOTE_DURATION = 2
+AVAILABLE_MAPS = [ u"cp_granary", u"cp_badlands" ]
 
 def rounded_ctime():
     return calendar.timegm(time.gmtime())
@@ -80,7 +81,7 @@ class Pug(object):
         self.map_vote_start = -1
         self.map_vote_end = -1
         self.map_vote_duration = MAPVOTE_DURATION
-        self.maps = [ u"cp_granary", u"cp_badlands" ]
+        self.maps = AVAILABLE_MAPS
 
         self.server = None
         self.server_id = -1
@@ -485,6 +486,10 @@ class Pug(object):
         """
         if player_id in self.end_stats:
             self.end_stats[player_id]["rating"] = rating
+
+    @staticmethod
+    def map_available(map_name):
+        return map_name in AVAILABLE_MAPS
 
     @property
     def teams_done(self):

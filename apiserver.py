@@ -96,6 +96,7 @@ class Application(tornado.web.Application):
         self._ban_expiration_timer = PeriodicCallback(
                                         self.ban_manager.check_bans,
                                         600000)
+        self._ban_expiration_timer.start()
 
         # loading the pug managers will also load all server managers
         self.__load_pug_managers()

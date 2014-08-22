@@ -26,6 +26,10 @@ class TFPugJsonInterface(BaseJsonInterface):
 
         obj_dict["server"] = None # remove the server reference
 
+        # convert teams to a list
+        for team in obj_dict["teams"]:
+            obj_dict["teams"][team] = list(obj_dict["teams"][team])
+
         return json.dumps(obj_dict)
 
     def loads(self, pid, data):
@@ -41,6 +45,14 @@ class TFPugJsonInterface(BaseJsonInterface):
                 tmp = {}
                 for itemkey in data_dict[key]:
                     tmp[long(itemkey)] = data_dict[key][itemkey]
+
+                data_dict[key] = tmp
+
+            elif key == u"teams":
+                # we should convert teams back to a set!
+                tmp = {}
+                for team in data_dict[key]:
+                    tmp[team] = set(data_dict[key][team])
 
                 data_dict[key] = tmp
 

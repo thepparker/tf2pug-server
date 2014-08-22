@@ -34,6 +34,7 @@ Response_NoBanFound = 1403
 Response_BanList = 1404
 
 Response_PlayerStats = 1500
+Response_TopPlayerStats = 1501
 
 class ResponseHandler(object):
     def __init__(self):
@@ -200,6 +201,16 @@ class ResponseHandler(object):
         """
         return {
             "response": Response_PlayerStats,
+            "stats": stats
+        }
+
+    def top_player_stats(self, stats):
+        """
+        Stats is a list of stat dicts with CID as the key. May need to be
+        sorted here.
+        """
+        return {
+            "response": Response_TopPlayerStats,
             "stats": stats
         }
 

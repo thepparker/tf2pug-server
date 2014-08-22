@@ -196,9 +196,9 @@ class Application(tornado.web.Application):
             user_info = self.db.get_user_info(public_key)
 
             if user_info:
-                logging.info("Successfully obtained user info for %s", 
-                             public_key)
-                return self._auth_cache.add_user(user_info)
+                logging.info("Successfully obtained user %s info for %s", 
+                             user_info, public_key)
+                return self._auth_cache.add_user(user_info[0])
             
             else:
                 return None

@@ -554,6 +554,5 @@ class StatHandler(BaseHandler):
 
             self.write(self.response_handler.top_player_stats(
                         self.application.db.get_top_stats(
-                            stat = stat
-                            limit = limit)
+                            stat = stat, limit = limit)
                     ))

@@ -60,11 +60,17 @@ def test_flush_player_stats():
     for cid in player_stats:
         player_stats[cid]["kills"] = 10
 
+    player_stats[1]["rating"] = 2000
+    player_stats[2]["kills"] = 12
+    player_stats[2]["rating"] = 1700
+
     dbif.flush_player_stats(player_stats)
 
 def test_stat_index():
     print "Adding stat index 'kills'"
     dbif.add_stat_index("kills")
+    dbif.add_stat_index("rating")
+
     test_flush_player_stats()
 
 def test_get_pugs():

@@ -27,6 +27,8 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
 
     def add_stat_index(self, stat):
         self._indexable_stats.append(stat)
+        logging.info("Will now maintain stat index for '%s' on stat flush", 
+                     stat)
 
     def get_user_info(self, public_key = None):
         conn, cursor = self._get_db_objects()
@@ -92,6 +94,34 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
 
         finally:
             self._close_db_objects(cursor, conn)
+
+    def get_top_stats(self, stat, limit):
+        """
+        We just get the top LIMIT CIDs based on the given stat and then call
+        get_player_stats to get the stats of the obtained players.
+        """
+        conn, cursor = self._get_db_objects()
+
+        top_cids = None
+        try:
+            cursor.execute("""SELECT steamid
+                              FROM players_index
+                              WHERE item = %s
+                              ORDER BY value DESC
+                              LIMIT %s""", [ stat, limit ]);
+
+            results = cursor.fetchall()
+
+            top_cids = [ x[0] for x in results ]
+
+        except:
+            logging.exception("Exception getting top player stats")
+            raise
+
+        finally:
+            self._close_db_objects(cursor, conn)
+
+            return self.get_player_stats(ids = top_cids)
 
     def flush_player_stats(self, player_stats):
         conn, cursor = self._get_db_objects()

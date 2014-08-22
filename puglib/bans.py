@@ -14,7 +14,7 @@ class Ban(dict):
         self["banned_name"] = None
         self["banner_cid"] = None
         self["banner_name"] = None
-        self["ban_start_time"] = epoch()
+        self["ban_start_time"] = time.time()
         self["ban_duration"] = None
         self["reason"] = None
         self["expired"] = False

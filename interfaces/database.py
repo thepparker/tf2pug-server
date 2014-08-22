@@ -36,8 +36,9 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
 
             if public_key:
                 cursor.execute("""SELECT name, pug_group, server_group,
-                                    private_key
-                                  FROM api_keys WHERE public_key = %s""", (api_key,))
+                                    private_key, public_key
+                                  FROM api_keys WHERE public_key = %s""", 
+                                (public_key,))
 
             else:
                 cursor.execute("""SELECT name, pug_group, server_group, 
@@ -259,7 +260,7 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
             conn.commit()
 
         except:
-            logging.exception("An exception occurred flushing pug %d" % pug.id)
+            logging.exception("An exception occurred flushing pug %s" % pug.id)
 
         finally:
             self._close_db_objects(cursor, conn)

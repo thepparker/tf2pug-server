@@ -1,10 +1,15 @@
 import urllib2
 import urllib
 import json
+import hmac
+import hashlib
+import time
 
 from pprint import pprint
 
-api_key = "123abc"
+public_key = "publicabc123"
+private_key = "123abc"
+
 
 api_address = "http://192.168.101.128:51515/"
 
@@ -41,7 +46,7 @@ def vote_map(player_id, map_name):
     interface = "ITF2Pug/Map/Vote/"
 
     params = {
-        "key": api_key,
+        "key": public_key,
         "steamid": player_id,
         "map": map_name
     }
@@ -59,7 +64,7 @@ def pug_status(pid):
     interface = "ITF2Pug/Status/"
 
     params = {
-        "key": api_key,
+        "key": public_key,
         "pugid": pid
     }
 
@@ -76,7 +81,7 @@ def pug_list():
     interface = "ITF2Pug/List/"
 
     params = {
-        "key": api_key
+        "key": public_key
     }
 
     data = get_data(interface, params)
@@ -96,7 +101,7 @@ def player_list(pid):
     interface = "ITF2Pug/Player/List/"
 
     params = {
-        "key": api_key,
+        "key": public_key,
         "pugid": pid
     }
 
@@ -111,7 +116,7 @@ def player_list(pid):
 
 def create_pug(pid, name, size = 12):
     create_params = {
-        "key": api_key,
+        "key": public_key,
         "steamid": pid,
         "name": name,
         "size": size
@@ -128,7 +133,7 @@ def create_pug(pid, name, size = 12):
 
 def end_pug(pid):
     params = {
-        "key": api_key,
+        "key": public_key,
         "pugid": pid
     }
 
@@ -147,7 +152,7 @@ def end_pug(pid):
 def add_player(pid, name, pugid = None, size=12):
 
     add_params = {
-        "key": api_key,
+        "key": public_key,
         "steamid": pid,
         "name": name
     }
@@ -168,7 +173,7 @@ def add_player(pid, name, pugid = None, size=12):
 
 def remove_player(pid):
     params = {
-        "key": api_key,
+        "key": public_key,
         "steamid": pid
     }
 
@@ -185,7 +190,7 @@ def remove_player(pid):
 def add_ban():
     print "Attempting to add ban"
     params = {
-        "key": api_key
+        "key": public_key
     }
 
     data = {
@@ -211,9 +216,22 @@ def add_ban():
 
 
 def get_data(interface, params):
+    # generate authentication
+    params["auth_time"] = str(int(time.time()))
+    h = hmac.new(private_key, public_key + params["auth_time"], hashlib.sha256)
+
+    params["auth_token"] = h.hexdigest()
+
     return urllib2.urlopen(api_address + interface + "?" + urllib.urlencode(params)).read()
 
 def post_data(interface, params):
+    params["auth_time"] = str(int(time.time() - 20))
+    print "Encrypting " + public_key + params["auth_time"] + " with private key " + private_key
+
+    h = hmac.new(private_key, public_key + params["auth_time"], hashlib.sha256)
+
+    params["auth_token"] = h.hexdigest()
+
     return urllib2.urlopen(api_address + interface, urllib.urlencode(params)).read()
 
 

@@ -28,18 +28,21 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
     def add_stat_index(self, stat):
         self._indexable_stats.append(stat)
 
-    def get_user_info(self, api_key = None):
+    def get_user_info(self, public_key = None):
         conn, cursor = self._get_db_objects()
 
         try:
             result = None
 
-            if api_key:
-                cursor.execute("""SELECT name, pug_group, server_group 
-                                  FROM api_keys WHERE key = %s""", (api_key,))
+            if public_key:
+                cursor.execute("""SELECT name, pug_group, server_group,
+                                    private_key
+                                  FROM api_keys WHERE public_key = %s""", (api_key,))
 
             else:
-                cursor.execute("SELECT name, pug_group, server_group, key FROM api_keys")
+                cursor.execute("""SELECT name, pug_group, server_group, 
+                                    private_key, public_key
+                                  FROM api_keys""")
             
             result = cursor.fetchall()
 

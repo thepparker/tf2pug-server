@@ -1,7 +1,9 @@
 -- Contains user auth keys
 --DROP TABLE IF EXISTS api_keys;
 CREATE TABLE api_keys (name text NOT NULL, pug_group integer NOT NULL, 
-                       server_group integer NOT NULL, key text UNIQUE NOT NULL
+                       server_group integer NOT NULL, 
+                       public_key text UNIQUE NOT NULL, 
+                       private_key text UNIQUE NOT NULL
                     );
 
 -- Servers available for use in pugs
@@ -32,7 +34,7 @@ CREATE TRIGGER update_pugs_modtime BEFORE UPDATE ON pugs
 --DROP TABLE IF EXISTS pugs_index;
 CREATE TABLE pugs_index (id serial, pug_entity_id integer UNIQUE NOT NULL,
                         finished boolean NOT NULL, 
-                        api_key text references api_keys(key) ON UPDATE CASCADE
+                        api_key text references api_keys(private_key) ON UPDATE CASCADE
                     );
 
 -- Player stats

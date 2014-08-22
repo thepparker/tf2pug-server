@@ -1,5 +1,9 @@
 import logging
 import json
+import time
+import hmac
+import hashlib
+import sys
 
 import tornado.web
 
@@ -8,53 +12,93 @@ from tornado.web import HTTPError
 from puglib import Exceptions as PugManagerExceptions, bans
 from serverlib import Rcon, Exceptions as ServerManagerExceptions
 
+def compare_digest(a, b):
+    if int(''.join([ str(x) for x in sys.version_info[:3] ])) < 277:
+        return a == b
+
+    else:
+        return hmac.compare_digest(a, b)
+
 # The base handler class sets up properties and useful methods
 class BaseHandler(tornado.web.RequestHandler):
     def __init__(self, application, request, **kwargs):
         tornado.web.RequestHandler.__init__(self, application, request, **kwargs)
 
+        self._player_id = None
+        self._player_name = None
+        self._pugid = None
+
+        self._request_key = None
+        self._request_token = None
+        self._request_time = None
+
     @property
     def manager(self):
-        return self.application.get_pug_manager(self.request_key)
+        return self.application.get_pug_manager(self.current_user.private_key)
 
     @property
     def request_key(self):
-        return self.get_argument("key")
+        if not self._request_key:
+            self._request_key = self.get_argument("key")
+
+        return self._request_key
+
+    @property
+    def request_token(self):
+        if not self._request_token:
+            self._request_token = self.get_argument("auth_token")
+
+        return self._request_token
+
+    @property
+    def request_time(self):
+        if not self._request_time:
+            try:
+                self._request_time = int(self.get_argument("auth_time"))
+
+            except:
+                logging.exception("Exception casting request time")
+                raise HTTPError(400)
+
+        return self._request_time
 
     @property
     def player_id(self):
-        sid = self.get_argument("steamid")
+        if not self._player_id:
+            sid = self.get_argument("steamid")
 
-        logging.debug("STEAMID: %s" % sid)
-        try:
-            sid = long(sid)
+            logging.debug("STEAMID: %s" % sid)
+            try:
+                self._player_id = long(sid)
 
-            return sid
+            except:
+                logging.exception("error casting steamid")
+                raise HTTPError(400)
 
-        except:
-            logging.exception("error casting steamid")
-            raise HTTPError(400)
+        return self._player_id
 
     @property
     def player_name(self):
-        return self.get_argument("name")
+        if not self._player_name:
+            self._player_name = self.get_argument("name")
+
+        return self._player_name
 
     @property
     def pugid(self):
-        pugid = self.get_argument("pugid")
-        
-        logging.debug("PUG ID: %s" % pugid)
+        if not self._pugid:
+            pugid = self.get_argument("pugid")
+            
+            logging.debug("PUG ID: %s" % pugid)
 
-        try:
-            pugid = long(pugid)
+            try:
+                self._pugid = long(pugid)
 
-            return pugid
+            except:
+                logging.exception("error casting pug id")
+                raise HTTPError(400)
 
-        except:
-            logging.exception("error casting pug id")
-            raise HTTPError(400)
-
-        return pugid
+        return self._pugid
 
 
     @property
@@ -74,17 +118,59 @@ class BaseHandler(tornado.web.RequestHandler):
     def response_handler(self):
         return self.application.response_handler
 
-    def validate_api_key(self):
-        if not self.application.valid_api_key(self.request_key):
-            logging.info("Unauthorised user")
+    def get_current_user(self):
+        return self.application.get_user_info(self.request_key)
+
+    def validate_request(self):
+        """
+        Validates whether the request is allowed or not based on the supplied
+        authentication parameters. We use a simple hash-based approach to
+        authentication. The user uses a secret key, known only by them and us,
+        to hash a string, creating the auth_token. We then perform the same
+        hashing on our side. If the tokens match, the user is authenticated.
+
+        The hashed string is a HMAC digest of the following encoding:
+        $PUBLIC_KEY + $TIMESTAMP
+
+        The hashing algorithm used is SHA256. The HMAC key is the user's
+        private key.
+        """
+
+        logging.debug("Validating request. Time: %s, public key: %s",
+                      self.request_time, self.request_key)
+
+        # the first thing we should do is check the timestamp to prevent replay
+        # attacks. we also check if a user matching the public key even exists
+        if (time.time() - self.request_time > 10) or self.current_user is None:
+            logging.info("Request from %s is outdated, or no user info found",
+                         self.request_key)
+
             raise HTTPError(401)
 
+        # have user details. now we can compute what the request_token SHOULD
+        # be
+        to_encrypt = self.request_key + str(self.request_time)
+        logging.debug("Encrypting %s with private key %s", 
+                      to_encrypt, self.current_user.private_key)
+
+        h = hmac.new(self.current_user.private_key, to_encrypt, hashlib.sha256)
+
+        token = h.hexdigest()
+        if compare_digest(token, self.request_token):
+            # user is authenticated
+            logging.info("Request from %s (%s) successfully authenticated", 
+                         self.current_user.name, self.current_user.public_key)
+
+        else:
+            logging.debug("Digests did not match. User digest: %s - OURS: %s",
+                          self.request_token, token)
+            raise HTTPError(401)
 
 # returns a list of pugs and their status
 class PugListHandler(BaseHandler):
     # A simple GET is required for a pug listing
     def get(self):
-        self.validate_api_key()
+        self.validate_request()
 
         self.write(self.response_handler.pug_listing(self.manager.get_pugs()))
 
@@ -93,7 +179,7 @@ class PugStatusHandler(BaseHandler):
     # Parameters:
     # @pugid The ID to get status for
     def get(self):
-        self.validate_api_key()
+        self.validate_request()
 
         # the response handler will automatically handle invalid pug ids by
         # sending an invalidpug response code
@@ -108,7 +194,7 @@ class PugAddHandler(BaseHandler):
     # @name The name of the player being added
     # @pugid The pug ID to add the player to
     def post(self):
-        self.validate_api_key()
+        self.validate_request()
 
         pug_id = self.pugid
 
@@ -146,7 +232,7 @@ class PugRemoveHandler(BaseHandler):
     # The only required parameter is the player's steamid
     # @steamid The SteamID to remove
     def post(self):
-        self.validate_api_key()
+        self.validate_request()
 
         try:
             pug = self.manager.remove_player(self.player_id)
@@ -192,7 +278,7 @@ class PugCreateHandler(BaseHandler):
                             -100 means < 100 rating.
     """
     def post(self):
-        self.validate_api_key()
+        self.validate_request()
 
         pug_map = self.get_argument("map", None)
         size = self.size
@@ -231,7 +317,7 @@ class PugEndHandler(BaseHandler):
     # @pugid The ID of the pug to end
     # @steamid The user trying to end the pug?
     def post(self):
-        self.validate_api_key()
+        self.validate_request()
 
         pug_id = self.pugid
 
@@ -254,7 +340,7 @@ class PugPlayerListHandler(BaseHandler):
     # The only required parameter is the pug id
     # @pugid The pug ID to get a player list for
     def get(self):
-        self.validate_api_key()
+        self.validate_request()
 
         pug_id = self.pugid
 
@@ -268,7 +354,7 @@ class PugMapVoteHandler(BaseHandler):
     # @steamid The player's ID who is voting
     # @map The map name being voted for
     def post(self):
-        self.validate_api_key()
+        self.validate_request()
 
         pmap = self.get_argument("map")
 
@@ -298,7 +384,7 @@ class PugForceMapHandler(BaseHandler):
     # @pugid The ID of the pug
     # @map The name of the map
     def post(self):
-        self.validate_api_key()
+        self.validate_request()
 
         fmap = self.get_argument("map", None, False)
         pug_id = self.pugid
@@ -331,7 +417,7 @@ class BanAddHandler(BaseHandler):
                 a JSON encoded string with the format dicated in bans.md
     """
     def post(self):
-        self.validate_api_key()
+        self.validate_request()
 
         # Note: tornado will raise its own exception if using get_argument
         # without a default, so if we get data, we know it's something
@@ -361,7 +447,7 @@ class BanRemoveHandler(BaseHandler):
     :param steamid The 64bit SteamID to remove the ban for
     """
     def post(self):
-        self.validate_api_key()
+        self.validate_request()
 
         try:
             self.application.ban_manager.remove_ban(self.player_id)
@@ -387,7 +473,7 @@ class BanListHandler(BaseHandler):
                               A bool (1/0 or 'true'/'false').
     """
     def get(self):
-        self.validate_api_key()
+        self.validate_request()
 
         cids = self.get_argument("ids", None)
         expired = self.get_argument("expired", False)
@@ -434,7 +520,10 @@ class StatHandler(BaseHandler):
     :param ids (optional) A JSON encoded LIST of ids to get stats for
     """
     def get(self):
-        self.validate_api_key()
+        self.validate_request()
+
+        from pprint import pprint
+        pprint(self.request.arguments)
 
         cids = self.get_argument("ids", None)
         if cids is not None:

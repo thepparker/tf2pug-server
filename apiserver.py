@@ -25,12 +25,65 @@ from tornado.ioloop import PeriodicCallback
 define("ip", default = settings.listen_ip, help = "The IP to listen on", type = str)
 define("port", default = settings.listen_port, help = "The port to listen on", type = int)
 
-# Raised when a user attempts to authorise with an invalid key
-class InvalidKeyException(Exception):
-    pass
+class APIUser(object):
+    def __init__(self, name, pug_group, server_group, private_key, public_key):
+        self.name = name
+        self.pug_group = pug_group
+        self.server_group = server_group
+        self.private_key = private_key
+        self.public_key = public_key
+
+        self.cache_time = time.time()
+
+class UserContainer(object):
+    def __init__(self):
+        self.users = []
+
+    def __contains__(self, user):
+        if not isinstance(user, APIUser):
+            raise TypeError("Invalid user type")
+
+        for u in self.users:
+            if u == user:
+                return True
+
+    def add_user(self, user_info):
+        #user_info = (name, pug_group, server_group, private_key, public_key)
+        u = APIUser(user_info[0], user_info[1], user_info[2], user_info[3],
+                    user_info[4])
+
+        self.users.append(u)
+
+        return u
+
+    def get_user_by_pub_key(self, key):
+        self._clear_cache()
+
+        for u in self.users:
+            if u.public_key == key:
+                return u
+
+        return None
+
+    def get_user_by_priv_key(self, key):
+        self._clear_cache()
+
+        for u in self.users:
+            if u.private_key == key:
+                return u
+
+        return None
+
+    def _clear_cache(self):
+        # remove all items older than 120 seconds. we do this before every
+        # fetch
+
+        self.users[:] = [ x for x in self.users if time.time() < x.cache_time + 120 ]
+
 
 class Application(tornado.web.Application):
     def __init__(self, db):
+        # init tornado specific settings first
         handlers = [
             # pug creation and management
             (r"/ITF2Pug/List/", WebHandler.PugListHandler),
@@ -60,31 +113,24 @@ class Application(tornado.web.Application):
             "debug": True,
         }
 
+        tornado.web.Application.__init__(self, handlers, **settings)
+
+        # -----------------
         self.db = db
         
         self.response_handler = ResponseHandler.ResponseHandler()
-        # pug managers are currently per API key
+        
+        # pug managers are stored per private key (will eventually be 
+        # pug_group)
         self._pug_managers = {}
+
         # server managers are per server group. each server group can have
         # multiple pug managers attached to it
         self._server_managers = {}
 
-        self.ban_manager = bans.BanManager(db)
+        self.ban_manager = bans.BanManager(db) 
 
-        """ Auth cache is in the following form:
-        { "key":
-            { 
-                "valid": true/false,
-                "name": name,
-                "pug_group": pug_group,
-                "server_group": server_group,
-                "cache_time": when this item was cached
-            }
-        }
-
-        """
-        self._auth_cache = {}
-
+        self._auth_cache = UserContainer()
 
         # check pug status every 2 seconds. this status includes map vote,
         # ending, etc.
@@ -95,7 +141,7 @@ class Application(tornado.web.Application):
         # 10 minutes. so, 10 (min) * 60 (seconds in 1 minute) * 1000 (ms in 1s)
         self._ban_expiration_timer = PeriodicCallback(
                                         self.ban_manager.check_bans,
-                                        600000)
+                                        1000)
         self._ban_expiration_timer.start()
 
         # loading the pug managers will also load all server managers
@@ -103,87 +149,35 @@ class Application(tornado.web.Application):
 
         self.__late_load_servers()
 
-        tornado.web.Application.__init__(self, handlers, **settings)
-
-    def valid_api_key(self, key):
-        if key is None:
-            return False
-            
-        if key in self._auth_cache:
-            logging.debug("Key %s is in auth cache", key)
-
-            valid = self._auth_cache[key]["valid"] 
-            cache_time = self._auth_cache[key]["cache_time"]
-
-            # check if the cache has expired
-            # if it has expired, we remove the key from the cache and recache
-            if (time.time() - cache_time) > 120:
-                logging.debug("Cache for key has expired")
-                del self._auth_cache[key]
-
-            else:
-                # cache has not expired
-                logging.debug("Key is in cache and has not expired. Valid: %s", valid)
-                return valid
-
-        user_info = self.db.get_user_info(key)
-
-        logging.debug("User details for key %s: %s", key, user_info)
-        if user_info is None:
-            self.__cache_client_data(key, user_info)
-            raise InvalidKeyException("Invalid API key %s" % (key))
-        
-        else:
-            # cache and return true
-            # user_info is currently [(0,1,2)], so we just get the tuple out
-            self.__cache_client_data(key, user_info[0])
-
-            return True
-
-    def __cache_client_data(self, key, user_info):
-        if user_info is None:
-            self._auth_cache[key] = {
-                "valid": False,
-                "cache_time": time.time(),
-            }
-        else:
-            # user_info = [(name, pug_group, server_group)]
-            self._auth_cache[key] = {
-                "valid": True,
-                "name": user_info[0],
-                "pug_group": user_info[1],
-                "server_group": user_info[2],
-                "cache_time": time.time(),
-            }
-
-    def get_server_manager(self, group):
-        if group in self._server_managers:
-            return self._server_managers[group]
+    def get_server_manager(self, server_group):
+        if server_group in self._server_managers:
+            return self._server_managers[server_group]
 
         else:
-            logging.debug("Getting server manager for group %d", group)
+            logging.debug("Getting server manager for group %d", server_group)
 
-            new_manager = ServerManager.ServerManager(group, self.db)
+            new_manager = ServerManager.ServerManager(server_group, self.db)
 
-            self._server_managers[group] = new_manager
+            self._server_managers[server_group] = new_manager
 
             return new_manager
 
-    def get_pug_manager(self, key):
-        if key in self._pug_managers:
-            return self._pug_managers[key]
+    def get_pug_manager(self, private_key):
+        if private_key in self._pug_managers:
+            return self._pug_managers[private_key]
 
         else:
             # NOTE: If this is being called, the data will ALWAYS be in the cache
-            logging.debug("Getting new pug manager for key %s", key)
+            logging.debug("Getting new pug manager for private key %s", 
+                          private_key)
 
-            client_group = self._auth_cache[key]["server_group"]
+            user = self._auth_cache.get_user_by_priv_key(private_key)
 
-            new_manager = PugManager.PugManager(key, self.db, 
-                            self.get_server_manager(client_group),
+            new_manager = PugManager.PugManager(private_key, self.db, 
+                            self.get_server_manager(user.server_group),
                             self.ban_manager)
 
-            self._pug_managers[key] = new_manager
+            self._pug_managers[private_key] = new_manager
 
             return new_manager
 
@@ -192,6 +186,25 @@ class Application(tornado.web.Application):
 
         for manager in self._pug_managers.values():
             manager.status_check(curr_ctime)
+
+    def get_user_info(self, public_key):
+        user = self._auth_cache.get_user_by_pub_key(public_key)
+
+        if user is None:
+            logging.info("User with public key %s is not cached. Refreshing", 
+                         public_key)
+            user_info = self.db.get_user_info(public_key)
+
+            if user_info:
+                logging.info("Successfully obtained user info for %s", 
+                             public_key)
+                return self._auth_cache.add_user(user_info)
+            
+            else:
+                return None
+
+        else:
+            return user
 
     def __load_pug_managers(self):
         logging.info("Loading pug managers for all users")
@@ -202,12 +215,8 @@ class Application(tornado.web.Application):
 
         if results:
             for key_tuple in results:
-                # key_tuple in the form (name, pug_group, server_group, key)
-                key = key_tuple[3]
-
-                self.__cache_client_data(key, key_tuple[0:3])
-
-                self.get_pug_manager(key_tuple[3])
+                user = self._auth_cache.add_user(key_tuple)
+                self.get_pug_manager(user.private_key)
 
     def __late_load_servers(self):
         """

@@ -53,6 +53,17 @@ class BaseDatabaseInterface(object):
         """
         raise NotImplementedError("This must be implemented")
 
+    def get_top_stats(self, stat, limit):
+        """
+        Gets the top `limit` players for the given stat column.
+
+        :param stat The stat column to filter on
+        :param limit The maximum number of players to get
+
+        :return A dictionary of stats with respect to each ID
+        """
+        raise NotImplementedError("Not implemented")
+
     def flush_player_stats(self, player_stats):
         """
         Updates stats from a pug. The dict given is used to update all values

@@ -112,8 +112,7 @@ class Pug(object):
         self._players[player_id] = player_name
 
         self.player_stats[player_id] = pstats
-        # empty stats for the current game
-        self.game_stats[player_id] = PlayerStats()
+        self._get_game_stats(player_id)
 
     """
     Add a player to the specified team list. Player can also be a list, as

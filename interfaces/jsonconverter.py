@@ -39,7 +39,10 @@ class TFPugJsonInterface(BaseJsonInterface):
         pug = Pug.Pug()
 
         for key in data_dict:
-            if key == u'player_votes' or key == u'_players' or key == u'player_stats':
+            if (key == u'player_votes' or key == u'_players' or 
+                key == u'player_stats' or key == u'game_stats' or
+                key == u'end_stats'):
+
                 # these keys are dictionaries, so we want to do them slightly 
                 # different. i.e convert unicode keys back to longs
                 tmp = {}

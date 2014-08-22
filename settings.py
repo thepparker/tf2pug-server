@@ -9,4 +9,5 @@ db_pass = "theapiforme"
 db_host = "127.0.0.1"
 db_port = 5432
 
+indexed_stats = ("kills", "deaths", "assists", "rating")
 

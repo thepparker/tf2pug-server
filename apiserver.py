@@ -106,7 +106,7 @@ class Application(tornado.web.Application):
             (r"/ITF2Pug/Ban/List/", WebHandler.BanListHandler),
 
             # stats
-            (r"/ITF2Pug/Stat/", WebHandler.StatHandler),
+            (r"/ITF2Pug/Stat/(.*)/", WebHandler.StatHandler),
         ]
 
         settings = {
@@ -257,6 +257,9 @@ if __name__ == "__main__":
     dbinterface_cls = get_db_interface("PGSQL")
 
     dbinterface = dbinterface_cls(db)
+
+    for statcol in settings.indexed_stats:
+        dbinterface.add_stat_index(statcol)
 
     api_server = Application(dbinterface)
 

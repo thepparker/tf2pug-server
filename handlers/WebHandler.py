@@ -519,33 +519,41 @@ class StatHandler(BaseHandler):
 
     :param ids (optional) A JSON encoded LIST of ids to get stats for
     """
-    def get(self):
-        self.validate_request()
+    def get(self, slug):
+        #self.validate_request()
 
-        from pprint import pprint
-        pprint(self.request.arguments)
+        routes = ("All", "Select", "Top")
+        if slug not in routes:
+            raise HTTPError(404)
 
         cids = self.get_argument("ids", None)
-        if cids is not None:
+        if slug == "All":
+            self.write(self.response_handler.player_stats(
+                        self.application.db.get_player_stats()
+                    ))
+
+        elif slug == "Select" and cids is not None:
             try:
                 cids = json.loads(cids)
             except:
                 raise HTTPError(400)
 
-        logging.debug("cids: %s", cids)
-
-        try:
-            if cids is None:
-                # select all stats
-                self.write(self.response_handler.player_stats(
-                        self.application.db.get_player_stats()
+            # we have cids to get stats for
+            self.write(self.response_handler.player_stats(
+                        self.application.db.get_player_stats(cids)
                     ))
 
-            else:
-                # we have cids to get stats for
-                self.write(self.response_handler.player_stats(
-                            self.application.db.get_player_stats(cids)
-                        ))
-        except:
-            logging.exception("Exception getting player stats")
-            raise HTTPError(500)
+        elif slug == "Top":
+            stat = self.get_argument("stat", "rating")
+            limit = self.get_argument("limit", 50)
+            
+            try:
+                limit = int(limit)
+            except:
+                raise HTTPError(400)
+
+            self.write(self.response_handler.top_player_stats(
+                        self.application.db.get_top_stats(
+                            stat = stat
+                            limit = limit)
+                    ))

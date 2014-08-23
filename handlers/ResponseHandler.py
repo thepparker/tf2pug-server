@@ -96,8 +96,9 @@ class ResponseHandler(object):
     def server_connection_error(self):
         return { "response": Response_ServerConnectionError }
 
-    def pug_vote_added(self, pug):
+    def pug_vote_added(self, player_id, pug):
         response = self.pug_status(pug)
+        response["voter_id"] = player_id
 
         self.change_response_code(response, Response_MapVoteAdded)
 

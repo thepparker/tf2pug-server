@@ -361,7 +361,8 @@ class PugMapVoteHandler(BaseHandler):
         try:
             pug = self.manager.vote_map(self.player_id, pmap)
 
-            self.write(self.response_handler.pug_vote_added(pug))
+            self.write(self.response_handler.pug_vote_added(self.player_id, 
+                                                            pug))
 
         except PugManagerExceptions.PlayerNotInPugException:
             self.write(self.response_handler.player_not_in_pug())

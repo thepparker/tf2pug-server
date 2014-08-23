@@ -297,6 +297,13 @@ class PugCreateHandler(BaseHandler):
         except PugManagerExceptions.PlayerInPugException:
             self.write(self.response_handler.player_in_pug())
 
+        except PugManagerExceptions.PlayerRestrictedException:
+            self.write(self.response_handler.player_restricted())
+
+        except PugManagerExceptions.PlayerBannedException:
+            ban = self.application.ban_manager.get_player_ban(self.player_id)
+            self.write(self.response_handler.player_banned(ban.reason))
+
         except PugManagerExceptions.InvalidMapException:
             self.write(self.response_handler.invalid_map())
 

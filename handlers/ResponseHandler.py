@@ -237,7 +237,7 @@ class ResponseHandler(object):
                 "anticheat": pug.server.anticheat,
                 "ip": pug.server.ip,
                 "port": pug.server.port,
-                "tv": pug.server.tv_port
+                "tv": pug.server.tv_port,
                 "password": pug.server.password
             }
 

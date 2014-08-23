@@ -238,13 +238,17 @@ class ResponseHandler(object):
                 "ip": pug.server.ip,
                 "port": pug.server.port,
                 "tv": pug.server.tv_port
+                "password": pug.server.password
             }
 
         else:
             del packet["server"]
 
         del packet["_players"]
+
+        # only stats we send are the game stats
         del packet["player_stats"]
+        del packet["end_stats"]
 
         packet["named_state"] = pug.get_state_string()
         packet["players"] = self._pug_players_list(pug)

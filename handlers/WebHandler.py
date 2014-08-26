@@ -284,6 +284,11 @@ class PugCreateHandler(BaseHandler):
         size = self.size
         custom_id = self.get_argument("custom_id", None)
         restriction = self.get_argument("restriction", None)
+        if restriction is not None:
+            try:
+                restriction = int(restriction)
+            except:
+                raise HTTPError(401)
 
         try:
             pug = self.manager.create_pug(self.player_id, self.player_name,

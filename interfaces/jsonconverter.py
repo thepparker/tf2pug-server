@@ -17,6 +17,12 @@ Pug objects to JSON and store it in string fields, or any applicable data
 field in your database of choice.
 """
 
+def default(obj):
+    if isinstance(obj, set):
+        return list(obj)
+
+    raise TypeError(repr(o) + " is not JSON serializable")
+
 class TFPugJsonInterface(BaseJsonInterface):
     def dumps(self, pug):
         # need to establish a dictionary, and then dump it into a json string
@@ -26,11 +32,7 @@ class TFPugJsonInterface(BaseJsonInterface):
 
         obj_dict["server"] = None # remove the server reference
 
-        # convert teams to a list
-        for team in obj_dict["teams"]:
-            obj_dict["teams"][team] = list(obj_dict["teams"][team])
-
-        return json.dumps(obj_dict)
+        return json.dumps(obj_dict, default = default)
 
     def loads(self, pid, data):
         # load the data into a dictionary and then set a Pug object's fields
@@ -58,6 +60,10 @@ class TFPugJsonInterface(BaseJsonInterface):
                     tmp[team] = set(data_dict[key][team])
 
                 data_dict[key] = tmp
+
+            from pprint import pprint
+            print key
+            pprint(data_dict[key])
 
             setattr(pug, str(key), data_dict[key])
 

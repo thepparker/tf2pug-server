@@ -255,9 +255,13 @@ class ResponseHandler(object):
         packet["map_vote_counts"] = self._pug_vote_count_list(pug)
         packet["player_votes"] = self._pug_vote_list(pug)
 
+        
+        # make a copy of the pug teams object so we don't modify it
+        packet["teams"] = {}
+
         # convert sets to list so they can be json serialized
-        for team in packet["teams"]:
-            packet["teams"][team] = list(packet["teams"][team])
+        for team in pug.teams:
+            packet["teams"][team] = list(pug.teams[team])
 
         return packet
 

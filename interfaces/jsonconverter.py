@@ -61,10 +61,6 @@ class TFPugJsonInterface(BaseJsonInterface):
 
                 data_dict[key] = tmp
 
-            from pprint import pprint
-            print key
-            pprint(data_dict[key])
-
             setattr(pug, str(key), data_dict[key])
 
         pug.id = pid

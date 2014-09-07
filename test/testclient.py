@@ -14,32 +14,28 @@ private_key = "123abc"
 api_address = "http://192.168.101.128:51515/"
 
 def main():
-    """
     res = create_pug(5, 'joebob')
     pugid = int(res["pug"]["id"])
 
     add_player(1, "rick", pugid)
     add_player(2, "steve", pugid)
-    add_res = add_player(3, "jimmy", pugid)
-    add_player(76561197976832968, "roight", pugid)
-    add_player(76561198031041077, "kaki", pugid)
-    add_player(76561198011707860, "shneaky", pugid)
-    add_player(76561198064565908, "Faithless", pugid)
-    add_player(76561197970805594, "Shuz", pugid)
-    add_player(76561197997976691, "hero", pugid)
-    add_player(76561198045479800, "zato", pugid)
-    add_player(76561198042997347, "chrome", pugid)
-    add_player(76561197997302892, "jak", pugid)
+    add_player(3, "jimmy", pugid)
+    add_player(4, "roight", pugid)
+    add_player(5, "kaki", pugid)
+    add_player(6, "shneaky", pugid)
+    add_player(7, "Faithless", pugid)
+    add_player(8, "Shuz", pugid)
+    add_player(9, "hero", pugid)
+    add_player(10, "zato", pugid)
+    add_player(11, "chrome", pugid)
+    #add_player(12, "jak", pugid)
 
-    player_list(int(res["pug"]["id"]))
-    pug_status(int(res["pug"]["id"]))
+    #pug_status(int(res["pug"]["id"]))
 
     pug_list()
 
-    vote_map(2, "cp_granary")
-    vote_map(3, "cp_badlands")
-    """
-    add_ban()
+    #add_ban()
+    #pug_list()
 
 
 def vote_map(player_id, map_name):
@@ -119,7 +115,9 @@ def create_pug(pid, name, size = 12):
         "key": public_key,
         "steamid": pid,
         "name": name,
-        "size": size
+        "size": size,
+        "restriction": "+1500",
+        "custom_id": "tf2-syd-1"
     }
     create_interface = "ITF2Pug/Create/"
     create_data = post_data(create_interface, create_params)
@@ -225,7 +223,7 @@ def get_data(interface, params):
     return urllib2.urlopen(api_address + interface + "?" + urllib.urlencode(params)).read()
 
 def post_data(interface, params):
-    params["auth_time"] = str(int(time.time() - 20))
+    params["auth_time"] = str(int(time.time()))
     print "Encrypting " + public_key + params["auth_time"] + " with private key " + private_key
 
     h = hmac.new(private_key, public_key + params["auth_time"], hashlib.sha256)

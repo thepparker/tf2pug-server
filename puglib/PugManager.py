@@ -45,11 +45,11 @@ class PugManager(object):
     If no pug ID is specified, the player is added to the first pug with space
     available. If no space is available, a new pug is created.
 
-    @param player_id The ID of the player to add
-    @param player_name The name of the player to add
-    @param pug_id The ID of the pug to add the player to
+    :param player_id The ID of the player to add
+    :param player_name The name of the player to add
+    :param pug_id The ID of the pug to add the player to
 
-    @return Pug The pug the player was added to or None
+    :return Pug The pug the player was added to or None
     """
     def add_player(self, player_id, player_name, pug_id):
         pug = self.get_pug_by_id(pug_id)
@@ -110,9 +110,9 @@ class PugManager(object):
     ended because it is empty after removing the player, an exception is
     raised.
 
-    @param player_id The player to remove
+    :param player_id The player to remove
 
-    @return Pug The pug the player was removed from.
+    :return Pug The pug the player was removed from.
     """
     def remove_player(self, player_id):
         pug = self.get_player_pug(player_id)
@@ -134,13 +134,13 @@ class PugManager(object):
     This method is used to create a new pug. Size and map are optional. If the
     player is already in a pug, an exception is raised.
 
-    @param player_id The ID of the player to add
-    @param player_name The name of the player to add
-    @param size The size of the pug (max number of players)
-    @param map The map the pug will be on. If none, it means a vote will occur
+    :param player_id The ID of the player to add
+    :param player_name The name of the player to add
+    :param size The size of the pug (max number of players)
+    :param map The map the pug will be on. If none, it means a vote will occur
                once the pug is full.
 
-    @return Pug The newly created pug
+    :return Pug The newly created pug
     """
     def create_pug(self, player_id, player_name, size = 12, pug_map = None,
                    custom_id = None, restriction = None):
@@ -183,7 +183,7 @@ class PugManager(object):
     otherwords, it's for method overloading (which we can otherwise only do by
     having optional parameters).
 
-    @param pug_id The ID of the pug to end
+    :param pug_id The ID of the pug to end
     """
     def end_pug(self, pug_id):
         pug = self.get_pug_by_id(pug_id)
@@ -197,7 +197,7 @@ class PugManager(object):
     Ends the given pug. This means we set the state to game over, reset the
     assigned server, close the logging socket and flush the pug/server.
 
-    @param pug The pug to end
+    :param pug The pug to end
     """
     def _end_pug(self, pug):
         # resetting the server automatically causes a server_manager flush
@@ -225,10 +225,10 @@ class PugManager(object):
 
     Raises an exception if the player is not in a pug.
 
-    @param player_id The ID of the player voting
-    @param pmap The map being voted for
+    :param player_id The ID of the player voting
+    :param pmap The map being voted for
 
-    @return Pug The pug that had a map vote placed
+    :return Pug The pug that had a map vote placed
     """
     def vote_map(self, player_id, pmap):
         pug = self.get_player_pug(player_id)
@@ -282,9 +282,9 @@ class PugManager(object):
         """
         Determines if a player is in a pug.
 
-        @param player_id The player to check for
+        :param player_id The player to check for
 
-        @return bool True if the player is in a pug, else False
+        :return bool True if the player is in a pug, else False
         """
         return self.get_player_pug(player_id) is not None
 
@@ -292,9 +292,9 @@ class PugManager(object):
         """
         Checks if the given player is banned from this service.
 
-        @param player_id The player to check
+        :param player_id The player to check
 
-        @return bool True if the player is banned, else False
+        :return bool True if the player is banned, else False
         """
         ban = self.ban_manager.get_player_ban(player_id)
         
@@ -306,9 +306,9 @@ class PugManager(object):
     """
     Gets the pug the given player is in (if any).
 
-    @param player_id The player to check for
+    :param player_id The player to check for
 
-    @return Pug The pug the player is in, or none
+    :return Pug The pug the player is in, or none
     """
     def get_player_pug(self, player_id):
         for pug in self._pugs:
@@ -320,9 +320,9 @@ class PugManager(object):
     """
     Searches through the pug list for a pug matching the given id.
 
-    @param pug_id The pug ID to search for
+    :param pug_id The pug ID to search for
 
-    @return Pug The pug matching the given ID, or None
+    :return Pug The pug matching the given ID, or None
     """
     def get_pug_by_id(self, pug_id):
         for pug in self._pugs:
@@ -335,9 +335,9 @@ class PugManager(object):
     Searches through the pug list and returns the first pug with space
     available.
 
-    @param size (optional) The pug size to match against
+    :param size (optional) The pug size to match against
 
-    @return Pug The first PUG with space available, or None
+    :return Pug The first PUG with space available, or None
     """
     def _get_pug_with_space(self, size = 12):
         for pug in self._pugs:
@@ -429,7 +429,7 @@ class PugManager(object):
     Calculates the new rating of players after the game and updates it in the 
     database
 
-    @param pug The pug to update ratings for
+    :param pug The pug to update ratings for
     """
     def __update_ratings(self, pug):
         """

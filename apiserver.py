@@ -12,6 +12,8 @@ import tornado.ioloop
 import psycopg2
 import psycopg2.pool
 
+import momoko
+
 from puglib import PugManager, bans
 from handlers import ResponseHandler, WebHandler
 from serverlib import ServerManager
@@ -251,12 +253,19 @@ if __name__ == "__main__":
                 settings.db_host, settings.db_port
             )
 
+    # a synchronous pool for database queries that should be performed 
+    # synchronously
     db = psycopg2.pool.SimpleConnectionPool(minconn = 1, maxconn = 1, 
         dsn = dsn)
 
+    # asynchronous connection pool for async queries. momoko utilizes gen to
+    # perform queries asynchronously using tornado
+    async_db = momoko.Pool(dsn = dsn, size = 1, max_size = 2, 
+        raise_connect_errors = False)
+
     dbinterface_cls = get_db_interface("PGSQL")
 
-    dbinterface = dbinterface_cls(db)
+    dbinterface = dbinterface_cls(db, async_db)
 
     for statcol in settings.indexed_stats:
         dbinterface.add_stat_index(statcol)
@@ -274,6 +283,8 @@ if __name__ == "__main__":
 
         api_server.close()
         db.closeall()
+        async_db.close()
+
         tornado.ioloop.IOLoop.instance().stop()
         
         sys.exit(0)

@@ -8,6 +8,7 @@ import sys
 import tornado.web
 
 from tornado.web import HTTPError
+from tornado import gen
 
 from puglib import Exceptions as PugManagerExceptions, bans
 from serverlib import Rcon, Exceptions as ServerManagerExceptions
@@ -532,6 +533,7 @@ class StatHandler(BaseHandler):
 
     :param ids (optional) A JSON encoded LIST of ids to get stats for
     """
+    @gen.coroutine
     def get(self, slug):
         #self.validate_request()
 
@@ -541,8 +543,16 @@ class StatHandler(BaseHandler):
 
         cids = self.get_argument("ids", None)
         if slug == "All":
+            serialized_stats = yield self.application.db.get_player_stats(
+                                                    async = True)
+
+            deserialized_stats = {}
+            if serialized_stats is not None:
+                for result in serialized_stats:
+                    deserialized_stats[result[0]] = json.loads(result[1])
+
             self.write(self.response_handler.player_stats(
-                        self.application.db.get_player_stats()
+                        deserialized_stats
                     ))
 
         elif slug == "Select" and cids is not None:
@@ -551,9 +561,17 @@ class StatHandler(BaseHandler):
             except:
                 raise HTTPError(400)
 
-            # we have cids to get stats for
+            serialized_stats = yield self.application.db.get_player_stats(
+                                                    ids = cids,
+                                                    async = True)
+
+            deserialized_stats = {}
+            if serialized_stats is not None:
+                for result in serialized_stats:
+                    deserialized_stats[result[0]] = json.loads(result[1])
+
             self.write(self.response_handler.player_stats(
-                        self.application.db.get_player_stats(cids)
+                        deserialized_stats
                     ))
 
         elif slug == "Top":
@@ -565,7 +583,22 @@ class StatHandler(BaseHandler):
             except:
                 raise HTTPError(400)
 
+            cids_curs = yield self.application.db.get_top_players(stat = stat, 
+                                                    limit=limit,
+                                                    async = True)
+
+            cids = [ x[0] for x in cids_curs.fetchall() ]
+
+            deserialized_stats = {}
+            if len(cids) > 0:
+                serialized_stats = yield self.application.db.get_player_stats(
+                                                        ids = cids,
+                                                        async = True)
+
+                if serialized_stats is not None:
+                    for result in serialized_stats:
+                        deserialized_stats[result[0]] = json.loads(result[1])
+
             self.write(self.response_handler.top_player_stats(
-                        self.application.db.get_top_stats(
-                            stat = stat, limit = limit)
+                        deserialized_stats
                     ))

@@ -4,6 +4,8 @@ import json
 import psycopg2.extras
 from psycopg2.extras import Json
 
+import momoko
+
 from BaseInterfaces import BaseDatabaseInterface
 
 class PSQLDatabaseInterface(BaseDatabaseInterface):
@@ -20,8 +22,10 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
     finally:
         self._close_db_objects(cursor, conn)
     """
-    def __init__(self, db):
+    def __init__(self, db, async_db):
         BaseDatabaseInterface.__init__(self, db)
+
+        self.async_db = async_db
 
         self._indexable_stats = []
 
@@ -57,71 +61,82 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
         finally:
             self._close_db_objects(cursor, conn)
 
-    def get_player_stats(self, ids = None):
-        conn, cursor = self._get_db_objects()
-
-        # ids is a list of 64 bit steamids (i.e pug.players_list)
-        try:
-            query = """SELECT steamid, data
+    def get_player_stats(self, ids = None, async = False):
+        query = """SELECT steamid, data
                        FROM players"""
 
-            query_args = []
+        query_args = []
 
-            # if we have a list of ids, we want to filter to only select them
-            if ids is not None:
-                logging.debug("ids is not none, getting individual stats")
-                query += " WHERE steamid IN %s"
-                query_args.append(tuple(ids))
+        # if we have a list of ids, we want to filter to only select them
+        if ids is not None:
+            logging.debug("ids is not none, getting individual stats")
+            query += " WHERE steamid IN %s"
+            query_args.append(tuple(ids))
+
+        if async:
+            return momoko.Op(self.async_db.execute, query, query_args)
+
+        else:
+            conn, cursor = self._get_db_objects()
             
-            cursor.execute(query, query_args)
+            try:
+                cursor.execute(query, query_args)
 
-            results = cursor.fetchall()
-            stats = {}
+                results = cursor.fetchall()
+                stats = {}
 
-            if results:
-                for result in results:
-                    logging.debug("player stat row: %s", result)
-                    # result is tuple in the form (steamid, JSON string)
-                    # the pug manager expects a dict with steamid as the root
-                    # keys, and values of stat dicts. so we decode the json.
-                    stats[result[0]] = json.loads(result[1])
+                if results:
+                    for result in results:
+                        logging.debug("player stat row: %s", result)
+                        # result is tuple in the form (steamid, JSON string)
+                        # the pug manager expects a dict with steamid as the root
+                        # keys, and values of stat dicts. so we decode the json.
+                        stats[result[0]] = json.loads(result[1])
 
-            return stats
+                return stats
 
-        except:
-            logging.exception("An exception occurred getting stats for %s" % ids)
-            raise
+            except:
+                logging.exception("An exception occurred getting stats for %s",  
+                                  ids)
+                raise
 
-        finally:
-            self._close_db_objects(cursor, conn)
+            finally:
+                self._close_db_objects(cursor, conn)
 
-    def get_top_stats(self, stat, limit):
+    def get_top_players(self, stat, limit, async = False):
         """
-        We just get the top LIMIT CIDs based on the given stat and then call
-        get_player_stats to get the stats of the obtained players.
+        Get the top LIMIT CIDs based on the given stat
         """
-        conn, cursor = self._get_db_objects()
+        query = """SELECT steamid
+                   FROM players_index
+                   WHERE item = %s
+                   ORDER BY value DESC
+                   LIMIT %s"""
 
-        top_cids = None
-        try:
-            cursor.execute("""SELECT steamid
-                              FROM players_index
-                              WHERE item = %s
-                              ORDER BY value DESC
-                              LIMIT %s""", [ stat, limit ]);
+        query_args = [ stat, limit ]
 
-            results = cursor.fetchall()
+        if async:
+            return momoko.Op(self.async_db.execute, query, query_args)
 
-            top_cids = [ x[0] for x in results ]
+        else:
+            conn, cursor = self._get_db_objects()
 
-        except:
-            logging.exception("Exception getting top player stats")
-            raise
+            top_cids = None
+            try:
+                cursor.execute(query, query_args);
 
-        finally:
-            self._close_db_objects(cursor, conn)
+                results = cursor.fetchall()
 
-            return self.get_player_stats(ids = top_cids)
+                top_cids = [ x[0] for x in results ]
+
+                return top_cids
+
+            except:
+                logging.exception("Exception getting top player stats")
+                raise
+
+            finally:
+                self._close_db_objects(cursor, conn)
 
     def flush_player_stats(self, player_stats):
         conn, cursor = self._get_db_objects()

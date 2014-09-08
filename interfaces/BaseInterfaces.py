@@ -42,25 +42,31 @@ class BaseDatabaseInterface(object):
         """
         raise NotImplementedError("This must be implemented")
 
-    def get_player_stats(self, ids = None):
+    def get_player_stats(self, ids = None, async = False):
         """
         Gets stat info pertaining to the given list of 64bit SteamIDs. If no
         list is given, gets all stat data in the database.
 
         :param ids (optional) The list of 64bit IDs to get data for
+        :param async (optional) Whether to return a `tornado.gen.YieldPoint` or
+                                equivalent Future to run in a coroutine, or to 
+                                perform the query synchronously
 
         :return A dictionary of stats with respect to each individual ID
         """
         raise NotImplementedError("This must be implemented")
 
-    def get_top_stats(self, stat, limit):
+    def get_top_players(self, stat, limit):
         """
         Gets the top `limit` players for the given stat column.
 
         :param stat The stat column to filter on
         :param limit The maximum number of players to get
+        :param async (optional) Whether to return a `tornado.gen.YieldPoint` or
+                                equivalent Future to run in a coroutine, or to 
+                                perform the query synchronously
 
-        :return A dictionary of stats with respect to each ID
+        :return A list of 64bit SteamIDs in descending order based on stat
         """
         raise NotImplementedError("Not implemented")
 

@@ -535,46 +535,22 @@ class StatHandler(BaseHandler):
     """
     @gen.coroutine
     def get(self, slug):
-        #self.validate_request()
+        self.validate_request()
 
         routes = ("All", "Select", "Top")
         if slug not in routes:
             raise HTTPError(404)
 
         cids = self.get_argument("ids", None)
-        if slug == "All":
-            serialized_stats = yield self.application.db.get_player_stats(
-                                                    async = True)
-
-            deserialized_stats = {}
-            if serialized_stats is not None:
-                for result in serialized_stats:
-                    deserialized_stats[result[0]] = json.loads(result[1])
-
-            self.write(self.response_handler.player_stats(
-                        deserialized_stats
-                    ))
-
-        elif slug == "Select" and cids is not None:
+        if cids is not None:
             try:
                 cids = json.loads(cids)
             except:
                 raise HTTPError(400)
 
-            serialized_stats = yield self.application.db.get_player_stats(
-                                                    ids = cids,
-                                                    async = True)
+        serialized_stats = None
 
-            deserialized_stats = {}
-            if serialized_stats is not None:
-                for result in serialized_stats:
-                    deserialized_stats[result[0]] = json.loads(result[1])
-
-            self.write(self.response_handler.player_stats(
-                        deserialized_stats
-                    ))
-
-        elif slug == "Top":
+        if slug == "Top":
             stat = self.get_argument("stat", "rating")
             limit = self.get_argument("limit", 50)
             
@@ -589,16 +565,22 @@ class StatHandler(BaseHandler):
 
             cids = [ x[0] for x in cids_curs.fetchall() ]
 
-            deserialized_stats = {}
-            if len(cids) > 0:
-                serialized_stats = yield self.application.db.get_player_stats(
-                                                        ids = cids,
-                                                        async = True)
+        serialized_stats = yield self.application.db.get_player_stats(
+                                                ids = cids,
+                                                async = True)
 
-                if serialized_stats is not None:
-                    for result in serialized_stats:
-                        deserialized_stats[result[0]] = json.loads(result[1])
+        deserialized_stats = {}
+        if serialized_stats is not None:
+            for result in serialized_stats:
+                deserialized_stats[result[0]] = json.loads(result[1])
 
-            self.write(self.response_handler.top_player_stats(
+
+        if slug == "Top":
+            self.write(self.response_handler.top_player_stats(stat,
+                        deserialized_stats
+                    ))
+
+        if slug == "All" or slug == "Select":
+            self.write(self.response_handler.player_stats(
                         deserialized_stats
                     ))

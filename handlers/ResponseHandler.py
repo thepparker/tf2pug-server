@@ -1,6 +1,8 @@
 # The ResponseHandler handles all responses to API calls. Response codes
 # are the code sent along with packets to indicate what the packet is for.
 
+from collections import OrderedDict
+
 Response_None = 0 # for when shit goes completely wrong
 Response_PugListing = 1000
 Response_PugStatus = 1001
@@ -205,14 +207,24 @@ class ResponseHandler(object):
             "stats": stats
         }
 
-    def top_player_stats(self, stats):
+    def top_player_stats(self, sort_key, stats):
         """
-        Stats is a list of stat dicts with CID as the key. May need to be
-        sorted here.
+        Stats is a list of stat dicts with CID as the key. We should sort
+        the dict based on the given key
         """
+
+        # Sorted gives us a list of tuples (i.e sorted stats.items()), sorted
+        # in order of the sort key. We then convert this back to a dict using
+        # an OrderedDict so the new sort order is maintained.
+        sorted_stats = OrderedDict(sorted(stats.iteritems(), 
+                                          key = lambda x: x[1][sort_key],
+                                          reverse = True
+                                        )
+                                )
+
         return {
             "response": Response_TopPlayerStats,
-            "stats": stats
+            "stats": sorted_stats
         }
 
     def pug_status(self, pug):

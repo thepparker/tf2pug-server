@@ -103,7 +103,7 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
             finally:
                 self._close_db_objects(cursor, conn)
 
-    def get_top_players(self, stat, limit, async = False):
+    def get_top_players(self, stat, limit, offset = 0, async = False):
         """
         Get the top LIMIT CIDs based on the given stat
         """
@@ -111,9 +111,9 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
                    FROM players_index
                    WHERE item = %s
                    ORDER BY value DESC
-                   LIMIT %s"""
+                   OFFSET %s LIMIT %s"""
 
-        query_args = [ stat, limit ]
+        query_args = [ stat, offset, limit ]
 
         if async:
             return momoko.Op(self.async_db.execute, query, query_args)

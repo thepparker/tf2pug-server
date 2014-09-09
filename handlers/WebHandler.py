@@ -553,17 +553,28 @@ class StatHandler(BaseHandler):
         if slug == "Top":
             stat = self.get_argument("stat", "rating")
             limit = self.get_argument("limit", 50)
+            page = self.get_argument("page", 1)
             
             try:
                 limit = int(limit)
+                page = int(page)
             except:
                 raise HTTPError(400)
 
+            if page < 1:
+                page = 1;
+
             cids_curs = yield self.application.db.get_top_players(stat = stat, 
                                                     limit=limit,
+                                                    offset = (page-1)*limit,
                                                     async = True)
 
             cids = [ x[0] for x in cids_curs.fetchall() ]
+            if len(cids) == 0: 
+                #no more cids, or none found. write an empty response
+
+                self.write(self.response_handler.top_player_stats(stat, {}))
+                return
 
         serialized_stats = yield self.application.db.get_player_stats(
                                                 ids = cids,

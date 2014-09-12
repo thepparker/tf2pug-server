@@ -11,9 +11,6 @@ except:
     import json
 
 import tornado.web
-import tornado.escape
-# nasty hack to override the json module used by tornado
-tornado.escape.json = json
 
 from tornado.web import HTTPError
 from tornado import gen
@@ -40,6 +37,20 @@ class BaseHandler(tornado.web.RequestHandler):
         self._request_key = None
         self._request_token = None
         self._request_time = None
+
+    def write(self, chunk):
+        """
+        This method overrides the default RequestHandler.write method, and
+        uses our json module to JSON encode dictionaries. We do this so we
+        can use a faster implementation (such as ultrajson)
+        """
+
+        if isinstance(chunk, dict):
+            chunk = json.dumps(chunk)
+            self.set_header("Content-Type", "application/json; charset=UTF-8")
+
+        # chunk is encoded using our encoder, pass back to normal write method
+        super(BaseHandler, self).write(chunk)
 
     @property
     def manager(self):

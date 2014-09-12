@@ -27,7 +27,7 @@ class ManagerTestCase(unittest.TestCase):
         self.pool = psycopg2.pool.SimpleConnectionPool(minconn = 1, maxconn = 1,
             dsn = dsn)
 
-        self.db = PSQLDatabaseInterface(self.pool)
+        self.db = PSQLDatabaseInterface(self.pool, None)
         
         self.sm = ServerManager(1, self.db)
         self.bm = BanManager(self.db)

@@ -1,11 +1,19 @@
 import logging
-import json
 import time
 import hmac
 import hashlib
 import sys
 
+try:
+    import ujson as json
+except:
+    logging.info("Using inbuilt json module")
+    import json
+
 import tornado.web
+import tornado.escape
+# nasty hack to override the json module used by tornado
+tornado.escape.json = json
 
 from tornado.web import HTTPError
 from tornado import gen
@@ -536,7 +544,7 @@ class StatHandler(BaseHandler):
     """
     @gen.coroutine
     def get(self, slug):
-        self.validate_request()
+        #self.validate_request()
 
         routes = ("All", "Select", "Top")
         if slug not in routes:

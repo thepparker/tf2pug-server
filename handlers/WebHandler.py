@@ -531,7 +531,8 @@ class StatHandler(BaseHandler):
     A GET request to retrieve stats for an individual player, specific
     players, or all players.
 
-    :param ids (optional) A JSON encoded LIST of ids to get stats for
+    :param ids A JSON encoded LIST of ids to get stats for if the slug is
+               "Select"
     """
     @gen.coroutine
     def get(self, slug):
@@ -541,14 +542,13 @@ class StatHandler(BaseHandler):
         if slug not in routes:
             raise HTTPError(404)
 
-        cids = self.get_argument("ids", None)
-        if cids is not None:
+        cids = None
+        if slug == "Select":
+            cids = self.get_argument("ids")
             try:
                 cids = json.loads(cids)
             except:
                 raise HTTPError(400)
-
-        serialized_stats = None
 
         if slug == "Top":
             stat = self.get_argument("stat", "rating")
@@ -576,10 +576,12 @@ class StatHandler(BaseHandler):
                 self.write(self.response_handler.top_player_stats(stat, {}))
                 return
 
+        # now get the stats based on the obtained parameters
         serialized_stats = yield self.application.db.get_player_stats(
                                                 ids = cids,
                                                 async = True)
 
+        # deserialize the stats
         deserialized_stats = {}
         if serialized_stats is not None:
             for result in serialized_stats:
@@ -587,6 +589,7 @@ class StatHandler(BaseHandler):
 
 
         if slug == "Top":
+            # if top, we need to sort based on the given stat column
             self.write(self.response_handler.top_player_stats(stat,
                         deserialized_stats
                     ))

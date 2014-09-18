@@ -16,7 +16,7 @@ states = {
     "GAME_OVER": 6
 }
 
-MAPVOTE_DURATION = 2
+MAPVOTE_DURATION = 30
 AVAILABLE_MAPS = [ u"cp_granary", u"cp_badlands" ]
 
 # Raised when trying to start a map vote when the map has been forced

@@ -56,6 +56,7 @@ class Pug(object):
         self.custom_id = custom_id
         self.size = size
         self.state = states["GATHERING_PLAYERS"]
+        self._previous_state = self.state
         self.start_time = time.time()
 
         self.map = pmap
@@ -114,6 +115,9 @@ class Pug(object):
         self.player_stats[player_id] = pstats
         self._get_game_stats(player_id)
 
+        if self.state == states["REPLACEMENT_REQUIRED"]:
+            self.state = self._previous_state
+
     """
     Add a player to the specified team list. Player can also be a list, as
     per __allocate_players.
@@ -141,6 +145,13 @@ class Pug(object):
             # remove this player's stats
             del self.player_stats[player_id]
             del self.game_stats[player_id]
+
+            # if the game is in progress, we need to change the state to 
+            # replacement needed. we store the previous state so we can go
+            # back to it if we get a replacement
+            if self.state >= 1:
+                self._previous_state = self.state
+                self.state = states["REPLACEMENT_REQUIRED"]
 
         if player_id in self.player_votes:
             del self.player_votes[player_id]

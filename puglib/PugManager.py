@@ -375,6 +375,12 @@ class PugManager(object):
                 # from the internal list
                 self._end_pug(pug)
 
+            elif (pug.state == Pug.states["GATHERING_PLAYERS"] and
+                    ctime - pug.start_time > 1200):
+                # Pug has been looking for players for longer than 20 minutes,
+                # so we force end
+                
+                self._end_pug(pug)
 
     def _get_multi_player_stats(self, players):
         """

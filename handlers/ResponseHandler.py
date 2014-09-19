@@ -259,7 +259,6 @@ class ResponseHandler(object):
         del packet["_players"]
 
         # only stats we send are the game stats
-        del packet["player_stats"]
         del packet["end_stats"]
 
         packet["named_state"] = pug.get_state_string()

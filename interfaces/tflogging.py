@@ -27,13 +27,18 @@ game_over = re.compile(r'^L [0-9\/]+ - [0-9\:]+: World triggered "Game_Over" rea
 
 chat_message = re.compile(r'^L [0-9\/]+ - [0-9\:]+: "(.*?)<(\d+)><(.*?)><(Red|Blue|Spectator|Console)>" (say|say_team) "(.+)"$')
 
+player_kill = re.compile(r'^L [0-9\/]+ - [0-9\:]+: "(.*?)<(\d+)><(.*?)><(Red|Blue)>" killed "(.*?)<(\d+)><(.*?)><(Red|Blue)>" with "(.*?)" \x28attacker_position "(.*?)"\x29 \x28victim_position "(.*?)"\x29$')
+player_kill_special = re_compiler(r'^L [0-9\/]+ - [0-9\:]+: "(.*?)<(\d+)><(.*?)><(Red|Blue)>" killed "(.*?)<(\d+)><(.*?)><(Red|Blue)>" with "(.*?)" \x28customkill "(.*?)"\x29 \x28attacker_position "(.*?)"\x29 \x28victim_position "(.*?)"\x29$')
+player_assist = re.compile(r'^L [0-9\/]+ - [0-9\:]+: "(.*?)<(\d+)><(.*?)><(Red|Blue)>" triggered "kill assist" against "(.*?)<(\d+)><(.*?)><(Red|Blue)>" \x28assister_position "(.*?)"\x29 \x28attacker_position "(.*?)"\x29 \x28victim_position "(.*?)"\x29$')
+
 regex = {
     "round": (round_win, round_overtime, round_length, round_start, 
          round_setup_start, round_setup_end),
     "player_connection": (player_disconnect, player_connect, 
             player_validated),
     "team_score": (team_score, final_team_score, game_over),
-    "chat": (chat_message,)
+    "chat": (chat_message,),
+    "player_stat": (player_kill, player_kill_special, player_assist)
 }
 
 def check_regex_match(data):
@@ -100,7 +105,8 @@ class TFLogInterface(BaseLogInterface):
             "player_connection": self.__parse_player_connection,
             "round": self.__parse_round,
             "team_score": self.__parse_team_score,
-            "chat": self.__parse_chat
+            "chat": self.__parse_chat,
+            "player_stat": self.__parse_stat
         }
 
     def __verify_data(self, data):
@@ -239,3 +245,16 @@ class TFLogInterface(BaseLogInterface):
 
             elif cmd == "":
                 pass
+
+    def __parse_stat(self, match, expr):
+        if expr is player_kill or expr is player_kill_special:
+            attacker_cid = steamid_to_64bit(re_group(match, 3))
+            victim_cid = steamid_to_64bit(re_group(match, 7))
+
+            self.pug.update_game_stat(attacker_cid, "kills", 1)
+            self.pug.update_game_stat(victim_cid, "deaths", 1)
+
+        elif expr is player_assist:
+            assister_cid = steamid_to_64bit(re_group(match, 3))
+
+            self.pug.update_game_stat(assister_cid, "assists", 1)

@@ -69,10 +69,8 @@ class RconConnection(object):
         self._stream.connect((ip, port), self._auth)
 
     def _construct_packet(self, code, body):
-        #if len(body) > 510:
-        #    raise RconError("Command length too long. Length specified: %s, max length: %s" % (len(body), 510))
-
-        #packets are in the form dictated at https://developer.valvesoftware.com/wiki/Source_RCON_Protocol
+        #packets are in the form dictated at 
+        # https://developer.valvesoftware.com/wiki/Source_RCON_Protocol
         #<packet size><request id><request code><body string><empty string>
         #strings must be null terminated, even the empty one
 
@@ -81,12 +79,13 @@ class RconConnection(object):
 
         self.request_id += 1
 
-        #use little endian packing of ints, terminate body with a null, and add a null at the end for the empty string
-        packet = struct.pack('<l', self.request_id) + struct.pack('<l', code) + body.encode('ascii') + '\x00\x00'
+        # use little endian packing of ints, terminate body with a null,
+        # and add a null at the end for the empty string
+        packet = struct.pack('<l', self.request_id)
+        packet += struct.pack('<l', code) 
+        packet += body.encode('ascii') + '\x00\x00'
 
-        #add the packed length of the message body to the beginning of the packet
-        #logging.debug("Packet length: %s, packet: %s", len(packet), repr(packet))
-
+        # add packet length to the front of the packet
         packet = struct.pack('<l', len(packet)) + packet
 
         return packet
@@ -102,7 +101,7 @@ class RconConnection(object):
 
         def process_packet(packed_packet):
             #logging.debug("Processing packet: %s", repr(packed_packet))
-            #packet is in the form <id (packed int)><response code (packed int)><body>\x00\x00
+            #packet <id (packed int)><response code (packed int)><body>\x00\x00
             curr_packet_id = struct.unpack('<l', packed_packet[0:4])[0]
             response_code = struct.unpack('<l', packed_packet[4:8])[0]
             message = packed_packet[8:].strip('\x00') #strip the terminators
@@ -136,7 +135,8 @@ class RconConnection(object):
             raise self.error
 
         if not auth_sent:
-            auth_packet = self._construct_packet(SERVERDATA_AUTH, self.rcon_password)
+            auth_packet = self._construct_packet(SERVERDATA_AUTH, 
+                                                 self.rcon_password)
 
             # _auth will be called again once the auth packet has been sent
 
@@ -166,10 +166,11 @@ class RconConnection(object):
                 self._process_queue()
 
             else:
-                self.error = RconAuthError("Unknown packet id (%d) received when auth packet was expected with id %d" % (response[0], self.request_id))
-
+                self.error = RconAuthError("Expected packet id %d, got %d" % (
+                        response[0], self.request_id))
         else:
-            self.error = RconAuthError("Received unexpected response code when auth response was expected")
+            self.error = RconAuthError("Expected auth response, got %d" % (
+                        response[1]))
 
     def _exec(self, command, callback = None):
         """
@@ -191,7 +192,8 @@ class RconConnection(object):
             # to the stream's internal write queue
             packet = self._construct_packet(SERVERDATA_COMMAND_RESPONSE, r'')
 
-            f = partial(self._command_sent_callback, handle_callback = callback)
+            f = partial(self._command_sent_callback, 
+                        handle_callback = callback)
             self._send_packet(packet, f)
 
     def _command_sent_callback(self, handle_callback = None):
@@ -204,10 +206,12 @@ class RconConnection(object):
         """
         
         # begin reading
-        f = partial(self._handle_multi_packet_read, complete_callback = handle_callback)
+        f = partial(self._handle_multi_packet_read, 
+                    complete_callback = handle_callback)
         self._read_single_packet(f)
 
-    def _handle_multi_packet_read(self, data, previous = None, complete_callback = None):
+    def _handle_multi_packet_read(self, data, previous = None, 
+                                  complete_callback = None):
         # data is a tuple in the form (id, code, message)
 
         if previous is None:
@@ -236,9 +240,11 @@ class RconConnection(object):
                     packet_id == self.request_id):
 
                     if got_mirror_packet and message == '\x01':
-                        # have already gotten mirror packet, so this packet is the
-                        # expected packet after the mirror, with body of \x01. 
-                        # therefore, our response is complete!
+                        """
+                        Have already gotten mirror packet, so this packet is
+                        the expected packet after the mirror, with body of \x01
+                        Therefore, our response is complete!
+                        """
 
                         response_complete = True
                     else:
@@ -254,7 +260,10 @@ class RconConnection(object):
 
             elif not response_complete:
                 # response not complete, get the next packet
-                f = partial(self._handle_multi_packet_read, previous = previous, complete_callback = complete_callback)
+                f = partial(self._handle_multi_packet_read, 
+                            previous = previous, 
+                            complete_callback = complete_callback)
+
                 self._read_single_packet(f)
 
     def _compile_multi_packet(self, packets):
@@ -283,7 +292,7 @@ class RconConnection(object):
             # we're already reading/writing from the socket. this command
             # should be queued. the queue is processed at the end of a
             # read cycle
-            logging.debug("Stream is busy or we are not authed. Adding command to queue")
+            logging.debug("Stream is busy. Adding command to queue")
             self._add_to_queue((command, callback))
 
         else:
@@ -303,19 +312,20 @@ class RconConnection(object):
         logging.debug("Processing RCON command queue")
         try:
             command, callback = self._queue.popleft()
-            logging.debug("QUEUE - command: %s, callback: %s", command, callback)
+            logging.debug("QUEUE - command: %s, callback: %s", command, 
+                          callback)
 
             self.send_cmd(command, callback)
         except IndexError:
             pass
+
         except:
-            logging.exception("Unknown exception occurred whilst attempting to process queue")
+            logging.exception("Exception processing queue")
 
     def busy(self):
         return (self._stream.reading() 
                 or self._stream.writing()
                 or self._busy)
-
 
     @property
     def closed(self):

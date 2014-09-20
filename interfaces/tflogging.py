@@ -36,7 +36,8 @@ regex = {
          round_setup_start, round_setup_end),
     "player_connection": (player_disconnect, player_connect, 
             player_validated),
-    "team_score": (team_score, final_team_score, game_over),
+    "team_score": (team_score, final_team_score),
+    "game_event": (game_over,),
     "chat": (chat_message,),
     "player_stat": (player_kill, player_kill_special, player_assist)
 }
@@ -105,6 +106,7 @@ class TFLogInterface(BaseLogInterface):
             "player_connection": self.__parse_player_connection,
             "round": self.__parse_round,
             "team_score": self.__parse_team_score,
+            "game_event": self.__parse_game_event,
             "chat": self.__parse_chat,
             "player_stat": self.__parse_stat
         }
@@ -176,13 +178,12 @@ class TFLogInterface(BaseLogInterface):
         if expr is round_win:
             # do what?
             pass
+
         elif expr is round_start:
             # if first round_start event and the pug hasn't technically
             # started, let's start it!
             if not self.pug.game_started:
                 self.start_game()
-
-        pass
 
     def __parse_player_connection(self, match, expr):
         if expr is player_connect:
@@ -216,7 +217,8 @@ class TFLogInterface(BaseLogInterface):
 
             self.update_score(team, score)
 
-        elif expr is game_over:
+    def __parse_game_event(self, match, expr):
+        if expr is game_over:
             # game is over!
             self.end_game()
 
@@ -247,6 +249,9 @@ class TFLogInterface(BaseLogInterface):
                 pass
 
     def __parse_stat(self, match, expr):
+        if not self.pug.game_started:
+            return
+            
         if expr is player_kill or expr is player_kill_special:
             attacker_cid = steamid_to_64bit(re_group(match, 3))
             victim_cid = steamid_to_64bit(re_group(match, 7))

@@ -33,6 +33,11 @@ class PlayerStats(dict):
     objects (such as the parser), and they will be reflected in this object
     without us needing to do anything special.
     """
+
+    # special stats are stats that are not incremented in update_end_stats,
+    # they are set to whatever value is in the game stats dict
+    SPECIAL_STATS = ("rating", "winstreak")
+
     def __init__(self, *args, **kwargs):
         # Set the base stats, and then super to restore any stats from the
         # database
@@ -364,35 +369,53 @@ class Pug(object):
             team_score = self.game_scores[player_team]
             oppo_score = self.game_scores[opposition[player_team]]
 
-            if team_score > oppo_score: # this player won!
-                self.game_stats[cid]["wins"] = 1
-            elif team_score < oppo_score: # player lost
-                self.game_stats[cid]["losses"] = 1
-            else: # draw
-                self.game_stats[cid]["draws"] = 1
+            game_stat = self.game_stats[cid]
+            endgame = self.end_stats[cid]
+            pregame = self.player_stats[cid]
 
-            self.game_stats[cid]["games_played"] = 1
+            if team_score > oppo_score: # this player won!
+                game_stat["wins"] = 1
+
+                # adjust win streak
+                if pregame["winstreak"] < 0:
+                    game_stat["winstreak"] = 1
+                else:
+                    game_stat["winstreak"] = pregame["winstreak"] + 1
+
+            elif team_score < oppo_score: # player lost
+                game_stat["losses"] = 1
+
+                if pregame["winstreak"] < 0:
+                    game_stat["winstreak"] = pregame["winstreak"] - 1
+                else:
+                    game_stat["winstreak"] = -1
+
+            else: # draw
+                game_stat["draws"] = 1
+                game_stat["winstreak"] = 0
+
+            game_stat["games_played"] = 1
 
             if cid not in self.medics.values():
-                self.game_stats[cid]["games_since_medic"] = 1
+                game_stat["games_since_medic"] = 1
 
             # update all other stats
             if cid not in self.player_stats: # don't have player pre-game stats
-                self.end_stats[cid] = self.game_stats[cid]
+                self.end_stats[cid] = game_stat
                 continue
+                
             else:
                 self.end_stats[cid] = PlayerStats()
 
-            endgame = self.end_stats[cid]
-            pregame = self.player_stats[cid]
-            for stat, value in self.game_stats[cid].iteritems():
+            for stat, value in game_stat.iteritems():
                 # if the stat existed before the game, just add to it. else,
                 # we set it as new
-                if stat == "rating":
-                    continue
+                if stat in PlayerStats.SPECIAL_STATS:
+                    endgame[stat] = value
 
-                if stat in pregame:
+                elif stat in pregame:
                     endgame[stat] = pregame[stat] + value
+
                 else:
                     endgame[stat] = value
 

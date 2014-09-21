@@ -370,7 +370,6 @@ class Pug(object):
             oppo_score = self.game_scores[opposition[player_team]]
 
             game_stat = self.game_stats[cid]
-            endgame = self.end_stats[cid]
             pregame = self.player_stats[cid]
 
             if team_score > oppo_score: # this player won!
@@ -406,6 +405,8 @@ class Pug(object):
 
             else:
                 self.end_stats[cid] = PlayerStats()
+
+            endgame = self.end_stats[cid]
 
             for stat, value in game_stat.iteritems():
                 # if the stat existed before the game, just add to it. else,

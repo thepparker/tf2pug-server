@@ -175,6 +175,9 @@ class BaseLogInterface(object):
         self.pug.update_score(team, score)
 
     def print_teams(self):
+        if not self.pug.teams_done:
+            return
+            
         self.server.print_teams()
 
     def kick_player(self, sid, reason):

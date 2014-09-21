@@ -12,9 +12,9 @@ from BaseInterfaces import BaseLogInterface
 
 round_win = re.compile(r'^L [0-9\/]+ - [0-9\:]+: World triggered "Round_Win" \x28winner "(Blue|Red)"\x29$')
 round_overtime = re.compile(r'^L [0-9\/]+ - [0-9\:]+: World triggered "Round_Overtime"$')
-round_length = re.compile(r'^L [0-9\/]+ - [0-9\:]+: World triggered "Round_length" \x28seconds "(\d+)\.(\d+)"\x29$')
+round_length = re.compile(r'^L [0-9\/]+ - [0-9\:]+: World triggered "Round_Length" \x28seconds "(\d+)\.(\d+)"\x29$')
 round_start = re.compile(r'^L [0-9\/]+ - [0-9\:]+: World triggered "Round_Start"$')
-round_setup_start = re.compile(r'^L [0-9\/]+ - [0-9\:]+: World triggered "Round_Setup_Begin$"')
+round_setup_start = re.compile(r'^L [0-9\/]+ - [0-9\:]+: World triggered "Round_Setup_Begin"$')
 round_setup_end = re.compile(r'^L [0-9\/]+ - [0-9\:]+: World triggered "Round_Setup_End"$')
 
 player_connect = re.compile(r'^L [0-9\/]+ - [0-9\:]+: "(.*?)<(\d+)><(.*?)><>" connected, address "(.*?):(.*?)"$')
@@ -23,6 +23,7 @@ player_validated = re.compile(r'^L [0-9\/]+ - [0-9\:]+: "(.*?)<(\d+)><(.*?)><>" 
 
 team_score = re.compile(r'^L [0-9\/]+ - [0-9\:]+: Team "(Blue|Red)" current score "(\d+)" with "(\d+)" players$')
 final_team_score = re.compile(r'^L [0-9\/]+ - [0-9\:]+: Team "(Blue|Red)" final score "(\d+)" with "(\d+)" players$')
+
 game_over = re.compile(r'^L [0-9\/]+ - [0-9\:]+: World triggered "Game_Over" reason "(.*?)"$')
 
 chat_message = re.compile(r'^L [0-9\/]+ - [0-9\:]+: "(.*?)<(\d+)><(.*?)><(Red|Blue|Spectator|Console)>" (say|say_team) "(.+)"$')
@@ -76,7 +77,7 @@ def steamid_to_64bit(steam_id):
             auth_id = int(steam_id_tok[2])
             
             account_id = auth_id * 2 #multiply auth id by 2
-            account_id += auth_server #add the auth server. even ids are on server 0, odds on server 1
+            account_id += auth_server #add the auth server
 
     elif "[U:1:" in steam_id:
         # steamid is [U:1:####]. All we need to do is get the #### out and add
@@ -88,7 +89,8 @@ def steamid_to_64bit(steam_id):
         raise ValueError("Invalid SteamID: '%s'" % steam_id)    
 
     if not bool(account_id):
-        raise ValueError("Invalid SteamID: '%s' gives AccountID '%d'" % (steam_id, account_id))
+        raise ValueError("Invalid SteamID: '%s' gives AccountID '%d'" % (
+                         steam_id, account_id))
 
     # Have non-zero account id. Add the community ID modifier
     community_id = account_id + cm_modifier #add arbitrary number chosen by valve
@@ -103,19 +105,19 @@ class TFLogInterface(BaseLogInterface):
         self._secret = None
 
         self._dispatch = {
-            "player_connection": self.__parse_player_connection,
-            "round": self.__parse_round,
-            "team_score": self.__parse_team_score,
-            "game_event": self.__parse_game_event,
-            "chat": self.__parse_chat,
-            "player_stat": self.__parse_stat
+            "player_connection": self._parse_player_connection,
+            "round": self._parse_round,
+            "team_score": self._parse_team_score,
+            "game_event": self._parse_game_event,
+            "chat": self._parse_chat,
+            "player_stat": self._parse_stat
         }
 
-    def __verify_data(self, data):
+    def _verify_data(self, data):
         # check if we're using a secret
         if self._using_secret or data[0] == "S":
             self._using_secret = True
-            secret = mod_data[1:mod_data.find(" ")-1]
+            secret = data[1:data.find(" ")-1]
             
             if self._secret is None:
                 self._secret = secret
@@ -148,7 +150,7 @@ class TFLogInterface(BaseLogInterface):
         # Null byte is stripped. Now we just remove leading \xFF and trailing \n
         mod_data = mod_data.lstrip("\xFF").rstrip()
 
-        if self.__verify_data(mod_data):
+        if self._verify_data(mod_data):
             # mod_data is now in the form RL ..., or S<>L ..., we want it to
             # just be L ...
             # could also use mod_data.split(" ", 1)[1]
@@ -162,6 +164,7 @@ class TFLogInterface(BaseLogInterface):
         match_found = check_regex_match(data)
         if match_found is None:
             logging.debug("No regex match for: %s", data)
+            return
 
         group, match, expr = match_found
 
@@ -172,9 +175,13 @@ class TFLogInterface(BaseLogInterface):
             raise NotImplementedError("Dispatch method is not implemented for %s" % group)
 
         method = self._dispatch[group]
+
+        logging.debug("Data matches group \"%s\". Method: \"%s\"", group, 
+                      method)
+
         method(match, expr)
 
-    def __parse_round(self, match, expr):
+    def _parse_round(self, match, expr):
         if expr is round_win:
             # do what?
             pass
@@ -185,7 +192,7 @@ class TFLogInterface(BaseLogInterface):
             if not self.pug.game_started:
                 self.start_game()
 
-    def __parse_player_connection(self, match, expr):
+    def _parse_player_connection(self, match, expr):
         if expr is player_connect:
             # check if the player id is in the pug player list. if not, kick
             # them (if we're not looking for a replacement...?)
@@ -203,7 +210,7 @@ class TFLogInterface(BaseLogInterface):
         elif expr is player_disconnect:
             pass
 
-    def __parse_team_score(self, match, expr):
+    def _parse_team_score(self, match, expr):
         if expr is team_score:
             team = re_group(match, 1).lower()
             score = re_group(match, 2)
@@ -217,13 +224,12 @@ class TFLogInterface(BaseLogInterface):
 
             self.update_score(team, score)
 
-    def __parse_game_event(self, match, expr):
+    def _parse_game_event(self, match, expr):
         if expr is game_over:
             # game is over!
             self.end_game()
 
-    def __parse_chat(self, match, expr):
-        # this is the fun part............................................
+    def _parse_chat(self, match, expr):
         if expr is chat_message:
             sid = re_group(match, 3)
 
@@ -248,7 +254,7 @@ class TFLogInterface(BaseLogInterface):
             elif cmd == "":
                 pass
 
-    def __parse_stat(self, match, expr):
+    def _parse_stat(self, match, expr):
         if not self.pug.game_started:
             return
 

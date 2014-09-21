@@ -53,7 +53,9 @@ class Server(object):
         self.rcon("tv_port", callback = cb)        
 
     def rcon(self, msg, *args, **kwargs):
-        if not self.rcon_connection or self.rcon_connection.closed:
+        if (not self.rcon_connection or 
+          (self.rcon_connection and self.rcon_connection.closed)):
+
             self.rcon_connection = Rcon.RconConnection(self.ip, self.port, self.rcon_password)
 
         command = msg
@@ -98,7 +100,7 @@ class Server(object):
         self.rcon("changelevel %s", self.pug.map)
 
     def start_game(self, start_time = 10):
-        if not pug.live:
+        if not self.pug.game_started:
             self.rcon("!!! The game is starting in %(st)s !!!; mp_restartgame %(st)s", 
                         { 
                             "st": start_time

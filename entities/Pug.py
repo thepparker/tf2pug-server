@@ -403,7 +403,7 @@ class Pug(object):
             if cid not in self.player_stats: # don't have player pre-game stats
                 self.end_stats[cid] = game_stat
                 continue
-                
+
             else:
                 self.end_stats[cid] = PlayerStats()
 
@@ -534,7 +534,7 @@ class Pug(object):
 
     @property
     def game_started(self):
-        return self.state == states["GAME_STARTED"]
+        return self.state >= states["GAME_STARTED"]
 
     @property
     def game_over(self):

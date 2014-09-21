@@ -182,7 +182,7 @@ def test_update_game_stats():
 def test_update_end_stats():
     print "Testing end of game stat update"
     pug = Pug.Pug()
-    start = PlayerStats(kills = 1, deaths = 1, losses = 1)
+    start = PlayerStats(kills = 1, deaths = 1, losses = 1, winstreak = 2)
     pug.add_player(1L, "1", start)
 
     pug.update_game_stat(1L, "kills", 1)
@@ -192,10 +192,10 @@ def test_update_end_stats():
     pug._add_to_team("blue", 1L)
 
     game = PlayerStats(kills = 1, deaths = 1, wins = 1, games_played = 1,
-                       games_since_medic = 1)
+                       games_since_medic = 1, winstreak = 3)
 
     end = PlayerStats(kills = 2, deaths = 2, wins = 1, losses = 1,
-                      games_played = 1, games_since_medic = 1)
+                      games_played = 1, games_since_medic = 1, winstreak = 3)
 
     pug.update_end_stats()
 

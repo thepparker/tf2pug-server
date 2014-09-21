@@ -115,7 +115,7 @@ class Server(object):
         self._end_listener()
 
     def kick_player(self, steamid, reason = "Good bye"):
-        self.rcon("kickid %s %s", steamid, reason)
+        self.rcon("kickid \"%s\" \"%s\"", steamid, reason)
 
     def print_teams(self):
         teams = self.pug.named_teams()

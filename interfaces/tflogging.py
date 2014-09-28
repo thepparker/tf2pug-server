@@ -26,11 +26,13 @@ final_team_score = re.compile(r'^L [0-9\/]+ - [0-9\:]+: Team "(Blue|Red)" final 
 
 game_over = re.compile(r'^L [0-9\/]+ - [0-9\:]+: World triggered "Game_Over" reason "(.*?)"$')
 
-chat_message = re.compile(r'^L [0-9\/]+ - [0-9\:]+: "(.*?)<(\d+)><(.*?)><(Red|Blue|Spectator|Console)>" (say|say_team) "(.+)"$')
+chat_message = re.compile(r'^L [0-9\/]+ - [0-9\:]+: "(.*?)<(\d+)><(.*?)><(Red|Blue|Spectator|Console)>" (say|say_team) "(.*)"$')
 
 player_kill = re.compile(r'^L [0-9\/]+ - [0-9\:]+: "(.*?)<(\d+)><(.*?)><(Red|Blue)>" killed "(.*?)<(\d+)><(.*?)><(Red|Blue)>" with "(.*?)" \x28attacker_position "(.*?)"\x29 \x28victim_position "(.*?)"\x29$')
 player_kill_special = re.compile(r'^L [0-9\/]+ - [0-9\:]+: "(.*?)<(\d+)><(.*?)><(Red|Blue)>" killed "(.*?)<(\d+)><(.*?)><(Red|Blue)>" with "(.*?)" \x28customkill "(.*?)"\x29 \x28attacker_position "(.*?)"\x29 \x28victim_position "(.*?)"\x29$')
 player_assist = re.compile(r'^L [0-9\/]+ - [0-9\:]+: "(.*?)<(\d+)><(.*?)><(Red|Blue)>" triggered "kill assist" against "(.*?)<(\d+)><(.*?)><(Red|Blue)>" \x28assister_position "(.*?)"\x29 \x28attacker_position "(.*?)"\x29 \x28victim_position "(.*?)"\x29$')
+
+unity_report = re.compile(r'^L [0-9\/]+ - [0-9\:]+: "{"token":"REPORT","data":{"reported":"(.*)","reporter":"(.*)","reason":"(.*)","matchId":(\d)}}"')
 
 regex = {
     "round": (round_win, round_overtime, round_length, round_start, 
@@ -41,6 +43,7 @@ regex = {
     "game_event": (game_over,),
     "chat": (chat_message,),
     "player_stat": (player_kill, player_kill_special, player_assist)
+    "report": (unity_report,)
 }
 
 def check_regex_match(data):
@@ -110,7 +113,8 @@ class TFLogInterface(BaseLogInterface):
             "team_score": self._parse_team_score,
             "game_event": self._parse_game_event,
             "chat": self._parse_chat,
-            "player_stat": self._parse_stat
+            "player_stat": self._parse_stat,
+            "report": self._parse_report
         }
 
     def _verify_data(self, data):
@@ -269,3 +273,15 @@ class TFLogInterface(BaseLogInterface):
             assister_cid = steamid_to_64bit(re_group(match, 3))
 
             self.pug.update_game_stat(assister_cid, "assists", 1)
+
+    def _parse_report(self, match, expr):
+        if expr is unity_report:
+            reporter = re_group(match, 2)
+            reported = re_group(match, 1)
+
+            reason = re_group(match, 3)
+
+            match_id = re_group(match, 4)
+
+            # TODO: Utilize some sort of (as of yet undefined) API to store
+            # this report...

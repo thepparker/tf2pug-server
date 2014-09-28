@@ -157,6 +157,13 @@ class RegexTestCase(unittest.TestCase):
 
         self.check_group_match(strings, "player_stat")
 
+    def test_unity_report_regex(self):
+        s1 = 'L 10/01/2012 - 21:38:54: "{"token":"REPORT","data":{"reported":"STEAM_1:1:1","reporter":"STEAM_1:1:2","reason":"CHEATING","matchId":2}}"'
+
+        strings = [ s1 ]
+
+        self.check_group_match(strings, "report")
+
 class ConnectTestCase(LoggingTestCase):
     def test_valid_connect(self):
         msg = 'RL 10/01/2012 - 22:07:32: "1<0><[U:1:1]><>" connected, address "1.1.1.1:12345"'

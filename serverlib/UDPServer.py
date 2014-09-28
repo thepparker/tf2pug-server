@@ -43,6 +43,7 @@ class UDPServer(object):
         if not first:
             self._callback(data)
 
+
         # if we're finished, HALT!
         if self._stop:
             return

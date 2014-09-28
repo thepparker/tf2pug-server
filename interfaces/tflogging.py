@@ -42,8 +42,8 @@ regex = {
     "team_score": (team_score, final_team_score),
     "game_event": (game_over,),
     "chat": (chat_message,),
-    "player_stat": (player_kill, player_kill_special, player_assist)
-    "report": (unity_report,)
+    "player_stat": (player_kill, player_kill_special, player_assist),
+    "report": (unity_report,),
 }
 
 def check_regex_match(data):

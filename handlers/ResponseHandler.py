@@ -291,6 +291,9 @@ class ResponseHandler(object):
             if player_id in pug.player_stats:
                 player = dict(player.items() + pug.player_stats[player_id].items())
 
+            if not ("rank" in player):
+                player["rank"] = None
+
             player_list.append(player)
 
         return player_list

@@ -514,8 +514,8 @@ class Pug(object):
         Used by pug manager when updating ratings to set the player's new
         rating after the game.
         """
-        if player_id in self.end_stats:
-            self.end_stats[player_id]["rating"] = rating
+        if player_id in self.game_stats:
+            self.game_stats[player_id]["rating"] = rating
 
     @staticmethod
     def map_available(map_name):

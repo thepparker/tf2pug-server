@@ -1,7 +1,5 @@
 # This is the PUG manager library for TF2Pug. It handles pug creation, user
 # management and server management.
-#
-# The methods provided in this class are used by the API server
 
 import logging
 import time
@@ -206,8 +204,9 @@ class PugManager(object):
 
         # if pug is already in game_over state, update ratings & flush stats
         if pug.state == Pug.states["GAME_OVER"]:
-            pug.update_end_stats()
             self.__update_ratings(pug)
+            
+            pug.update_end_stats()
             self.__flush_pug_stats(pug)
             
         # set to game over so we never load this pug again if forced end

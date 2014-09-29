@@ -1,5 +1,9 @@
 import logging
-import json
+
+try:
+    import ujson as json
+except ImportError:
+    import json
 
 import psycopg2.extras
 from psycopg2.extras import Json
@@ -62,8 +66,8 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
             self._close_db_objects(cursor, conn)
 
     def get_player_stats(self, ids = None, async = False):
-        query = """SELECT steamid, data
-                       FROM players"""
+        query = """SELECT steamid, stats, rank
+                   FROM player_ranking"""
 
         query_args = []
 
@@ -83,17 +87,8 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
                 cursor.execute(query, query_args)
 
                 results = cursor.fetchall()
-                stats = {}
 
-                if results:
-                    for result in results:
-                        logging.debug("player stat row: %s", result)
-                        # result is tuple in the form (steamid, JSON string)
-                        # the pug manager expects a dict with steamid as the root
-                        # keys, and values of stat dicts. so we decode the json.
-                        stats[result[0]] = json.loads(result[1])
-
-                return stats
+                return self.deserialize_player_stats(results)
 
             except:
                 logging.exception("An exception occurred getting stats for %s",  
@@ -103,17 +98,32 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
             finally:
                 self._close_db_objects(cursor, conn)
 
+    def deserialize_player_stats(self, results):
+        return _deserialize_player_stats(results)
+
     def get_top_players(self, stat, limit, offset = 0, async = False):
         """
         Get the top LIMIT CIDs based on the given stat
         """
-        query = """SELECT steamid
-                   FROM players_index
-                   WHERE item = %s
-                   ORDER BY value DESC
-                   OFFSET %s LIMIT %s"""
+        query = None
+        query_args = []
 
-        query_args = [ stat, offset, limit ]
+        if stat == "rating":
+            query = """SELECT steamid
+                       FROM player_ranking
+                       ORDER BY rank ASC
+                       OFFSET %s LIMIT %s"""
+
+            query_args = [ offset, limit ]
+
+        else:
+            query = """SELECT steamid
+                       FROM players_index
+                       WHERE item = %s
+                       ORDER BY value DESC
+                       OFFSET %s LIMIT %s"""
+
+            query_args = [ stat, offset, limit ]
 
         if async:
             return momoko.Op(self.async_db.execute, query, query_args)
@@ -260,7 +270,7 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
                 if results:
                     pugs = [ jsoninterface.loads(x[0], x[1]) for x in results ]
                 
-                # results is a list of Pug objects, converted using the jsoninterface
+            # pugs is a list of Pug objects, converted using the jsoninterface
 
             return pugs
 
@@ -478,3 +488,26 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
         if conn:
             conn.rollback() # rollback to the latest safe point just in case
             self.db.putconn(conn) # put the connection back into the database pool
+
+def _deserialize_player_stats(results):
+    """
+    A helper method for deserializing player stats
+    """
+    stats = {}
+
+    if results is not None:
+        for result in results:
+            """
+            Result is tuple in the form (steamid, JSON string, rank (int)).
+            All methods using stats expect a dict with steamid as the key,
+            and stats as the value. Rank is inserted into the stats by us,
+            and is not stored in the JSON string.
+            """
+
+            #logging.debug("Player stat row: %s", result)
+
+            cid = result[0]
+            stats[cid] = json.loads(result[1])
+            stats[cid]["rank"] = result[2]
+
+    return stats

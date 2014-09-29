@@ -570,7 +570,7 @@ class StatHandler(BaseHandler):
                 raise HTTPError(400)
 
         if slug == "Top":
-            stat = self.get_argument("stat", "rating")
+            stat = self.get_argument("stat", "rating").lower()
             limit = self.get_argument("limit", 50)
             page = self.get_argument("page", 1)
             
@@ -601,10 +601,9 @@ class StatHandler(BaseHandler):
                                                 async = True)
 
         # deserialize the stats
-        deserialized_stats = {}
-        if serialized_stats is not None:
-            for result in serialized_stats:
-                deserialized_stats[result[0]] = json.loads(result[1])
+        deserialized_stats = self.application.db.deserialize_player_stats(
+                                    serialized_stats
+                                )
 
 
         if slug == "Top":

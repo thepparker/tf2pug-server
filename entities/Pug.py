@@ -74,10 +74,12 @@ class Pug(object):
         self.admin = None
         #players is a dict in the form { cid: "name", ... }
         self._players = {}
+        self.player_restriction = restriction # rating restriction
+
         self.player_stats = {} # stats before game
         self.game_stats = {} # stats obtained during this pug
         self.end_stats = {} # stats after game
-        self.player_restriction = restriction # rating restriction
+        self.stats_done = False
 
         self.player_votes = {}
         self.map_vote_start = -1
@@ -87,6 +89,8 @@ class Pug(object):
 
         self.server = None
         self.server_id = -1
+
+        self.game_over_time = 0
 
         self.teams = {
             "red": set(),
@@ -351,7 +355,12 @@ class Pug(object):
     def end_game(self):
         self.state = states["GAME_OVER"]
 
+        self.game_over_time = time.time()
+
     def update_end_stats(self):
+        if self.stats_done:
+            return
+
         # merge the game stats with the pre-game stats to get player's new
         # total stats
 
@@ -424,6 +433,8 @@ class Pug(object):
         for medic in self.medics.values():
             if medic in self.end_stats:
                 self.end_stats[medic]["games_since_medic"] = 0
+
+        self.stats_done = True
 
     def has_player(self, player_id):
         return player_id in self._players

@@ -202,13 +202,6 @@ class PugManager(object):
         # also closes the logging socket
         self.server_manager.reset(pug.server)
 
-        # if pug is already in game_over state, update ratings & flush stats
-        if pug.state == Pug.states["GAME_OVER"]:
-            self.__update_ratings(pug)
-            
-            pug.update_end_stats()
-            self.__flush_pug_stats(pug)
-            
         # set to game over so we never load this pug again if forced end
         pug.state = Pug.states["GAME_OVER"]
 
@@ -372,7 +365,16 @@ class PugManager(object):
                 # game is over! we need to update player rating based on the
                 # results, flush the pug one final time, and then remove pug
                 # from the internal list
-                self._end_pug(pug)
+                if not pug.stats_done:
+                    self.__update_ratings(pug)
+                
+                    pug.update_end_stats()
+                    self.__flush_pug_stats(pug)
+
+                # 10 second grace period for clients to update with the end
+                # stats before we flush and forget
+                if ctime - pug.game_over_time > 10:
+                    self._end_pug(pug)
 
             elif (pug.state == Pug.states["GATHERING_PLAYERS"] and
                     ctime - pug.start_time > 1200):

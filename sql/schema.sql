@@ -50,6 +50,18 @@ CREATE TABLE players_index (steamid bigint references players(steamid) ON UPDATE
 CREATE TRIGGER update_players_modtime BEFORE UPDATE ON players
   FOR EACH ROW EXECUTE PROCEDURE update_modified_time();
 
+-- DROP VIEW IF EXISTS player_ranking;
+CREATE VIEW player_ranking AS 
+  SELECT row_number() OVER (ORDER BY pstats.value desc) as rank, 
+         pstats.steamid, pstats.data as stats
+  FROM (
+        SELECT p.steamid, p.data, pi.value
+        FROM 
+            players p JOIN players_index pi ON p.steamid = pi.steamid 
+        WHERE pi.item = 'rating' 
+        ORDER BY pi.value DESC
+      ) as pstats;
+
 -- Bans. We store ban time as an int (epoch in UTC+0 time), and
 -- duration as an int (ban duration in seconds), so we know the ban is expired
 -- when current_epoch (UTC+0) > (ban_start_time + ban_duration). Ban expiration

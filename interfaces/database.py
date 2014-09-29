@@ -165,6 +165,10 @@ class PSQLDatabaseInterface(BaseDatabaseInterface):
                               FROM players 
                               WHERE steamid IN %s""", (tuple(cids),))
 
+            for s in player_stats:
+                if "rank" in player_stats[s]:
+                    del player_stats[s]["rank"]
+
             results = cursor.fetchall()
             # populate existing with the steamids that are already in the
             # table. these ids we will simply update

@@ -166,6 +166,9 @@ class Pug(object):
             del self.player_votes[player_id]
 
     def begin_map_vote(self):
+        if self.state > states["MAPVOTE_COMPLETED"]:
+            return
+
         if self.map_forced:
             self.state = states["MAPVOTE_COMPLETED"]
 

@@ -217,14 +217,14 @@ class TFLogInterface(BaseLogInterface):
     def _parse_team_score(self, match, expr):
         if expr is team_score:
             team = re_group(match, 1).lower()
-            score = re_group(match, 2)
+            score = int(re_group(match, 2))
 
             self.update_score(team, score)
 
         elif expr is final_team_score:
             # final update, make sure scores are correct
             team = re_group(match, 1).lower()
-            score = re_group(match, 2)
+            score = int(re_group(match, 2))
 
             self.update_score(team, score)
 

@@ -353,7 +353,11 @@ class Pug(object):
             pass
 
     def update_score(self, team, score):
-        self.game_scores[team] = score
+        try:
+            score = int(score)
+            self.game_scores[team] = score
+        except:
+            pass
 
     def end_game(self):
         self.state = states["GAME_OVER"]

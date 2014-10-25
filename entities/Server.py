@@ -101,7 +101,7 @@ class Server(object):
 
     def start_game(self, start_time = 10):
         if not self.pug.game_started:
-            self.rcon("!!! The game is starting in %(st)s !!!; mp_restartgame %(st)s", 
+            self.rcon("say !!! The game is starting in %(st)s !!!; mp_restartgame %(st)s", 
                         { 
                             "st": start_time
                         })

@@ -6,7 +6,7 @@ import threading
 import socket
 import logging
 
-#logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
 
 from interfaces import get_log_interface, tflogging
 from entities import Server, Pug
@@ -31,7 +31,6 @@ class LoggingTestCase(unittest.TestCase):
 
         self.server.rcon_connection = RconConnection()
 
-        #self.server.rcon = rcon_dummy
         self.server.ip = "202.138.3.55"
         self.server.port = 27045
         self.server.rcon_password = "thanksobama"
@@ -158,7 +157,7 @@ class RegexTestCase(unittest.TestCase):
         self.check_group_match(strings, "player_stat")
 
     def test_unity_report_regex(self):
-        s1 = 'L 10/01/2012 - 21:38:54: "{"token":"REPORT","data":{"reported":"STEAM_1:1:1","reporter":"STEAM_1:1:2","reason":"CHEATING","matchId":2}}"'
+        s1 = 'L 10/01/2012 - 21:38:54: "{"token":"REPORT","data":{"reported":"STEAM_0:1:1","reporter":"STEAM_0:1:2","reason":"CHEATING","matchId":2}}"'
 
         strings = [ s1 ]
 
@@ -250,9 +249,15 @@ class ChatTestCase(LoggingTestCase):
     def test_replace_command(self):
         pass
 
+class ReportTestCase(LoggingTestCase):
+    def test_report(self):
+        msg = 'L 10/01/2012 - 21:38:54: "{"token":"REPORT","data":{"reported":"STEAM_0:1:1","reporter":"STEAM_0:1:2","reason":"CHEATING","matchId":2}}"'
+        print "Sending message " + msg
+        self.socket.send(msg)
+
 def test_suites():
     classes = [ RegexTestCase, VerifyTestCase, ConnectTestCase, StatTestCase, 
-                ChatTestCase ]
+                ChatTestCase, ReportTestCase ]
 
     return [ unittest.TestLoader().loadTestsFromTestCase(x) for x in classes ]
 

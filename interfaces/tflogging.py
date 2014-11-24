@@ -32,7 +32,7 @@ player_kill = re.compile(r'^L [0-9\/]+ - [0-9\:]+: "(.*?)<(\d+)><(.*?)><(Red|Blu
 player_kill_special = re.compile(r'^L [0-9\/]+ - [0-9\:]+: "(.*?)<(\d+)><(.*?)><(Red|Blue)>" killed "(.*?)<(\d+)><(.*?)><(Red|Blue)>" with "(.*?)" \x28customkill "(.*?)"\x29 \x28attacker_position "(.*?)"\x29 \x28victim_position "(.*?)"\x29$')
 player_assist = re.compile(r'^L [0-9\/]+ - [0-9\:]+: "(.*?)<(\d+)><(.*?)><(Red|Blue)>" triggered "kill assist" against "(.*?)<(\d+)><(.*?)><(Red|Blue)>" \x28assister_position "(.*?)"\x29 \x28attacker_position "(.*?)"\x29 \x28victim_position "(.*?)"\x29$')
 
-unity_report = re.compile(r'^L [0-9\/]+ - [0-9\:]+: "{"token":"REPORT","data":{"reported":"(.*)","reporter":"(.*)","reason":"(.*)","matchId":(\d)}}"')
+unity_report = re.compile(r'^L [0-9\/]+ - [0-9\:]+: "{"token":"REPORT","data":{"reported":"(.*)","reporter":"(.*)","reason":"(.*)","matchId":(\d+)}}"')
 
 regex = {
     "round": (round_win, round_overtime, round_length, round_start, 

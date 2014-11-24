@@ -1,6 +1,7 @@
 from .tflogging import TFLogInterface
 from .jsonconverter import TFPugJsonInterface
 from .database import PSQLDatabaseInterface
+from .pesapi import PESAPIInterface
 
 GAME_CODES = {
     "TF2": 1,

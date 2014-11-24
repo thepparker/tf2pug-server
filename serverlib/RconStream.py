@@ -8,7 +8,6 @@ import struct
 import logging
 
 from tornado.iostream import IOStream
-from tornado import gen
 
 from functools import partial
 from collections import deque

@@ -8,7 +8,17 @@ TF2 Logging Interface
 import logging
 import re
 
-from BaseInterfaces import BaseLogInterface
+import settings
+
+from .BaseInterfaces import BaseLogInterface
+from .pesapi import PESAPIInterface
+
+USING_UNITY = settings.use_pes_unity
+pes_api_interface = None
+if USING_UNITY:
+    pes_api_interface = PESAPIInterface(settings.pes_api_base_url,
+                                        settings.pes_api_userid,
+                                        settings.pes_api_privatekey)
 
 round_win = re.compile(r'^L [0-9\/]+ - [0-9\:]+: World triggered "Round_Win" \x28winner "(Blue|Red)"\x29$')
 round_overtime = re.compile(r'^L [0-9\/]+ - [0-9\:]+: World triggered "Round_Overtime"$')
@@ -159,7 +169,11 @@ class TFLogInterface(BaseLogInterface):
             # just be L ...
             # could also use mod_data.split(" ", 1)[1]
             mod_data = "L" + mod_data[mod_data.find(" "):]
-            self._dispatch_parse(mod_data)
+            try:
+                self._dispatch_parse(mod_data)
+
+            except:
+                logging.exception("Exception parsing data: '%s'", data)
 
     def _dispatch_parse(self, data):
         # actually parse the log data!
@@ -180,8 +194,8 @@ class TFLogInterface(BaseLogInterface):
 
         method = self._dispatch[group]
 
-        logging.debug("Data matches group \"%s\". Method: \"%s\"", group, 
-                      method)
+        #logging.debug("Data matches group \"%s\". Method: \"%s\"", group, 
+        #              method)
 
         method(match, expr)
 
@@ -275,13 +289,24 @@ class TFLogInterface(BaseLogInterface):
             self.pug.update_game_stat(assister_cid, "assists", 1)
 
     def _parse_report(self, match, expr):
+        # We utilise the Unity API to store this report. Therefore, if not
+        # using unity, just skip this. Note that this begs the question of:
+        # if we're not using unity, why the fuck are we getting a report?
+        if not USING_UNITY:
+            return
+
         if expr is unity_report:
-            reporter = re_group(match, 2)
-            reported = re_group(match, 1)
+            reporter = steamid_to_64bit(re_group(match, 2))
+            reported = steamid_to_64bit(re_group(match, 1))
 
             reason = re_group(match, 3)
 
             match_id = re_group(match, 4)
 
-            # TODO: Utilize some sort of (as of yet undefined) API to store
-            # this report...
+            logging.debug("Report details - REPORTER: %s, REPORTED: %s, REASON: '%s', MATCHID: %s", 
+                          reporter, reported, reason, match_id)
+
+            pes_api_interface.create_report(reported, reporter, reason, 
+                                            match_id)
+            
+

@@ -11,3 +11,8 @@ db_port = 5432
 
 indexed_stats = ("kills", "deaths", "assists", "rating")
 
+use_pes_unity = True
+pes_api_address = ""
+pes_api_base_url = ""
+pes_api_userid = 0
+pes_api_privatekey = ""

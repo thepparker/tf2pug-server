@@ -27,15 +27,17 @@ class PESAPIInterface(object):
         self.private_key = private_key
 
     def get_params(self, params):
+        return params
+
+    def __get_params(self, params):
         """
+        NO LONGER USED. AUTHENTICATION IS NOW IP WHITELIST
+
         We need to order the given parameters alphabetically by the values in 
         the given params dict. Then we convert it to a string and hash it
         using our private key, yielding the key used for authentication. We then
         add these parameters to the original params dict.
         """
-
-        pprint(params)
-
         # convert params to a URL query string with keyvalues sorted by values
         sorted_params = sorted(params.items(), key = operator.itemgetter(1))
         # sorted_params is now a list in the format [(key, value), ...],
@@ -62,18 +64,20 @@ class PESAPIInterface(object):
             "offender_steam_id": offender,
             "victim_steam_id": victim, 
             "reason": reason,
-            "match_id": match_id
+            "match_id": match_id,
+            "action": method
         })
 
-        self.post(method, params, callback)
+        self.post(params, callback)
 
-    def post(self, method, params, callback):
+    def post(self, params, callback):
         client = AsyncHTTPClient()
-        request = HTTPRequest(url = self.api_url(method), 
+        request = HTTPRequest(url = self.api_url(), 
                               method = "POST",
                               body = urllib.urlencode(params))
 
-        pprint(self.api_url(method))
+        pprint(self.api_url())
+        pprint(urllib.urlencode(params))
 
         logging.debug("POSTING REPORT")
 
@@ -82,16 +86,11 @@ class PESAPIInterface(object):
     def get(self, params):
         pass
 
-    def api_url(self, method, params = None):
-        action = { "action": method }
-        
-        param_string = ""
-
-        if params is not None:
-            param_string = "&" + urllib.urlencode(params)
-
-        return "{0}?{1}{2}".format(self.base_url, urllib.urlencode(action), 
-                                    param_string)
+    def api_url(self, params = None):
+        if params is None:
+            return self.base_url
+        else:
+            return "{0}?{1}".format(self.base_url, urllib.urlencode(params))
 
     def api_callback(self, callback):
         if callback is None:

@@ -94,7 +94,7 @@ def calculate_rating(teams, rank):
     for i, team in enumerate(teams):
         # team is a list of Rating objects
         for j, e_team in enumerate(teams):
-            if team == e_team: #skip if same team
+            if i == j: #skip if same team
                 continue
 
             actual_score = 0

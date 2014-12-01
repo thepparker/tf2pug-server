@@ -2,7 +2,7 @@
 import math
 
 K_table = {
-    "2": 6,
+    "2.0": 6,
     "1.9": 7,
     "1.8": 8,
     "1.7": 10,
@@ -17,8 +17,8 @@ def K_lookup(rating):
     # convert rating to nearest 10, floor it, then convert to nearest 1 with
     # 1 decimal place. i.e 1580/100 = 15.8, floor(15.8) = 15.0, k = 15/10 = 1.5
     lookup_key = math.floor(round(rating/100, 1))/10
-    if lookup_key > 2:
-        lookup_key = 2
+    if lookup_key >= 2.0:
+        lookup_key = 2.0
     if lookup_key < 1.4:
         lookup_key = 1.4
 

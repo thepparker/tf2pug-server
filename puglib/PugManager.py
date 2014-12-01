@@ -366,7 +366,7 @@ class PugManager(object):
                 # results, flush the pug one final time, and then remove pug
                 # from the internal list
                 if not pug.stats_done:
-                    self.__update_ratings(pug)
+                    self._update_ratings(pug)
                 
                     pug.update_end_stats()
                     self.__flush_pug_stats(pug)
@@ -438,7 +438,7 @@ class PugManager(object):
 
     :param pug The pug to update ratings for
     """
-    def __update_ratings(self, pug):
+    def _update_ratings(self, pug):
         """
         We use an Elo implementation to calculate a player's new
         rating based on the actual and expected outcome of the game.
@@ -514,8 +514,8 @@ class PugManager(object):
 
         # map player rating to player id, store as list of tuples which can be
         # easily inserted into the db
-        mapper = lambda r, t: (float(r), t)
-        ratings_tupled = map(mapper, team1_rating, pug.teams[team1]) + map(mapper, team2_rating, pug.teams[team2])
+        mapper = lambda cid, r: (cid, float(r))
+        ratings_tupled = map(mapper, pug.teams[team1], team1_rating) + map(mapper, pug.teams[team2], team2_rating)
         logging.debug("Players with new ratings: %s", ratings_tupled)
 
         # update player stats dict with new ratings in preparation for flush

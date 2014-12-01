@@ -11,10 +11,14 @@ import settings
 
 from puglib.PugManager import PugManager
 from puglib.bans import BanManager
-from entities.Pug import Pug
+from entities.Pug import Pug, PlayerStats
 import puglib.Exceptions as PMEx
 from interfaces import PSQLDatabaseInterface
 from serverlib.ServerManager import ServerManager
+
+def fill_pug(m, pug):
+    for i in range(2, pug.size+1):
+        m.add_player(i, str(i), pug.id)
 
 class ManagerTestCase(unittest.TestCase):
     def setUp(self):
@@ -48,9 +52,11 @@ class ManagerTestCase(unittest.TestCase):
     def tearDown(self):
         self.pool.closeall()
 
-def fill_pug(m, pug):
-    for i in range(2, pug.size+1):
-        m.add_player(i, str(i), pug.id)
+    def create_full_pug(self):
+        pug = self.pm.create_pug(1, "1")
+        fill_pug(self.pm, pug)
+
+        return pug
 
 class CreatePugTest(ManagerTestCase):
     def test_create_pug(self):
@@ -91,13 +97,15 @@ class CreatePugTest(ManagerTestCase):
 
 
     def test_create_player_restricted(self):
-        # base elo is 1500, so check for restriction above and below
+        # get player elo, check restriction either side
+        stats = self.pm._get_player_stats(1)
+        rating = stats[1]["rating"]
+
         self.assertRaises(PMEx.PlayerRestrictedException, 
-                    lambda: self.pm.create_pug(1, "1", restriction = -1400))
+                    lambda: self.pm.create_pug(1, "1", restriction = -rating))
 
         self.assertRaises(PMEx.PlayerRestrictedException,
-                    lambda: self.pm.create_pug(1, "1", restriction = 1600))
-
+                    lambda: self.pm.create_pug(1, "1", restriction = rating+1))
 
     def test_no_servers_available(self):
         pug = self.pm.create_pug(1, "1")
@@ -166,12 +174,6 @@ class PlayerAddRemoveTest(ManagerTestCase):
                           lambda: self.pm.add_player(13, "13", pug.id))
 
 class MapVoteTest(ManagerTestCase):
-    def create_full_pug(self):
-        pug = self.pm.create_pug(1, "1")
-        fill_pug(self.pm, pug)
-
-        return pug
-
     def test_vote_begin_transition(self):
         pug = self.create_full_pug()
 
@@ -251,9 +253,68 @@ class MapVoteTest(ManagerTestCase):
 
         self.assertTrue(pug.teams_done)
 
+class UpdateRatingsTestCase(ManagerTestCase):
+    def test_ratings_update(self):
+        pug = Pug()
+
+        pug.add_player(1L, "1", PlayerStats(rating = 1600, games_since_medic = 5))
+        pug.add_player(2L, "2", PlayerStats(rating = 1600, games_since_medic = 5))
+        pug.add_player(3L, "3", PlayerStats(rating = 1800))
+        pug.add_player(4L, "4", PlayerStats(rating = 1800))
+        pug.add_player(5L, "5", PlayerStats(rating = 1770))
+        pug.add_player(6L, "6", PlayerStats(rating = 1750))
+        pug.add_player(7L, "7", PlayerStats(rating = 1700))
+        pug.add_player(8L, "8", PlayerStats(rating = 1900))
+        pug.add_player(9L, "9", PlayerStats(rating = 1500))
+        pug.add_player(10L, "10", PlayerStats(rating = 1650))
+        pug.add_player(11L, "11", PlayerStats(rating = 1620))
+        pug.add_player(12L, "12", PlayerStats(rating = 1680))
+
+        pug.shuffle_teams()
+
+        # Now insert some fake score
+        pug.update_score("red", 1)
+
+        self.pm._update_ratings(pug)
+        pug.update_end_stats()
+
+        # There's 2 potential team lineups based on the random choice of which
+        # team gets which medic, so we need to check both.
+
+        ratings = []
+
+        if 1 in pug.teams["red"]:
+            new_blue_ratings = [
+                            (2L, 1595.003), (4L, 1791.591), (6L, 1742.406), 
+                            (8L, 1890.181), (9L, 1496.559), (10L, 1644.143)
+                        ]
+
+            new_red_ratings = [
+                            (1L, 1609.983), (3L, 1803.009), (5L, 1774.124), 
+                            (7L, 1705.0), (11L, 1629.597), (12L, 1688.404)
+                        ]
+
+            ratings = new_blue_ratings + new_red_ratings
+
+        else:
+            new_blue_ratings = [
+                            (1L, 1595.003), (4L, 1791.591), (6L, 1742.406), 
+                            (8L, 1890.181), (9L, 1496.559), (10L, 1644.143)
+                        ]
+
+            new_red_ratings = [
+                            (2L, 1609.983), (3L, 1803.009), (5L, 1774.124), 
+                            (7L, 1705.0), (11L, 1629.597), (12L, 1688.404)
+                        ]
+
+            ratings = new_blue_ratings + new_red_ratings
+
+        for cid, rating in ratings:
+            self.assertEquals(pug.end_stats[cid]["rating"], rating)
 
 def test_suites():
-    classes = [ CreatePugTest, PlayerAddRemoveTest, MapVoteTest ]
+    classes = [ CreatePugTest, PlayerAddRemoveTest, MapVoteTest,
+                UpdateRatingsTestCase ]
 
     return [ unittest.TestLoader().loadTestsFromTestCase(x) for x in classes ]
 

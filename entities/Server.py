@@ -110,7 +110,7 @@ class Server(object):
         self.pug = None
         self.pug_id = -1
 
-        self.rcon("say This server is being reset because the pug is over; kickall; sv_password getOuTPLZ")
+        self.rcon("say The pug is over!; sv_password %s; kickall", random_string(8))
 
         self._end_listener()
 
@@ -124,10 +124,9 @@ class Server(object):
         mapper = lambda (p, r): "%s" % p if r is None else "%s (%s)" % (p, r) 
 
         # teams is a dict in the form { TEAM_NAME: [ ("name", "role"), .. ], ..}
-        a = [ "say %s: " % x + " - ".join(map(mapper, teams[x])) for x in teams ]
+        a = [ "say %s: " % x.upper() + " - ".join(map(mapper, teams[x])) for x in teams ]
 
         self.rcon(";".join(a))
-
 
     def _setup_listener(self, log_port = 0):
         if log_port is None:

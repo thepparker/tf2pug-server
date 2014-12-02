@@ -169,8 +169,6 @@ class BaseLogInterface(object):
     def end_game(self):
         self.pug.end_game()
 
-        self.server.reset()
-
     def update_score(self, team, score):
         self.pug.update_score(team, score)
 

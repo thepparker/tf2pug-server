@@ -198,7 +198,7 @@ class PugManager(object):
     :param pug The pug to end
     """
     def _end_pug(self, pug):
-        # resetting the server automatically causes a server_manager flush
+        # resetting the server automatically causes a server_manager flush.
         # also closes the logging socket
         self.server_manager.reset(pug.server)
 
@@ -354,7 +354,7 @@ class PugManager(object):
 
             elif (pug.state == Pug.states["MAPVOTE_COMPLETED"]):
                 # means the map was forced and begin_map_vote just set
-                # the stat to mapvote_completed (i.e teams were not shuffled)
+                # the state to mapvote_completed (i.e teams were not shuffled)
                 # so we need to shuffle teams and change map
 
                 pug.shuffle_teams()
@@ -372,7 +372,8 @@ class PugManager(object):
                     self.__flush_pug_stats(pug)
 
                 # 10 second grace period for clients to update with the end
-                # stats before we flush and forget
+                # stats and for players in the server to get the end of game
+                # panel and statistics in-game.
                 if ctime - pug.game_over_time > 10:
                     self._end_pug(pug)
 

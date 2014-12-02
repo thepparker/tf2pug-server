@@ -1,3 +1,6 @@
+import sys
+sys.path.append('../puglib')
+
 from rating import *
 
 def test_rating():
@@ -36,6 +39,14 @@ def rate_4v4_1500():
             (Rating(rating = 1502.435), Rating(rating = 1521.766), 
                 Rating(rating = 1541.085), Rating(rating = 1560.397))
         ]
+
+def rate_6v6_all_1500():
+    # test 6v6 with all same rating
+    team1 = [ Rating(1500) for x in range(6) ]
+    team2 = [ Rating(1500) for x in range(6) ]
+
+    calculate_rating([ team1, team2 ], [0, 1])
+
 
 def rate_1v1_cross_tier():
     team1 = [ Rating(1850) ]

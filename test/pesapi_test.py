@@ -28,8 +28,8 @@ class CreateMatchTestCase(APITestCase):
 
 class CreateReportTestCase(APITestCase):
     def test_report(self):
-        offender = 1234L
-        victim = 12345L
+        offender = 76561197960265728L
+        victim = 76561197960265728L
 
         reason = "CHEATING"
         match_id = 1

@@ -158,7 +158,7 @@ class BaseLogInterface(object):
     def parse(self, data):
         raise NotImplementedError("Must implement this method")
 
-    def start_game(self, start_time = 20):
+    def start_game(self, start_time = 5):
         self.server.start_game(start_time)
         self.pug.begin_game()
 

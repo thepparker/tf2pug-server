@@ -19,7 +19,7 @@ states = {
 MAPVOTE_DURATION = 1 # Time in seconds for map vote duration
 AVAILABLE_MAPS = [ u"cp_granary", u"cp_badlands" ]
 REPLACE_TIMEOUT = 10 # Time in seconds to wait for a replace
-DISCONNECT_TIMEOUT = 10 # Time in seconds to wait before replacing a disconnect
+DISCONNECT_TIMEOUT = 100 # Time in seconds to wait before replacing a disconnect
 
 # Raised when trying to start a map vote when the map has been forced
 class MapForcedException(Exception):
@@ -629,6 +629,10 @@ class Pug(object):
     @property
     def replacement_required(self):
         return self.state == states["REPLACEMENT_REQUIRED"]
+
+    @property
+    def has_disconnects(self):
+        return len(self.disconnects) > 0
 
     @staticmethod
     def map_available(map_name):

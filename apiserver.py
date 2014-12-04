@@ -139,6 +139,13 @@ class Application(tornado.web.Application):
         self._pug_status_timer = PeriodicCallback(self._pug_status_check, 2000)
         self._pug_status_timer.start()
 
+        # Periodically flush all entities to ensure data is up to date in the 
+        # event of a crash or reload (as otherwise, no flushes are done during
+        # a game)
+        self._periodic_flush_timer = PeriodicCallback(self._periodic_flush, 
+                                                 10000)
+        self._periodic_flush_timer.start()
+
         # check ban expirations every 10 mins
         self._ban_expiration_timer = PeriodicCallback(
                                         self.ban_manager.check_bans,
@@ -181,6 +188,13 @@ class Application(tornado.web.Application):
             self._pug_managers[private_key] = new_manager
 
             return new_manager
+
+    def _periodic_flush(self):
+        for manager in self._pug_managers.values():
+            manager.flush_all()
+
+        for manager in self._server_managers.values():
+            manager.flush_all()
 
     def _pug_status_check(self):
         curr_ctime = time.time()

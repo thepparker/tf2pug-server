@@ -255,13 +255,6 @@ class Pug(object):
 
             self.state = states["MAP_VOTING"]
 
-        # Add all players to disconnect list so they are replaced if they
-        # do not join within a reasonable time
-        for pid in self._players:
-            self.add_disconnect(pid, 
-                                "Not joining server within DISCONNECT_TIMEOUT"
-                            )
-
     def end_map_vote(self):
         if self.map_forced:
             self.state = states["MAPVOTE_COMPLETED"]
@@ -427,6 +420,14 @@ class Pug(object):
 
         logging.info("Team allocation complete. Red: %s (Score: %s), Blue: %s (Score: %s)", 
                         self.teams["red"], red_score, self.teams["blue"], blue_score)
+
+    def setup_connect_timer(self):
+        # Add all players to disconnect list so they are replaced if they
+        # do not join within a reasonable time (DISCONNECT_TIMEOUT)
+        for pid in self._players:
+            self.add_disconnect(pid, 
+                                "Not joining server within DISCONNECT_TIMEOUT"
+                            )
 
     def begin_game(self):
         if not self.game_started:

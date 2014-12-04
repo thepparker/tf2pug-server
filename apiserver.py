@@ -139,11 +139,10 @@ class Application(tornado.web.Application):
         self._pug_status_timer = PeriodicCallback(self._pug_status_check, 2000)
         self._pug_status_timer.start()
 
-        # check ban expirations. timer is in MS, and we want to check every
-        # 10 minutes. so, 10 (min) * 60 (seconds in 1 minute) * 1000 (ms in 1s)
+        # check ban expirations every 10 mins
         self._ban_expiration_timer = PeriodicCallback(
                                         self.ban_manager.check_bans,
-                                        1000)
+                                        10*60*1000)
         self._ban_expiration_timer.start()
 
         # loading the pug managers will also load all server managers

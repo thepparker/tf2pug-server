@@ -34,22 +34,19 @@ class PugManager(object):
 
         self.__load_pugs()
 
-    """
-    Adds a player to a pug. 
-
-    If a pug ID is specified, the player is added to that pug if possible. If 
-    it is not possible, an exception is raised.
-
-    If no pug ID is specified, the player is added to the first pug with space
-    available. If no space is available, a new pug is created.
-
-    :param player_id The ID of the player to add
-    :param player_name The name of the player to add
-    :param pug_id The ID of the pug to add the player to
-
-    :return Pug The pug the player was added to or None
-    """
     def add_player(self, player_id, player_name, pug_id):
+        """
+        Adds a player to a pug. 
+
+        The player is added to the given pug id if possible. If not possible,
+        an exception is raised.
+
+        :param player_id The ID of the player to add
+        :param player_name The name of the player to add
+        :param pug_id The ID of the pug to add the player to
+
+        :return Pug The pug the player was added to or None
+        """
         pug = self.get_pug_by_id(pug_id)
 
         if pug is None:
@@ -95,24 +92,26 @@ class PugManager(object):
             else:
                 pug.add_player(player_id, player_name, stats[player_id])
 
-        # we now have a valid pug and the player has been aded. check if it's
-        # full
-        if pug.full:
-            # pug is full, so we should make it transition to map voting
+        # We now have a valid pug and the player has been aded. check if it's
+        # full, and proceed to map voting. Only do this if the current state is
+        # gathering players (i.e. map vote has not already been done). This
+        # check is performed in case the pug actually requires a replacement,
+        # in which case, map voting has already taken place.
+        if pug.full and pug.state == Pug.states["GATHERING_PLAYERS"]:
             pug.begin_map_vote()
 
-    """
-    This method removes the given player ID from any pug they may be in.
-
-    If the player is not in a pug, an exception is raised. If the pug was
-    ended because it is empty after removing the player, an exception is
-    raised.
-
-    :param player_id The player to remove
-
-    :return Pug The pug the player was removed from.
-    """
     def remove_player(self, player_id):
+        """
+        This method removes the given player ID from any pug they may be in.
+
+        If the player is not in a pug, an exception is raised. If the pug was
+        ended because it is empty after removing the player, an exception is
+        raised.
+
+        :param player_id The player to remove
+
+        :return Pug The pug the player was removed from.
+        """
         pug = self.get_player_pug(player_id)
 
         if pug is None:
@@ -128,21 +127,27 @@ class PugManager(object):
         else:
             return pug
 
-    """
-    This method is used to create a new pug. Size and map are optional. If the
-    player is already in a pug, an exception is raised.
-
-    :param player_id The ID of the player to add
-    :param player_name The name of the player to add
-    :param size The size of the pug (max number of players)
-    :param map The map the pug will be on. If none, it means a vote will occur
-               once the pug is full.
-
-    :return Pug The newly created pug
-    """
     def create_pug(self, player_id, player_name, size = 12, pug_map = None,
                    custom_id = None, restriction = None):
+        """
+        This method is used to create a new pug. Size and map are optional. If 
+        the player is already in a pug, is banned, or does not meet the
+        restriction themselves, an exception is raised.
 
+        :param player_id The ID of the player to add
+        :param player_name The name of the player to add
+        :param size The size of the pug (max number of players)
+        :param map The map the pug will be on. If none, it means a vote will 
+                   occur once the pug is full.
+        :param custom_id A custom ID to assign to the pug. Useful for clients
+                         to distinguish pugs if necessary.
+        :param restriction A rating restriction to enforce. If a positive
+                           number is given, players must have >= that rating.
+                           If a negative number is given, players must have
+                           < that rating.
+
+        :return Pug The newly created pug
+        """
 
         if pug_map is not None and (not Pug.Pug.map_available(pug_map)):
             raise InvalidMapException("Invalid map specified")
@@ -175,15 +180,14 @@ class PugManager(object):
 
         return pug
 
-    """
-    This method is a public wrapper for _end_pug(). This serves to ensure that
-    the pug object itself is always passed to _end_pug, rather than an ID. In
-    otherwords, it's for method overloading (which we can otherwise only do by
-    having optional parameters).
-
-    :param pug_id The ID of the pug to end
-    """
     def end_pug(self, pug_id):
+        """
+        This method is a public wrapper for _end_pug(). This serves to ensure 
+        that the pug object itself is always passed to _end_pug, rather than
+        an ID. 
+
+        :param pug_id The ID of the pug to end
+        """
         pug = self.get_pug_by_id(pug_id)
 
         if pug is None:
@@ -191,13 +195,13 @@ class PugManager(object):
 
         self._end_pug(pug)
 
-    """
-    Ends the given pug. This means we set the state to game over, reset the
-    assigned server, close the logging socket and flush the pug/server.
-
-    :param pug The pug to end
-    """
     def _end_pug(self, pug):
+        """
+        Ends the given pug. This means we set the state to game over, reset the
+        assigned server, close the logging socket and flush the pug/server.
+
+        :param pug The pug to end
+        """
         # resetting the server automatically causes a server_manager flush.
         # also closes the logging socket
         self.server_manager.reset(pug.server)
@@ -212,17 +216,18 @@ class PugManager(object):
         if pug in self._pugs:
             self._pugs.remove(pug)
 
-    """
-    Adds a vote for the given map by the specified player.
-
-    Raises an exception if the player is not in a pug.
-
-    :param player_id The ID of the player voting
-    :param pmap The map being voted for
-
-    :return Pug The pug that had a map vote placed
-    """
     def vote_map(self, player_id, pmap):
+        """
+        Adds a vote for the given map by the specified player.
+
+        Raises an exception if the player is not in a pug, the pug is not in
+        map voting state, or the map is invalid.
+
+        :param player_id The ID of the player voting
+        :param pmap The map being voted for
+
+        :return Pug The pug that had a map vote placed
+        """
         pug = self.get_player_pug(player_id)
 
         if pug is None:
@@ -295,43 +300,43 @@ class PugManager(object):
 
         return False
 
-    """
-    Gets the pug the given player is in (if any).
-
-    :param player_id The player to check for
-
-    :return Pug The pug the player is in, or none
-    """
     def get_player_pug(self, player_id):
+        """
+        Gets the pug the given player is in (if any).
+
+        :param player_id The player to check for
+
+        :return Pug The pug the player is in, or none
+        """
         for pug in self._pugs:
             if pug.has_player(player_id):
                 return pug
 
         return None
 
-    """
-    Searches through the pug list for a pug matching the given id.
-
-    :param pug_id The pug ID to search for
-
-    :return Pug The pug matching the given ID, or None
-    """
     def get_pug_by_id(self, pug_id):
+        """
+        Searches through the pug list for a pug matching the given id.
+
+        :param pug_id The pug ID to search for
+
+        :return Pug The pug matching the given ID, or None
+        """
         for pug in self._pugs:
             if pug.id == pug_id:
                 return pug
 
         return None
 
-    """
-    Searches through the pug list and returns the first pug with space
-    available.
-
-    :param size (optional) The pug size to match against
-
-    :return Pug The first PUG with space available, or None
-    """
     def _get_pug_with_space(self, size = 12):
+        """
+        Searches through the pug list and returns the first pug with space
+        available.
+
+        :param size (optional) The pug size to match against
+
+        :return Pug The first PUG with space available, or None
+        """
         for pug in self._pugs:
             if pug.size == size and not pug.full:
                 return pug
@@ -339,6 +344,13 @@ class PugManager(object):
         return None
 
     def status_check(self, ctime = 0):
+        """
+        Performs various status checks on all pugs managed by this manager.
+        These includes things such as ending map votes, shuffling teams,
+        ending pugs at game over, etc.
+
+        :param ctime The current epoch time (used for checking map vote end)
+        """
         for pug in self._pugs[:]:
             if (pug.state == Pug.states["MAP_VOTING"]) and (ctime > pug.map_vote_end):
                 logging.debug("Map vote period is over for pug %d", pug.id)
@@ -378,7 +390,7 @@ class PugManager(object):
                     self._end_pug(pug)
 
             elif (pug.state == Pug.states["GATHERING_PLAYERS"] and
-                    ctime - pug.start_time > 1200):
+                    ctime > pug.start_time + 1200):
                 # Pug has been looking for players for longer than 20 minutes,
                 # so we force end
                 
@@ -434,13 +446,13 @@ class PugManager(object):
         self.db.flush_player_stats(pug.end_stats)
 
     """
-    Calculates the new rating of players after the game and updates it in the 
-    database
-
-    :param pug The pug to update ratings for
+    
     """
     def _update_ratings(self, pug):
         """
+        Calculates the new rating of players after the game and updates it in
+        the pug object.
+
         We use an Elo implementation to calculate a player's new
         rating based on the actual and expected outcome of the game.
         For the basic elo algorithm, please see the following:
@@ -476,6 +488,8 @@ class PugManager(object):
 
         If a duel-based Elo system does not work out, implementing TrueSkill
         or Glicko will not be too hard.
+
+        :param pug The pug to update ratings for
         """
         team1, team2 = pug.teams.keys()
 
@@ -524,6 +538,9 @@ class PugManager(object):
             pug.set_player_rating(cid, new_rating)
 
     def __load_pugs(self):
+        """
+        Load all pugs owned by this manager from the database.
+        """
         # clear the pug list
         del self._pugs[:]
         logging.debug("Attempting to load pugs under API key %s", self.api_key)
@@ -550,11 +567,19 @@ class PugManager(object):
                 self._pugs.append(pug)
         
     def _flush_pug(self, pug):
+        """
+        Flush the given pug to the database
+
+        :param pug The pug to flush
+        """
         logging.debug("Flushing pug to database. ID: %s", pug.id)
         jsoninterface = self._json_iface_cls()
 
         self.db.flush_pug(self.api_key, jsoninterface, pug)
 
     def flush_all(self):
+        """
+        Flush all active pugs in this manager
+        """
         for pug in self._pugs:
             self._flush_pug(pug)

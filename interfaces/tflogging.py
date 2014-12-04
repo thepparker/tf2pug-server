@@ -204,8 +204,8 @@ class TFLogInterface(BaseLogInterface):
 
     def _parse_round(self, match, expr):
         if expr is round_win:
-            # do what?
-            pass
+            # Stop tracking stats after round_win
+            self.ROUND_PAUSE = True
 
         elif expr is round_start:
             # if first round_start event and the pug hasn't technically
@@ -218,6 +218,9 @@ class TFLogInterface(BaseLogInterface):
                 
                 else:
                     self.start_game()
+            else:
+                # start tracking stats again!
+                self.ROUND_PAUSE = False
 
     def _parse_player_connection(self, match, expr):
         if expr is player_connect:
@@ -293,7 +296,7 @@ class TFLogInterface(BaseLogInterface):
                 pass
 
     def _parse_stat(self, match, expr):
-        if not self.pug.game_started:
+        if not self.pug.game_started or self.ROUND_PAUSE:
             return
 
         if expr is player_kill or expr is player_kill_special:
@@ -323,7 +326,8 @@ class TFLogInterface(BaseLogInterface):
 
             match_id = re_group(match, 4)
 
-            logging.debug("Report details - REPORTER: %s, REPORTED: %s, REASON: '%s', MATCHID: %s", 
+            logging.debug("Report details - REPORTER: %s, REPORTED: %s, "
+                          "REASON: '%s', MATCHID: %s", 
                           reporter, reported, reason, match_id)
 
             pes_api_interface.create_report(reported, reporter, reason, 

@@ -19,6 +19,7 @@ states = {
 MAPVOTE_DURATION = 1 # Time in seconds for map vote duration
 AVAILABLE_MAPS = [ u"cp_granary", u"cp_badlands" ]
 REPLACE_TIMEOUT = 10 # Time in seconds to wait for a replace
+DISCONNECT_TIMEOUT = 10 # Time in seconds to wait before replacing a disconnect
 
 # Raised when trying to start a map vote when the map has been forced
 class MapForcedException(Exception):
@@ -77,6 +78,9 @@ class Pug(object):
         self._players = {}
         self.player_restriction = restriction # rating restriction
 
+        self.disconnects = []
+        # A record of all disconnects that resulted in a replacement
+        self.disconnect_record = []
         self.leaver_record = []
 
         self.player_stats = {} # stats before game
@@ -195,6 +199,47 @@ class Pug(object):
         if player_id in self.player_votes:
             del self.player_votes[player_id]
 
+    def add_disconnect(self, player_id, reason):
+        """
+        Add a disconnection so it can be checked for a replacement after 
+        DISCONNECT_TIMEOUT. Note that when a game first starts, ALL players are
+        added to the disconnect list, so that anyone who does not join within
+        the given disconnect period is also automatically replaced.
+        """
+        if player_id in self._players:
+            self.disconnects.append({ "id": player_id, "reason": reason, 
+                                      "time": time.time() 
+                                    })
+
+    def remove_disconnect(self, player_id):
+        """
+        Remove a disconnection in the case that a player has rejoined the
+        server after disconnecting
+        """
+        if player_id in self._players:
+            for disc in self.disconnects[:]:
+                if disc["id"] == player_id:
+                    self.disconnects.remove(disc)
+
+    def check_disconnects(self):
+        """
+        Check the disconnects list. If anyone has been disconnected for longer
+        than DISCONNECT_TIMEOUT, remove them from the pug (trigger replacement)
+
+        This includes players who have not connected to the server fast enough.
+        If, for whatever reason, we end up removing ALL players, the pug will
+        be ended. (i.e. server is dead - no one can actually join)
+        """
+        ctime = time.time()
+        # make a copy, as we are removing from the list at the same time
+        for disc in self.disconnects[:]:
+            if ctime > disc["time"] + DISCONNECT_TIMEOUT:
+                self.remove_player(disc["id"])
+
+                self.disconnects.remove(disc)
+                self.disconnect_record.append(disc)
+
+
     def begin_map_vote(self):
         if self.state >= states["MAP_VOTING"]:
             return
@@ -209,6 +254,13 @@ class Pug(object):
             self.map_vote_end = self.map_vote_start + MAPVOTE_DURATION
 
             self.state = states["MAP_VOTING"]
+
+        # Add all players to disconnect list so they are replaced if they
+        # do not join within a reasonable time
+        for pid in self._players:
+            self.add_disconnect(pid, 
+                                "Not joining server within DISCONNECT_TIMEOUT"
+                            )
 
     def end_map_vote(self):
         if self.map_forced:

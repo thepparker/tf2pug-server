@@ -422,6 +422,15 @@ class PugManager(object):
                     # replacement has timed out. End the pug.
 
                     self._end_pug(pug)
+            else:
+                # Check pugs for disconnects. If a player has been disconnected
+                # for longer than a certain time, they are removed.
+                pug.check_disconnects()
+                # If ALL players were removed from the pug after 
+                # `check_disconnects()`, there's likely something wrong with
+                # the server. End the pug straight away.
+                if pug.player_count == 0:
+                    self._end_pug(pug)
 
     def _get_multi_player_stats(self, players):
         """

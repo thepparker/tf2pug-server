@@ -127,6 +127,9 @@ class TFLogInterface(BaseLogInterface):
             "report": self._parse_report
         }
 
+        # for pausing stat recording when game is not actually in progress
+        self.ROUND_PAUSE = True
+
     def _verify_data(self, data):
         # check if we're using a secret
         if self._using_secret or data[0] == "S":
@@ -208,7 +211,13 @@ class TFLogInterface(BaseLogInterface):
             # if first round_start event and the pug hasn't technically
             # started, let's start it!
             if not self.pug.game_started:
-                self.start_game()
+                if self.pug.replacement_required:
+                    self.server.rcon(
+                        "say Cannot start the game while waiting for a "
+                        "replacement; mp_tournament_restart")
+                
+                else:
+                    self.start_game()
 
     def _parse_player_connection(self, match, expr):
         if expr is player_connect:
@@ -222,11 +231,22 @@ class TFLogInterface(BaseLogInterface):
                 # this player is not in the pug, so we need to kick this fucka
                 self.kick_player(sid, "Not in pug player list")
 
+            ip = re_group(match, 4)
+            # TODO: Log this connection
+
+            self.pug.remove_disconnect(cid)
+
         elif expr is player_validated:
             pass
 
         elif expr is player_disconnect:
-            pass
+            name = re_group(match, 1)
+            sid = re_group(match, 3)
+            cid = steamid_to_64bit(sid)
+
+            reason = re_group(match, 5)
+
+            self.pug.add_disconnect(cid, reason)
 
     def _parse_team_score(self, match, expr):
         if expr is team_score:

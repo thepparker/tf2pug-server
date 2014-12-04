@@ -396,6 +396,33 @@ class PugManager(object):
                 
                 self._end_pug(pug)
 
+            elif (pug.state == Pug.states["REPLACEMENT_REQUIRED"]):
+                """
+                A replacement is required. If the game has not started yet
+                (i.e. has not gone live -> state is not GAME_STARTED) and 5
+                minutes has passed without a replacement joining, we end the
+                pug. Similarly, if the game is live, less than 15 minutes
+                has been played, and if no replacement is found in 5 minutes,
+                end the pug. 
+                """
+                #logging.debug("Pug is in replacement state. Game started: %s, "
+                #              "Replacement timed out: %s, replace timeout: %d, curr time: %d",
+                #              pug.game_started, pug.replacement_timed_out, 
+                #              pug.replacement_timeout, ctime)
+
+                if not pug.game_started and pug.replacement_timed_out:
+                    # Game not live, replace timed out. End the pug.
+                    self._end_pug(pug)
+
+                elif (pug.game_started and 
+                      ctime < pug.game_start_time + 900 and
+                      pug.replacement_timed_out):
+
+                    # Game is live, less than 15 minutes has elapsed and
+                    # replacement has timed out. End the pug.
+
+                    self._end_pug(pug)
+
     def _get_multi_player_stats(self, players):
         """
         Gets a list of player's stats

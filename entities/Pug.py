@@ -16,8 +16,9 @@ states = {
     "GAME_OVER": 6
 }
 
-MAPVOTE_DURATION = 30
+MAPVOTE_DURATION = 1 # Time in seconds for map vote duration
 AVAILABLE_MAPS = [ u"cp_granary", u"cp_badlands" ]
+REPLACE_TIMEOUT = 10 # Time in seconds to wait for a replace
 
 # Raised when trying to start a map vote when the map has been forced
 class MapForcedException(Exception):
@@ -76,6 +77,8 @@ class Pug(object):
         self._players = {}
         self.player_restriction = restriction # rating restriction
 
+        self.leaver_record = []
+
         self.player_stats = {} # stats before game
         self.game_stats = {} # stats obtained during this pug
         self.end_stats = {} # stats after game
@@ -90,7 +93,11 @@ class Pug(object):
         self.server = None
         self.server_id = -1
 
+        self.game_start_time = 0
         self.game_over_time = 0
+
+        self.replacement_time = 0
+        self.replacement_timeout = 0
 
         self.teams = {
             "red": set(),
@@ -124,14 +131,22 @@ class Pug(object):
         self.player_stats[player_id] = pstats
         self._get_game_stats(player_id)
 
-        if self.state == states["REPLACEMENT_REQUIRED"]:
+
+        # If this player is a replacement (i.e. in REPLACEMENT_REQUIRED state),
+        # and the pug is now full after this person has joined, go back to the
+        # previous state. HOWEVER, if we need MORE than one replacement, do NOT
+        # change the state back, keep it in REPLACEMENT_REQUIRED until the pug
+        # is full again.
+        if self.state == states["REPLACEMENT_REQUIRED"] and self.full:
+            self.replacement_time = 0
+            self.replacement_timeout = 0
             self.state = self._previous_state
 
-    """
-    Add a player to the specified team list. Player can also be a list, as
-    per __allocate_players.
-    """
     def _add_to_team(self, team, player):
+        """
+        Add a player to the specified team list. Player can also be a list, as
+        per __allocate_players.
+        """
         if isinstance(player, list):
             self.teams[team] |= set(player)
         else:
@@ -157,16 +172,31 @@ class Pug(object):
 
             # if the game is in progress, we need to change the state to 
             # replacement needed. we store the previous state so we can go
-            # back to it if we get a replacement
-            if self.state >= 1:
-                self._previous_state = self.state
-                self.state = states["REPLACEMENT_REQUIRED"]
+            # back to it if we get a replacement.
+            if self.state > states["GATHERING_PLAYERS"]:
+                # if the current state is already REPLACEMENT_REQUIRED (i.e.
+                # this is a second, or more, leaver), do NOT override the
+                # previous state.
+                ctime = time.time()
+                if self.state != states["REPLACEMENT_REQUIRED"]:
+                    self._previous_state = self.state
+
+                    # Start a timer for this replacement, so we can end the pug
+                    # if it takes too long.
+                    self.replacement_time = ctime
+                    self.replacement_timeout = ctime + REPLACE_TIMEOUT
+
+                    self.state = states["REPLACEMENT_REQUIRED"]
+
+                # Store the leaver's ID and the time they left for a future
+                # record.
+                self.leaver_record.append({ "id": player_id, "time": ctime })
 
         if player_id in self.player_votes:
             del self.player_votes[player_id]
 
     def begin_map_vote(self):
-        if self.state > states["MAPVOTE_COMPLETED"]:
+        if self.state >= states["MAP_VOTING"]:
             return
 
         if self.map_forced:
@@ -349,6 +379,8 @@ class Pug(object):
     def begin_game(self):
         if not self.game_started:
             self.state = states["GAME_STARTED"]
+            self.game_start_time = time.time()
+
         else:
             pass
 
@@ -535,6 +567,17 @@ class Pug(object):
         if player_id in self.game_stats:
             self.game_stats[player_id]["rating"] = rating
 
+    @property
+    def replacement_timed_out(self):
+        if self.state == states["REPLACEMENT_REQUIRED"]:
+            return time.time() >= self.replacement_timeout
+        else:
+            return False
+
+    @property
+    def replacement_required(self):
+        return self.state == states["REPLACEMENT_REQUIRED"]
+
     @staticmethod
     def map_available(map_name):
         return map_name in AVAILABLE_MAPS
@@ -553,7 +596,10 @@ class Pug(object):
 
     @property
     def game_started(self):
-        return self.state >= states["GAME_STARTED"]
+        if self.state == states["REPLACEMENT_REQUIRED"]:
+            return self._previous_state >= states["GAME_STARTED"]
+        else:
+            return self.state >= states["GAME_STARTED"]
 
     @property
     def game_over(self):

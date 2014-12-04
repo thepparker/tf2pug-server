@@ -266,6 +266,9 @@ class PugRemoveHandler(BaseHandler):
         except PugManagerExceptions.PugEmptyEndException:
             self.write(self.response_handler.empty_pug_ended())
 
+        except PugManagerExceptions.PlayerLeaveTooLateException:
+            self.write(self.response_handler.player_leave_too_late())
+
         except:
             logging.exception("Unknown exception when removing player from a pug")
             raise HTTPError(500)

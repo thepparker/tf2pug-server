@@ -14,6 +14,10 @@ class PlayerInPugException(Exception):
 class PlayerNotInPugException(Exception):
     pass
 
+# Raised when a player tries to leave the pug too late
+class PlayerLeaveTooLateException(Exception):
+    pass
+
 # Raised when a pug is ended because it becomes empty after a remove
 class PugEmptyEndException(Exception):
     pass

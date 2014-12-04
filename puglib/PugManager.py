@@ -117,6 +117,9 @@ class PugManager(object):
         if pug is None:
             raise PlayerNotInPugException("Player %s is not in a pug" % player_id)
 
+        if pug.state == Pug.states["MAP_VOTING"]:
+            raise PlayerLeaveTooLateException("Player cannot leave this late")
+
         pug.remove_player(player_id)
 
         # if there's no more players in the pug, we need to end it

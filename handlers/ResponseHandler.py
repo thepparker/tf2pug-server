@@ -19,6 +19,7 @@ Response_PlayerAdded = 1103
 Response_PlayerRemoved = 1104
 Response_PlayerBanned = 1105
 Response_PlayerRestricted = 1106
+Response_PlayerLeaveTooLate = 1107
 
 Response_MapVoteAdded = 1200
 Response_MapForced = 1201
@@ -122,6 +123,9 @@ class ResponseHandler(object):
         self.change_response_code(response, Response_PlayerRemoved)
 
         return response
+
+    def player_leave_too_late(self):
+        return { "response": Response_PlayerLeaveTooLate }
 
     def player_banned(self, reason):
         return { 

@@ -359,8 +359,8 @@ class PugManager(object):
 
                 # Make the teams and then change the map to the voted map
                 pug.shuffle_teams()
-
                 pug.server.change_map()
+                pug.setup_connect_timer()
 
                 self._flush_pug(pug)
 
@@ -370,8 +370,10 @@ class PugManager(object):
                 # so we need to shuffle teams and change map
 
                 pug.shuffle_teams()
-
                 pug.server.change_map()
+                pug.setup_connect_timer()
+
+                self._flush_pug(pug)
 
             elif (pug.state == Pug.states["GAME_OVER"]):
                 # game is over! we need to update player rating based on the
@@ -422,7 +424,7 @@ class PugManager(object):
                     # replacement has timed out. End the pug.
 
                     self._end_pug(pug)
-                    
+
             if pug.has_disconnects:
                 # Check pugs for disconnects. If a player has been disconnected
                 # for longer than a certain time, they are removed.

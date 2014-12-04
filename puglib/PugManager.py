@@ -422,7 +422,8 @@ class PugManager(object):
                     # replacement has timed out. End the pug.
 
                     self._end_pug(pug)
-            else:
+                    
+            if pug.has_disconnects:
                 # Check pugs for disconnects. If a player has been disconnected
                 # for longer than a certain time, they are removed.
                 pug.check_disconnects()

@@ -17,9 +17,13 @@ states = {
 }
 
 MAPVOTE_DURATION = 1 # Time in seconds for map vote duration
-AVAILABLE_MAPS = [ u"cp_granary", u"cp_badlands", "cp_gravelpit", "cp_snakewater" ]
-REPLACE_TIMEOUT = 10 # Time in seconds to wait for a replace
-DISCONNECT_TIMEOUT = 100 # Time in seconds to wait before replacing a disconnect
+AVAILABLE_MAPS = [ "cp_granary", "cp_badlands", "cp_gravelpit", 
+                   "cp_snakewater_final1", "cp_process_final",
+                   "cp_gullywash_final1", "cp_sunshine_rc2",
+                   "koth_pro_viaduct_rc4"
+                ]
+REPLACE_TIMEOUT = 300 # Time in seconds to wait for a replace
+DISCONNECT_TIMEOUT = 300 # Time in seconds to wait before replacing a disconnect
 
 # Raised when trying to start a map vote when the map has been forced
 class MapForcedException(Exception):

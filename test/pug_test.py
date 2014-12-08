@@ -6,10 +6,12 @@ player restriction, updating game stats, etc.
 import sys
 import logging
 sys.path.append('..')
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 from entities import Pug
 from entities.Pug import PlayerStats
+
+from pprint import pprint
 
 def test_add_player():
     print "Testing add_player"
@@ -34,30 +36,90 @@ def test_remove_player():
     assert 1L not in pug.game_stats
     assert 1L not in pug.player_votes
 
+    # test replacement trigger
+    pug = fill_pug()
+    pug.shuffle_teams()
+
+    state = pug.state
+    player_team = pug.player_team(1L)
+
+    pug.remove_player(1L)
+    assert pug.full == False
+    assert pug.state == Pug.states["REPLACEMENT_REQUIRED"]
+    assert pug._previous_state == state
+    assert len(pug.teams[player_team]) == pug.size/2 - 1
+
+    leaver_ids = [ p["id"] for p in pug.leaver_record ]
+    assert 1L in leaver_ids
+
+    replace_time = pug.replacement_time
+    replace_timeout = pug.replacement_timeout
+    prev_state = pug._previous_state
+
+    # test double remove (i.e. need 2 replacements)
+    player_team = pug.player_team(2L)
+    pug.remove_player(2L)
+    assert pug.full == False
+    assert pug.state == Pug.states["REPLACEMENT_REQUIRED"]
+    assert pug.replacement_time == replace_time
+    assert pug.replacement_timeout == replace_timeout
+    assert pug._previous_state == prev_state
+
+    leaver_ids = [ p["id"] for p in pug.leaver_record ]
+    assert 2L in leaver_ids
+
 def test_add_to_team():
     print "Testing add_to_team"
     pug = Pug.Pug()
+
+    pug.add_player(1L, str(1L), PlayerStats())
+    pug.add_player(2L, str(2L), PlayerStats())
+    pug.add_player(3L, str(3L), PlayerStats())
+    pug.add_player(4L, str(4L), PlayerStats())
+
     pug._add_to_team("blue", 1L)
     assert pug.teams["blue"] == set([ 1L ])
+    assert pug.team_ratings["blue"] == PlayerStats()["rating"]
+    assert pug.player_team(1L) == "blue"
+
     pug._add_to_team("blue", [2L, 3L])
     assert pug.teams["blue"] == set([ 1L, 2L, 3L ])
+    assert pug.team_ratings["blue"] == PlayerStats()["rating"]*3
+
+    pug._add_to_team("blue", [ 4L ])
+    assert pug.teams["blue"] == set([ 1L, 2L, 3L, 4L ])
+    assert pug.team_ratings["blue"] == PlayerStats()["rating"]*4    
 
 def test_remove_from_team():
     print "Testing remove_from_team"
     pug = Pug.Pug()
-    pug._add_to_team("blue", [ 1L, 2L, 3L ])
+
+    pug.add_player(1L, str(1L), PlayerStats())
+    pug.add_player(2L, str(2L), PlayerStats())
+    pug.add_player(3L, str(3L), PlayerStats())
+    pug.add_player(4L, str(4L), PlayerStats())
+
+    assert pug.team_ratings["blue"] == 0
+
+    pug._add_to_team("blue", [ 1L, 2L, 3L, 4L ])
     
     pug._remove_from_team("blue", [ 1L ])
-    assert pug.teams["blue"] == set([ 2L, 3L ])
+    assert pug.teams["blue"] == set([ 2L, 3L, 4L ])
+    assert pug.team_ratings["blue"] == PlayerStats()["rating"]*3
 
-    pug._remove_from_team("blue", [ 2L, 3L ])
+    pug._remove_from_team("blue", 2L)
+    assert pug.teams["blue"] == set([ 3L, 4L ])
+    assert pug.team_ratings["blue"] == PlayerStats()["rating"]*2
+
+    pug._remove_from_team("blue", [ 3L, 4L ])
     assert pug.teams["blue"] == set([])
+    assert pug.team_ratings["blue"] == 0
+
 
 def fill_pug():
     pug = Pug.Pug()
-    pid = 1L
-    while not pug.full:
-        pug.add_player(pid, str(pid), PlayerStats())
+    for i in xrange(1,13):
+        pug.add_player(i, str(i), PlayerStats())
 
     assert pug.full == True
 
@@ -113,6 +175,14 @@ def test_update_score():
     pug = Pug.Pug()
     assert pug.game_scores["blue"] == pug.game_scores["red"] == 0
 
+    # Ensure no update before pug starts
+    pug.update_score("blue", 2)
+    pug.update_score("red", 3)
+    assert pug.game_scores["blue"] == pug.game_scores["red"] == 0
+
+    pug.begin_game()
+    assert pug.state == Pug.states["GAME_STARTED"]
+
     pug.update_score("blue", 2)
     assert pug.game_scores["blue"] == 2
     assert pug.game_scores["red"] == 0
@@ -139,6 +209,9 @@ def test_helpers():
     print "Testing helper methods"
     pug = Pug.Pug()
     pug.add_player(1L, "1", PlayerStats())
+    
+    pug._add_to_team("blue", 1L)
+    assert pug.player_team(1L) == "blue"
 
     assert pug.has_player(1L) == True
     assert pug.player_list() == [ 1L ]
@@ -151,18 +224,25 @@ def test_helpers():
     assert pug.player_name(1L) == "1"
     assert pug.get_state_string() == "GATHERING_PLAYERS"
 
+
     assert pug.teams_done == False
     assert pug.full == False
     assert pug.player_count == 1
     assert pug.game_started == False
     assert pug.game_over == False
     assert pug.password is None
+    assert pug.has_disconnects == False
+    assert pug.replacement_required == False
+    assert pug.replacement_timed_out == False
+    assert pug.map_available(Pug.AVAILABLE_MAPS[0]) == True
+
     assert len(pug.map_votes) == 0
 
 def test_update_game_stats():
     print "Testing game stat update"
     pug = Pug.Pug()
     pug.add_player(1L, "1", PlayerStats())
+    pug.begin_game()
     
     assert pug.game_stats[1L] == PlayerStats()
     assert pug.game_stats[1L] is pug._get_game_stats(1L)
@@ -184,18 +264,21 @@ def test_update_end_stats():
     pug = Pug.Pug()
     start = PlayerStats(kills = 1, deaths = 1, losses = 1, winstreak = 2)
     pug.add_player(1L, "1", start)
+    pug._add_to_team("blue", 1L)
+
+    pug.begin_game()
 
     pug.update_game_stat(1L, "kills", 1)
     pug.update_game_stat(1L, "deaths", 1)
-
     pug.update_score("blue", 1)
-    pug._add_to_team("blue", 1L)
+    pug.set_player_rating(1L, 1600)
 
     game = PlayerStats(kills = 1, deaths = 1, wins = 1, games_played = 1,
-                       games_since_medic = 1, winstreak = 3)
+                       games_since_medic = 1, winstreak = 3, rating = 1600)
 
     end = PlayerStats(kills = 2, deaths = 2, wins = 1, losses = 1,
-                      games_played = 1, games_since_medic = 1, winstreak = 3)
+                      games_played = 1, games_since_medic = 1, winstreak = 3,
+                      rating = 1600)
 
     pug.update_end_stats()
 
@@ -222,6 +305,7 @@ def test_shuffle_teams():
     pug.add_player(12L, "12", PlayerStats(rating = 1680))
 
     pug.shuffle_teams()
+    assert pug.state == Pug.states["TEAMS_SHUFFLED"]
 
     # 2 potential team lineups for each team due to medics being randomly
     # shuffled
@@ -233,6 +317,164 @@ def test_shuffle_teams():
     assert 1L in pug.medics.values() and 2L in pug.medics.values()
     assert pug.teams["blue"] == blue_team1 or pug.teams["blue"] == blue_team2
     assert pug.teams["red"] == red_team1 or pug.teams["red"] == red_team2
+
+def prepare_full_pug():
+    pug = fill_pug()
+    pug.shuffle_teams()
+
+    return pug
+
+def test_replace_player_single():
+    print "Testing single player replace"
+    pug = prepare_full_pug()
+
+    player_team = pug.player_team(1L)
+    pug.remove_player(1L)
+    assert pug.state == Pug.states["REPLACEMENT_REQUIRED"]
+
+    leaver_ids = [ p["id"] for p in pug.leaver_record ]
+    assert 1L in leaver_ids
+
+    # Add a new player
+    pug.add_player(13L, "13", PlayerStats())
+
+    # Make sure the state went back to the previous state
+    assert pug.state == Pug.states["TEAMS_SHUFFLED"]
+    assert pug.full == True
+
+    # Make sure the replacement is on the same team as the leaver
+    assert len(pug.teams[player_team]) == pug.size/2
+    assert pug.player_team(13L) == player_team
+
+def test_replace_player_multi():
+    print "Testing multiple player replace"
+
+    """
+    2 Players - Both from the same team
+    """
+    pug = prepare_full_pug()
+
+    team1, team2 = pug.teams.keys()
+    ids = list(pug.teams[team1])[:2]
+    for i in ids:
+        pug.remove_player(i)
+
+    assert len(pug.teams[team1]) == pug.size/2 - 2
+    assert pug.full == False
+
+    pug.add_player(13L, "13", PlayerStats())
+    # Make sure they to the same team
+    assert len(pug.teams[team1]) == pug.size/2 - 1
+    assert pug.full == False
+
+    # Ensure we're still looking for a replacement
+    assert pug.state == Pug.states["REPLACEMENT_REQUIRED"]
+
+    # Make sure the team is now full, and we're back to teams_shuffled
+    pug.add_player(14L, "14", PlayerStats())
+    assert len(pug.teams[team1]) == pug.size/2
+    assert pug.full == True
+
+    assert pug.state == Pug.states["TEAMS_SHUFFLED"]
+
+    """
+    2 Players - 1 from each team (equal team rating)
+    """
+    pug = prepare_full_pug()
+
+    ids = list(pug.teams[team1])[:1] + list(pug.teams[team2])[:1]
+    for i in ids:
+        pug.remove_player(i)
+
+    assert len(pug.teams[team1]) == pug.size/2 - 1
+    assert len(pug.teams[team2]) == pug.size/2 - 1
+    assert pug.full == False
+
+    pug.add_player(13L, "13", PlayerStats())
+    assert pug.player_team(13L) is not None
+    assert len(pug.teams[pug.player_team(13L)]) == pug.size/2
+    assert pug.full == False
+    assert pug.state == Pug.states["REPLACEMENT_REQUIRED"]
+
+    pug.add_player(14L, "14", PlayerStats())
+    assert pug.player_team(14L) is not None
+    assert len(pug.teams[pug.player_team(14L)]) == pug.size/2
+    assert pug.full == True
+    assert pug.state == Pug.states["TEAMS_SHUFFLED"]
+
+    """
+    2 Players - 1 from each team (non-equal team rating)
+    """
+    pug = prepare_full_pug()
+    pug.team_ratings[team1] = 8750
+    pug.team_ratings[team2] = 9000
+
+    ids = list(pug.teams[team1])[:1] + list(pug.teams[team2])[:1]
+    for i in ids:
+        pug.remove_player(i)
+
+    assert len(pug.teams[team1]) == pug.size/2 - 1
+    assert len(pug.teams[team2]) == pug.size/2 - 1
+    assert pug.full == False
+
+    # Player is added to the team with the lowest rating first
+    pug.add_player(13L, "13", PlayerStats())
+    assert pug.player_team(13L) == team1
+    assert len(pug.teams[team1]) == pug.size/2
+    assert pug.full == False
+    assert pug.state == Pug.states["REPLACEMENT_REQUIRED"]
+
+    pug.add_player(14L, "14", PlayerStats())
+    assert pug.player_team(14L) == team2
+    assert len(pug.teams[team2]) == pug.size/2
+    assert pug.full == True
+    assert pug.state == Pug.states["TEAMS_SHUFFLED"]
+
+    """
+    3 Players - 2 from 1 team, 1 from the other (non-equal rating)
+    """
+    pug = prepare_full_pug()
+    pug.team_ratings[team1] = 8750
+    pug.team_ratings[team2] = 9000
+
+    ids = list(pug.teams[team1])[:2] + list(pug.teams[team2])[:1]
+    for i in ids:
+        pug.remove_player(i)
+
+    assert len(pug.teams[team1]) == pug.size/2 - 2
+    assert len(pug.teams[team2]) == pug.size/2 - 1
+    assert pug.full == False
+    assert pug.state == Pug.states["REPLACEMENT_REQUIRED"]
+
+    # Player is added to the team with the least number of players first
+    pug.add_player(13L, "13", PlayerStats(rating = 2000))
+    assert pug.player_team(13L) == team1
+    assert len(pug.teams[team1]) == pug.size/2 - 1
+    assert len(pug.teams[team2]) == pug.size/2 - 1
+    
+    assert pug.full == False # Still not full
+    assert pug.state == Pug.states["REPLACEMENT_REQUIRED"]
+
+    # Team1 should now have a higher rating than team2, so the next player
+    # should be added to team2
+    assert pug.team_ratings[team1] > pug.team_ratings[team2]
+    
+    pug.add_player(14L, "14", PlayerStats())
+    assert pug.player_team(14L) == team2
+    assert len(pug.teams[team1]) == pug.size/2 - 1
+    assert len(pug.teams[team2]) == pug.size/2
+    
+    assert pug.full == False
+    assert pug.state == Pug.states["REPLACEMENT_REQUIRED"]
+
+    # And finally, last player to team1
+    pug.add_player(15L, "15", PlayerStats())
+    assert pug.player_team(15L) == team1
+    assert len(pug.teams[team1]) == pug.size/2
+    assert len(pug.teams[team2]) == pug.size/2
+    
+    assert pug.full == True
+    assert pug.state == Pug.states["TEAMS_SHUFFLED"]
 
 def test():
     test_add_player()
@@ -246,5 +488,8 @@ def test():
     test_update_game_stats()
     test_update_end_stats()
     test_shuffle_teams()
-    
-test()
+    test_replace_player_single()
+    test_replace_player_multi()
+
+if __name__ == "__main__":
+    test()

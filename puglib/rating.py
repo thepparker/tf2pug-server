@@ -93,9 +93,12 @@ def calculate_rating(teams, rank):
     new = [ [] for x in range(len(teams)) ]
     for i, team in enumerate(teams):
         # team is a list of Rating objects
+        num_t_players = len(team)
         for j, e_team in enumerate(teams):
             if i == j: #skip if same team
                 continue
+
+            num_e_players = len(e_team)
 
             actual_score = 0
             # rank is reverse sorted (i.e 0,1,2,3), so we need to do this 
@@ -107,6 +110,13 @@ def calculate_rating(teams, rank):
             else:
                 actual_score = DRAW
 
+            """
+            If the teams do not have an equal number of players, mitigate the
+            elo gain/loss. This must be the same for both teams in order to
+            keep a zero-sum system (amount gained = amount lost).
+            """
+            K_mitigate = 1.0/(1 + abs(num_t_players - num_e_players))
+
             for p in team:
                 # we need to do some lookup to find the K-factor for these
                 # players. always use the winner's K-factor, or in the case of
@@ -114,7 +124,6 @@ def calculate_rating(teams, rank):
                 K_factor = K(p) # default K-factor
 
                 duel_sum = 0
-                num_e_players = len(e_team)
                 for e in e_team:
                     expected_score = 1/(1+math.pow(10,((float(e)-float(p))/400))) # 0 < E < 1
 
@@ -124,7 +133,7 @@ def calculate_rating(teams, rank):
                         # because it's the smallest
                         K_factor = K(e)
 
-                    rating_gain = K_factor*(actual_score-expected_score)
+                    rating_gain = K_mitigate*K_factor*(actual_score-expected_score)
 
                     duel_sum += rating_gain
 

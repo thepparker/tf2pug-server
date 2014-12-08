@@ -254,7 +254,7 @@ class MapVoteTest(ManagerTestCase):
         self.assertTrue(pug.teams_done)
 
 class UpdateRatingsTestCase(ManagerTestCase):
-    def test_ratings_update(self):
+    def test_ratings_update_even_teams(self):
         pug = Pug()
 
         pug.add_player(1L, "1", PlayerStats(rating = 1600, games_since_medic = 5))
@@ -311,6 +311,41 @@ class UpdateRatingsTestCase(ManagerTestCase):
 
         for cid, rating in ratings:
             self.assertEquals(pug.end_stats[cid]["rating"], rating)
+
+    def test_ratings_update_uneven_teams(self):
+        """
+        This test case covers when someone leaves and no replacement is found
+        before we attempt to update the ratings. (i.e. the teams are uneven).
+        """
+        pug = Pug()
+
+        pug.add_player(1L, "1", PlayerStats(rating = 1600, games_since_medic = 5))
+        pug.add_player(2L, "2", PlayerStats(rating = 1600, games_since_medic = 5))
+        pug.add_player(3L, "3", PlayerStats(rating = 1800))
+        pug.add_player(4L, "4", PlayerStats(rating = 1800))
+        pug.add_player(5L, "5", PlayerStats(rating = 1770))
+        pug.add_player(6L, "6", PlayerStats(rating = 1750))
+        pug.add_player(7L, "7", PlayerStats(rating = 1700))
+        pug.add_player(8L, "8", PlayerStats(rating = 1900))
+        pug.add_player(9L, "9", PlayerStats(rating = 1500))
+        pug.add_player(10L, "10", PlayerStats(rating = 1650))
+        pug.add_player(11L, "11", PlayerStats(rating = 1620))
+        pug.add_player(12L, "12", PlayerStats(rating = 1680))
+
+        pug.shuffle_teams()
+
+        # Now insert some fake score
+        pug.update_score("red", 1)
+        # Remove a player. Teams are now uneven
+        pug.remove_player(1L)
+
+        from pprint import pprint
+
+        self.pm._update_ratings(pug)
+        pprint(pug.game_stats)
+        pug.update_end_stats()
+
+
 
 def test_suites():
     classes = [ CreatePugTest, PlayerAddRemoveTest, MapVoteTest,

@@ -112,6 +112,9 @@ class Pug(object):
             "blue": set()
         }
 
+        # TODO: Make everything use variable teams, so it is easily extended
+        team1, team2 = self.teams.keys()
+
         self.team_ratings = {
             "red": 0,
             "blue": 0
@@ -152,7 +155,42 @@ class Pug(object):
             we place the player on a team based on the current team ratings and
             the player's rating.
             """
+            team1, team2 = self.teams.keys()
+            team_lens = { 
+                            team1: len(self.teams[team1]), 
+                            team2: len(self.teams[team2]) 
+                        }
 
+            team1_len = team_lens[team1]
+            team2_len = team_lens[team2]
+
+            new_team = None
+
+            if team1_len > team2_len: # t1 has more players than t2. add to t2
+                new_team = team2
+
+            elif team1_len < team2_len: # opposite, t2 has more players than t1
+                new_team = team1
+
+            else:
+                # teams are even (i.e. more than 1 replacement), so we add to
+                # whichever team has the least rating.
+                team1_rating = self.team_ratings[team1]
+                team2_rating = self.team_ratings[team2]
+
+                if team1_rating > team2_rating: # add to team2
+                    new_team = team2
+
+                elif team1_rating < team2_rating:
+                    new_team = team1
+
+                else:
+                    # teams are even 100% even... dice roll!
+                    new_team = random.choice([ team1, team2 ])
+            
+            self._add_to_team(new_team, player_id)
+
+            # If the pug is now full, go back to prev state.
             if self.full:
                 self.replacement_time = 0
                 self.replacement_timeout = 0
@@ -626,7 +664,7 @@ class Pug(object):
     def update_game_stat(self, player_id, statkey, value, increment = True):
         if not self.game_started:
             return
-            
+
         ps = self._get_game_stats(player_id)
 
         if (not increment) or (statkey not in ps):

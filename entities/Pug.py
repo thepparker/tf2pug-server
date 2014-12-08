@@ -16,14 +16,14 @@ states = {
     "GAME_OVER": 6
 }
 
-MAPVOTE_DURATION = 1 # Time in seconds for map vote duration
+MAPVOTE_DURATION = 30 # Time in seconds for map vote duration
 AVAILABLE_MAPS = [ "cp_granary", "cp_badlands", "cp_gravelpit", 
                    "cp_snakewater_final1", "cp_process_final",
                    "cp_gullywash_final1", "cp_sunshine_rc2",
                    "koth_pro_viaduct_rc4"
                 ]
-REPLACE_TIMEOUT = 300 # Time in seconds to wait for a replace
-DISCONNECT_TIMEOUT = 300 # Time in seconds to wait before replacing a disconnect
+REPLACE_TIMEOUT = 180 # Time in seconds to wait for a replace before ending pug
+DISCONNECT_TIMEOUT = 90 # Time in seconds to wait before replacing a disconnect
 
 # Raised when trying to start a map vote when the map has been forced
 class MapForcedException(Exception):
@@ -139,45 +139,27 @@ class Pug(object):
         self.player_stats[player_id] = pstats
         self._get_game_stats(player_id)
 
-
         # If this player is a replacement (i.e. in REPLACEMENT_REQUIRED state),
         # and the pug is now full after this person has joined, go back to the
         # previous state. HOWEVER, if we need MORE than one replacement, do NOT
         # change the state back, keep it in REPLACEMENT_REQUIRED until the pug
         # is full again.
-        if self.state == states["REPLACEMENT_REQUIRED"] and self.full:
-            self.replacement_time = 0
-            self.replacement_timeout = 0
-            self.state = self._previous_state
+        if self.state == states["REPLACEMENT_REQUIRED"]:
+            """
+            Decide which team to place the player on. If the teams are uneven,
+            then we simply place them on whichever team has the least number of
+            players. If the teams are EVEN (i.e. 2 or more people have left),
+            we place the player on a team based on the current team ratings and
+            the player's rating.
+            """
 
-    def _add_to_team(self, team, player):
-        """
-        Add a player to the specified team list. Player can also be a list, as
-        per __allocate_players.
-        """
-        if isinstance(player, list):
-            self.teams[team] |= set(player)
-        else:
-            self.teams[team].add(player)
-
-    def _remove_from_team(self, team, player):
-        if isinstance(player, list):
-            self.teams[team] -= set(player)
-        else:
-            self.teams[team].add(player)
+            if self.full:
+                self.replacement_time = 0
+                self.replacement_timeout = 0
+                self.state = self._previous_state
 
     def remove_player(self, player_id):
         if player_id in self._players:
-            del self._players[player_id]
-
-            # update the admin to the next person in the pug
-            if player_id == self.admin and self.player_count > 0:
-                self.admin = self._players.keys()[0]
-
-            # remove this player's stats
-            del self.player_stats[player_id]
-            del self.game_stats[player_id]
-
             # if the game is in progress, we need to change the state to 
             # replacement needed. we store the previous state so we can go
             # back to it if we get a replacement.
@@ -200,8 +182,48 @@ class Pug(object):
                 # record.
                 self.leaver_record.append({ "id": player_id, "time": ctime })
 
+                player_team = self.player_team(player_id)
+                if player_team is not None:
+                    self._remove_from_team(player_team, player_id)
+
+            del self._players[player_id]
+
+            # update the admin to the next person in the pug
+            if player_id == self.admin and self.player_count > 0:
+                self.admin = self._players.keys()[0]
+
+            # remove this player's stats
+            del self.player_stats[player_id]
+            del self.game_stats[player_id]
+
         if player_id in self.player_votes:
             del self.player_votes[player_id]
+
+    def _add_to_team(self, team, player):
+        """
+        Add a player to the specified team list. Player can also be a list, as
+        per __allocate_players. We also increment the team rating here.
+        """
+        if isinstance(player, list):
+            for cid in player:
+                self.team_ratings[team] += self.player_stats[cid]["rating"]
+
+            self.teams[team] |= set(player)
+        else:
+            self.team_ratings[team] += self.player_stats[player]["rating"]
+
+            self.teams[team].add(player)
+
+    def _remove_from_team(self, team, player):
+        if isinstance(player, list):
+            for cid in player:
+                self.team_ratings[team] -= self.player_stats[cid]["rating"]
+
+            self.teams[team] -= set(player)
+        else:
+            self.team_ratings[team] -= self.player_stats[player]["rating"]
+
+            self.teams[team].discard(player)
 
     def add_disconnect(self, player_id, reason):
         """
@@ -327,7 +349,6 @@ class Pug(object):
         for team in self.teams:
             medic = potential_medics.pop()
 
-            self.team_ratings[team] += stat_data[medic]["rating"]
             self.medics[team] = medic
             self._add_to_team(team, medic)
             medics.append(medic)
@@ -419,9 +440,6 @@ class Pug(object):
         self._add_to_team("red", red)
         self._add_to_team("blue", blue)
 
-        self.team_ratings["red"] += red_score
-        self.team_ratings["blue"] += blue_score
-
         logging.info("Team allocation complete. Red: %s (Score: %s), Blue: %s (Score: %s)", 
                         self.teams["red"], red_score, self.teams["blue"], blue_score)
 
@@ -442,6 +460,9 @@ class Pug(object):
             pass
 
     def update_score(self, team, score):
+        if not self.game_started:
+            return
+
         try:
             score = int(score)
             self.game_scores[team] = score
@@ -465,11 +486,10 @@ class Pug(object):
         team1, team2 = self.teams.keys()
         opposition = { team1: team2, team2: team1 } 
         for cid in self.game_stats:
-            player_team = None
-            for team in self.teams:
-                if cid in self.teams[team]:
-                    player_team = team
-                    break
+            player_team = self.player_team(cid)
+            if player_team is None:
+                logging.error("Player '%s' has no team", cid)
+                continue
 
             team_score = self.game_scores[player_team]
             oppo_score = self.game_scores[opposition[player_team]]
@@ -590,12 +610,23 @@ class Pug(object):
         if pid in self._players:
             return self._players[pid]
 
+    def player_team(self, pid):
+        if pid in self._players:
+            for team in self.teams:
+                if pid in self.teams[team]:
+                    return team
+
+        return None
+
     def get_state_string(self):
         for name, enum in states.items():
             if enum == self.state:
                 return name
 
     def update_game_stat(self, player_id, statkey, value, increment = True):
+        if not self.game_started:
+            return
+            
         ps = self._get_game_stats(player_id)
 
         if (not increment) or (statkey not in ps):

@@ -159,7 +159,7 @@ class BaseLogInterface(object):
         raise NotImplementedError("Must implement this method")
 
     def start_game(self, start_time = 5):
-        self.server.start_game(start_time)
+        #self.server.start_game(start_time)
         self.pug.begin_game()
 
     def restart_game(self):

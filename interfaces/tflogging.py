@@ -218,9 +218,9 @@ class TFLogInterface(BaseLogInterface):
                 
                 else:
                     self.start_game()
-            else:
-                # start tracking stats again!
-                self.ROUND_PAUSE = False
+                    # start tracking stats
+                    self.ROUND_PAUSE = False
+                    self.server.rcon("say !!! The game is now live !!!")
 
     def _parse_player_connection(self, match, expr):
         if expr is player_connect:

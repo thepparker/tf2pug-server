@@ -1,5 +1,6 @@
 
 import math
+import numbers
 
 K_table = {
     "2.0": 6,
@@ -50,13 +51,13 @@ class Rating(object):
         return "%s(rating = %0.3f)" % (".".join([t.__module__, t.__name__]), self.rating)
 
     def __add__(self, other):
-        if isinstance(other, Rating):
-            return Rating(self.rating + other.rating)
+        if isinstance(other, (Rating, numbers.Number)):
+            return Rating(self.rating + other)
         else:
             raise TypeError("%s cannot add to %s" % (repr(self), repr(other)))
 
     def __sub__(self, other):
-        if isinstance(other, Rating):
+        if isinstance(other, (Rating, numbers.Number)):
             return Rating(self.rating - other.rating)
         else:
             raise TypeError("unsupported operand type(s) for -: '%s' and '%s'" % (
@@ -137,7 +138,13 @@ def calculate_rating(teams, rank):
 
                     duel_sum += rating_gain
 
-                new_rating = float(p) + duel_sum/num_e_players
+
+                # A little hack to ensure the rating is zero-sum when teams are
+                # uneven is to use the same player count for both calculations.
+                # To this end, we use the team that has the most players for
+                # the smallest ELO change.
+                new_rating = float(p) + duel_sum/ max(num_t_players, 
+                                                      num_e_players)
                 new[i].append(Rating(new_rating))
 
     # make new teams immutable

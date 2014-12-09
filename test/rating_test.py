@@ -3,6 +3,10 @@ sys.path.append('../puglib')
 
 from rating import *
 
+import random
+from pprint import pprint
+import math
+
 def test_rating():
     assert Rating(1) == Rating(1)
     assert Rating(1) <= Rating(2)
@@ -47,6 +51,93 @@ def rate_6v6_all_1500():
 
     calculate_rating([ team1, team2 ], [0, 1])
 
+def rate_5v6_random():
+    # Test rating when teams are uneven at the end of the match
+    print "Rating 5v6 (random rating)"
+    team1 = [ Rating(random.randrange(1400, 1700)) for x in range(6) ]
+    team2 = [ Rating(random.randrange(1400, 1700)) for x in range(5) ]
+
+    # First just check for zero-sum equality with random ratings
+    new_ratings = calculate_rating([ team1, team2 ], [1, 0])
+
+    team1_change = float(sum(new_ratings[0]) - sum(team1))
+    team2_change = float(sum(new_ratings[1]) - sum(team2))
+
+    print "Rating change for random elo - Team 1: {0}. Team2: {1}".format(
+                team1_change, team2_change)
+
+    assert math.floor(abs(team1_change)) == math.floor(abs(team2_change))
+
+    # Can't check rating equality here because of floating point inaccuracies
+    # assert new_ratings = []
+
+def rate_5v6_equal():
+    print "Rating 5v6 (all ELO equal) - Team 2 Win"
+    # Now we'll check zero-sum equality AND rating equality, since we have
+    # known values
+    team1 = [ Rating(1500) for x in range(6) ]
+    team2 = [ Rating(1500) for x in range(5) ]
+
+    new_ratings = calculate_rating([ team1, team2 ], [1, 0])
+    team1_change = float(sum(new_ratings[0]) - sum(team1))
+    team2_change = float(sum(new_ratings[1]) - sum(team2))
+
+    print "Rating change for constant elo - Team 1: {0}. Team2: {1}".format(
+                team1_change, team2_change)
+
+    assert abs(team1_change) == abs(team2_change)
+    
+    assert new_ratings == [
+            (Rating(rating = 1495.000), Rating(rating = 1495.000),
+             Rating(rating = 1495.000), Rating(rating = 1495.000),
+             Rating(rating = 1495.000), Rating(rating = 1495.000)),
+            (Rating(rating = 1506.000), Rating(rating = 1506.000),
+             Rating(rating = 1506.000), Rating(rating = 1506.000),
+             Rating(rating = 1506.000))
+        ]
+
+    print "Rating 5v6 (all ELO equal) - Team 1 Win"
+    new_ratings = calculate_rating([ team1, team2 ], [0, 1])
+    team1_change = float(sum(new_ratings[0]) - sum(team1))
+    team2_change = float(sum(new_ratings[1]) - sum(team2))
+
+    print "Rating change for constant elo - Team 1: {0}. Team2: {1}".format(
+                team1_change, team2_change)
+
+    assert abs(team1_change) == abs(team2_change)
+
+    assert new_ratings == [
+            (Rating(rating = 1505.000), Rating(rating = 1505.000),
+             Rating(rating = 1505.000), Rating(rating = 1505.000),
+             Rating(rating = 1505.000), Rating(rating = 1505.000)),
+            (Rating(rating = 1494.000), Rating(rating = 1494.000),
+             Rating(rating = 1494.000), Rating(rating = 1494.000),
+             Rating(rating = 1494.000))
+        ]
+    
+def rate_5v6_nonequal_draw():
+    team1 = [ Rating(1500+5*x) for x in range(6) ]
+    team2 = [ Rating(1500+20+x) for x in range(5) ]
+
+    new_ratings = calculate_rating([ team1, team2 ], [0, 0])
+
+    team1_change = float(sum(new_ratings[0]) - sum(team1))
+    team2_change = float(sum(new_ratings[1]) - sum(team2))
+
+    print "Rating change for 5v6 draw - Team 1: {0}. Team2: {1}".format(
+                team1_change, team2_change)
+
+    assert math.floor(abs(team1_change)) == math.floor(abs(team2_change))
+
+    assert new_ratings == [
+            (Rating(rating = 1500.316), Rating(rating = 1505.244),
+             Rating(rating = 1510.173), Rating(rating = 1515.101),
+             Rating(rating = 1520.029), Rating(rating = 1524.957)),
+            (Rating(rating = 1519.871), Rating(rating = 1520.853),
+             Rating(rating = 1521.836), Rating(rating = 1522.819),
+             Rating(rating = 1523.802))
+        ]
+
 
 def rate_1v1_cross_tier():
     team1 = [ Rating(1850) ]
@@ -67,6 +158,14 @@ def rate_1v1_cross_tier():
             (Rating(rating = 1751.401),)
         ]
 
-test_rating()
-rate_4v4_1500()
-rate_1v1_cross_tier()
+def test():
+    test_rating()
+    rate_4v4_1500()
+    rate_1v1_cross_tier()
+    rate_5v6_random()
+    rate_5v6_equal()
+    rate_5v6_nonequal_draw()
+
+if __name__ == "__main__":
+    test()
+

@@ -222,10 +222,13 @@ class TFLogInterface(BaseLogInterface):
                     self.ROUND_PAUSE = False
                     self.server.rcon("say !!! The game is now live !!!")
 
+            else:
+                self.ROUND_PAUSE = False
+
     def _parse_player_connection(self, match, expr):
         if expr is player_connect:
             # check if the player id is in the pug player list. if not, kick
-            # them (if we're not looking for a replacement...?)
+            # them
             name = re_group(match, 1)
             sid = re_group(match, 3)
             cid = steamid_to_64bit(sid)

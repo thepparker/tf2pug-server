@@ -46,6 +46,19 @@ class ServerManager(object):
 
         self._flush_server(server)
 
+    def reset_oprhans(self):
+        """
+        Resets all orphaned servers (servers that have a pug ID, but no
+        corresponding pug has been assigned). This method should _ONLY_ be
+        called by the PugManager once all pugs have been loaded, as it is the
+        PugManager's responsibility to assign pug objects to servers.
+        """
+        for server in self._servers:
+            if server.pug_id > 0 and server.pug is None:
+                server.reset()
+
+                self._flush_server(server)
+
     def get_server_by_id(self, sid):
         for server in self._servers:
             if server.id == sid:
@@ -78,6 +91,12 @@ class ServerManager(object):
         return server
 
     def __load_servers(self):
+        """
+        Load servers from the database. If a pug is in progress on a server,
+        the pug will be assigned to the server object by the PugManager's pug
+        loading method. We do not setup object relationships here.
+        """
+
         results = self.db.get_servers(self.group)
 
         if not results:

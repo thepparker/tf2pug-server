@@ -487,9 +487,6 @@ class PugManager(object):
     def __flush_pug_stats(self, pug):
         self.db.flush_player_stats(pug.end_stats)
 
-    """
-    
-    """
     def _update_ratings(self, pug):
         """
         Calculates the new rating of players after the game and updates it in
@@ -607,6 +604,11 @@ class PugManager(object):
                 pug.server.pug = pug # make sure to give the server the pug again!
 
                 self._pugs.append(pug)
+
+        # If any servers were allocated previously to a pug and were not reset
+        # for whatever reason, they are considered orphaned. We should
+        # reset these servers so they will be available for use again.
+        self.server_manager.reset_orphans()
         
     def _flush_pug(self, pug):
         """

@@ -46,7 +46,7 @@ class ServerManager(object):
 
         self._flush_server(server)
 
-    def reset_oprhans(self):
+    def reset_orphans(self):
         """
         Resets all orphaned servers (servers that have a pug ID, but no
         corresponding pug has been assigned). This method should _ONLY_ be

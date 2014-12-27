@@ -55,6 +55,7 @@ class ServerManager(object):
         """
         for server in self._servers:
             if server.pug_id > 0 and server.pug is None:
+                logging.debug("Resetting orphaned server '%d'", server.id)
                 server.reset()
 
                 self._flush_server(server)

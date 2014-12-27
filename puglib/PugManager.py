@@ -18,7 +18,7 @@ class PugManager(object):
     adding players to appropriate pugs, maintaining a list of active pugs,
     etc.
     """
-    def __init__(self, api_key, db, server_manager, ban_manager):
+    def __init__(self, group, api_key, db, server_manager, ban_manager):
         self.game = "TF2"
 
         self._json_iface_cls = get_json_interface(self.game)
@@ -31,6 +31,12 @@ class PugManager(object):
 
         self.server_manager = server_manager
         self.ban_manager = ban_manager
+
+        # A list of all other pug managers in the same group, used to prevent
+        # people joining pugs when they are in another pug belonging to a
+        # manager in the same group.
+        self.group = group
+        self.group_managers = []
 
         self.__load_pugs()
 
@@ -71,13 +77,13 @@ class PugManager(object):
         """
         # let's see if the user is banned/already in a pug
         if self._player_banned(player_id):
-            raise PlayerBannedException("Player %s is banned" % player_id)
+            raise PlayerBannedException("Player '%s' is banned" % player_id)
 
-        if self.get_player_pug(player_id) is not None:
-            raise PlayerInPugException("Player %s is already in pug" % player_id)
+        if self._player_in_pug(player_id):
+            raise PlayerInPugException("Player '%s' is already in pug" % player_id)
 
         if pug.full:
-            raise PugFullException("Pug %d is full" % pug.id )
+            raise PugFullException("Pug '%d' is full" % pug.id )
 
         else:
             # have potential pug. we need to check if the player is within the
@@ -286,7 +292,14 @@ class PugManager(object):
 
         :return bool True if the player is in a pug, else False
         """
-        return self.get_player_pug(player_id) is not None
+        if self.get_player_pug(player_id) is not None:
+            return True
+        
+        for pm in self.group_managers:
+            if pm.get_player_pug(player_id) is not None:
+                return True
+
+        return False
 
     def _player_banned(self, player_id):
         """

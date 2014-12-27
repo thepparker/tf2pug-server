@@ -45,9 +45,7 @@ class UserContainer(object):
         if not isinstance(user, APIUser):
             raise TypeError("Invalid user type")
 
-        for u in self.users:
-            if u == user:
-                return True
+        return user in self.users
 
     def add_user(self, user_info):
         #user_info = (name, pug_group, server_group, private_key, public_key)
@@ -181,7 +179,8 @@ class Application(tornado.web.Application):
 
             user = self._auth_cache.get_user_by_priv_key(private_key)
 
-            new_manager = PugManager.PugManager(private_key, self.db, 
+            new_manager = PugManager.PugManager(user.pug_group, private_key, 
+                            self.db, 
                             self.get_server_manager(user.server_group),
                             self.ban_manager)
 
@@ -232,6 +231,18 @@ class Application(tornado.web.Application):
             for key_tuple in results:
                 user = self._auth_cache.add_user(key_tuple)
                 self.get_pug_manager(user.private_key)
+
+        # Build each pug's group_managers list using a simple n*n iteration
+        logging.info("- Building lists of managers in the same groups")
+        for pm in self._pug_managers.values():
+            pm.group_managers = [ x 
+                    for x in self._pug_managers.values()
+                        if (x.api_key != pm.api_key) and (x.group == pm.group)
+                ]
+
+            logging.debug("'%s' group managers: %s", pm.api_key, pm.group_managers)
+
+        logging.info("All users loaded")
 
     def __late_load_servers(self):
         """

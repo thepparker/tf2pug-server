@@ -22,8 +22,8 @@ AVAILABLE_MAPS = [ "cp_granary", "cp_badlands", "cp_gravelpit",
                    "cp_gullywash_final1", "cp_sunshine_rc2",
                    "koth_pro_viaduct_rc4"
                 ]
-REPLACE_TIMEOUT = 180 # Time in seconds to wait for a replace before ending pug
-DISCONNECT_TIMEOUT = 90 # Time in seconds to wait before replacing a disconnect
+REPLACE_TIMEOUT = 300 # Time in seconds to wait for a replace before ending pug
+DISCONNECT_TIMEOUT = 180 # Time in seconds to wait before replacing a disconnect
 
 # Raised when trying to start a map vote when the map has been forced
 class MapForcedException(Exception):

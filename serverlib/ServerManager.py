@@ -24,6 +24,8 @@ class ServerManager(object):
     def allocate(self, pug):
         self.__load_servers() # reload servers, in case any new ones were added
 
+        # TODO: Raise an exception if we are unable to connect to the server,
+        # and disable the server so it cannot be used until fixed.
         for server in self._servers:
             if not server.in_use:
                 server.reserve(pug)

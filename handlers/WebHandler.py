@@ -190,7 +190,7 @@ class BaseHandler(tornado.web.RequestHandler):
 class PugListHandler(BaseHandler):
     # A simple GET is required for a pug listing
     def get(self):
-        self.validate_request()
+        #self.validate_request()
 
         self.write(self.response_handler.pug_listing(self.manager.get_pugs()))
 
